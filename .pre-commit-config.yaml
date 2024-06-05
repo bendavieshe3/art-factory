@@ -1,42 +1,52 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0 # Use the latest version
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
+        exclude: 'web/.*'
       - id: end-of-file-fixer
+        exclude: 'web/.*'
       - id: check-yaml
+        exclude: 'web/.*'
       - id: check-json
+        exclude: 'web/.*'
       - id: check-added-large-files
+        exclude: 'web/.*'
       - id: detect-private-key
+        exclude: 'web/.*'
 
   - repo: https://github.com/psf/black
-    rev: 24.4.2 # Use the latest version
+    rev: 24.4.2
     hooks:
       - id: black
         language_version: python3.11
+        exclude: 'web/.*'
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2 # Use the latest version
+    rev: 5.13.2
     hooks:
       - id: isort
         language_version: python3.11
+        exclude: 'web/.*'
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.4.0 # Use the latest version
+    rev: v9.4.0
     hooks:
       - id: eslint
         additional_dependencies: ['eslint-plugin-vue']
+        exclude: 'web/.*'
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8 # Use the latest version
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         files: \.(js|ts|jsx|tsx|json|md|vue|css|scss|html)$
+        exclude: 'web/.*'
 
   - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0 # Use the latest version
+    rev: 7.0.0
     hooks:
       - id: flake8
-        additional_dependencies:
-          ['flake8-bugbear', 'flake8-comprehensions', 'mccabe']
+        additional_dependencies: ['flake8-bugbear', 'flake8-comprehensions', 'mccabe']
         language_version: python3.11
+        exclude: 'web/.*'

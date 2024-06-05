@@ -104,3 +104,6 @@ celerybeat-schedule
 
 # virtualenv
 .venv/
+
+# sublime text
+*.sublime-*
