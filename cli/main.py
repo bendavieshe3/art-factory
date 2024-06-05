@@ -3,15 +3,19 @@ import os
 import sys
 
 import click
+
+# Ensure the shared module can be imported
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "shared"))
+)
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+)
+
 from commands.foreman import foreman
 from commands.run import run
 from commands.server import server
 from commands.worker import worker
-
-# Ensure the shared module can be imported
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-)
 
 
 @click.group()
