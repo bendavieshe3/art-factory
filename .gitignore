@@ -107,3 +107,6 @@ celerybeat-schedule
 
 # sublime text
 *.sublime-*
+
+# Ignore SQLite database files
+web/db.sqlite3
