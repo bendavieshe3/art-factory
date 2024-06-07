@@ -1,0 +1,6 @@
+# config/settings.yaml
+
+default_warehouse:
+  name: Default
+  path: default_warehouse/
+  is_default: true
