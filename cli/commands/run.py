@@ -9,7 +9,3 @@ def run():
     click.echo("Running main operation...")
     message = get_test_message()
     click.echo(message)
-
-
-if __name__ == "__main__":
-    run()

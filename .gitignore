@@ -110,3 +110,10 @@ celerybeat-schedule
 
 # Ignore SQLite database files
 web/db.sqlite3
+web/db.sqlite3.bak
+
+# Ignore default warehouse
+default_warehouse/
+
+# Mac
+.DS_Store
