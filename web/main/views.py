@@ -2,6 +2,7 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 from shared.messages import get_test_message
+from shared.services.warehouses import list_warehouses
 from .models import Warehouse
 
 
@@ -10,7 +11,7 @@ def index(request):
 
 
 def warehouse_list(request):
-    warehouses = Warehouse.objects.all()
+    warehouses = list_warehouses()
     return render(
         request, "settings/warehouse_list.html", {"warehouses": warehouses}
     )
