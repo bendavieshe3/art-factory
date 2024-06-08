@@ -1,7 +1,9 @@
 # config/config.py
+# Standard Library
 import os
 import sys
 
+# Third Party
 import django
 import yaml
 

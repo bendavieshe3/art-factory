@@ -1,6 +1,33 @@
 #!/usr/bin/env python3
+# Third Party
 import click
 
+"""
+Reserved general switches
+
+-p --preview
+-v --verbose
+__ --debug
+
+Reserved general options
+
+
+
+Reserved command options
+
+
+(without optons) - show a list
+
+-c <params> -create
+-r <id> --read
+-u <id> <params> --update
+-d <id> --delete
+__ <id> --make-default
+
+"""
+
+
+# First Party
 # Load configuration and check initialization
 from config.config import load_config
 from config.init import check_initialised
@@ -10,6 +37,7 @@ check_initialised(config)
 
 click.secho("Art Factory", fg="green")
 
+# First Party
 from cli.commands.foreman import foreman
 from cli.commands.run import run
 from cli.commands.server import server

@@ -1,3 +1,4 @@
+# Standard Library
 import os
 import sys
 
@@ -5,6 +6,7 @@ import sys
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 )
+# First Party
 from shared.work import perform_foreman_task
 
 if __name__ == "__main__":

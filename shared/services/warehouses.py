@@ -1,9 +1,13 @@
 # shared/services/warehouses
+# Standard Library
 import os
 
-from main.models import Warehouse
+# Third Party
+from django.db.utils import IntegrityError
 
-from shared.exceptions import ConfigurationException
+# First Party
+from main.models import Warehouse
+from shared.exceptions import AfConfigurationException, AfDuplicateException
 
 
 def init_warehouses(config):
@@ -28,11 +32,17 @@ def create_warehouse(name, path, is_default):
             os.makedirs(path)
             # Log that a folder was created with path
         else:
-            raise ConfigurationException(
+            raise AfConfigurationException(
                 f"Directory or parent does not exist: {path}"
             )
+    try:
+        Warehouse.objects.create(name=name, path=path, is_default=is_default)
+    except IntegrityError:
+        raise AfDuplicateException
 
-    Warehouse.objects.create(name=name, path=path, is_default=is_default)
+
+def delete_warehouse(id):
+    Warehouse.objects.filter(id=id).first().delete()
 
 
 class BadFilePathException(Exception):
