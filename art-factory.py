@@ -32,6 +32,8 @@ __ <id> --make-default
 from config.config import load_config
 from config.init import check_initialised
 
+ERR_COLOR = "red"
+
 config = load_config()
 check_initialised(config)
 
