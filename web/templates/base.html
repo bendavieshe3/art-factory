@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>{% block title %}Art Factory{% endblock %}</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .content {
+            flex: 1;
+        }
+        footer {
+            background-color: #f8f9fa;
+            padding: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Header -->
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <a class="navbar-brand" href="/">Art Factory</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="projectsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Projects
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="projectsDropdown">
+                                <a class="dropdown-item" href="/projects/overview">Overview</a>
+                                <a class="dropdown-item" href="/projects/portfolio">Portfolio</a>
+                                <a class="dropdown-item" href="/projects/browse">Browse</a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="productionDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Production
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="productionDropdown">
+                                <a class="dropdown-item" href="/production/overview">Overview</a>
+                                <!-- Add more links as needed -->
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="compositionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Compositions
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="compositionsDropdown">
+                                <a class="dropdown-item" href="/compositions/batches">Batches</a>
+                                <a class="dropdown-item" href="/compositions/search">Search</a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="labDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Lab
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="labDropdown">
+                                <a class="dropdown-item" href="/lab/image-comparator">Image Comparator</a>
+                                <a class="dropdown-item" href="/lab/factory-settings">Factory Settings</a>
+                                <a class="dropdown-item" href="/lab/replacement-parts">Replacement Parts</a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="processDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Process
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="processDropdown">
+                                <a class="dropdown-item" href="/process/pipelines">Pipelines</a>
+                                <a class="dropdown-item" href="/process/factory-processes">Factory Processes</a>
+                                <a class="dropdown-item" href="/process/replacement-parts">Replacement Parts</a>
+                                <a class="dropdown-item" href="/process/warehouses">Warehouses</a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Settings
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="settingsDropdown">
+                                <a class="dropdown-item" href="/settings/warehouses">Warehouses</a>
+                                <a class="dropdown-item" href="/settings/preferences">User Preferences</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Content -->
+        <div class="content container mt-4">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer mt-auto py-3 bg-light">
+            <div class="container">
+                <span class="text-muted">© 2023 Art Factory</span>
+            </div>
+        </footer>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

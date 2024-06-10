@@ -1,15 +1,17 @@
-<!-- web/templates/settings/warehouse_list.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Warehouse List</title>
-</head>
-<body>
-    <h1>Warehouse List</h1>
-    <ul>
-        {% for warehouse in warehouses %}
-        <li>{{ warehouse.name }} - {{ warehouse.path }} - Default: {{ warehouse.is_default }}</li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+<!-- templates/settings/warehouse_list.html -->
+{% extends "base.html" %}
+
+{% block title %}Warehouse List{% endblock %}
+
+{% block subnav %}
+{% include "settings/settings_subnav.html" %}
+{% endblock %}
+
+{% block content %}
+<h1>Warehouse List</h1>
+<ul>
+    {% for warehouse in warehouses %}
+        <li>{{ warehouse.name }} - {{ warehouse.path }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}
