@@ -162,3 +162,9 @@ python manage.py collectstatic
 - Database optimization using Django ORM best practices
 - Efficient file handling for generated media
 - Caching strategy using Django's cache framework
+
+## Local Knowledge Management
+
+@./.claude/kb/MOC.md
+
+For each request, use the Map of Content (MOC) to identify relevant knowledge articles that may inform your response. Read knowledge related to the current request based on the user command and project context. This knowledge base contains environment-specific information, best practices, and current technical information to supplement your responses without requiring web searches.

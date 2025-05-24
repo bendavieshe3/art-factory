@@ -117,3 +117,8 @@ celerybeat-schedule
 art-factory-old/
 generated_products/
 *.backup
+
+# Claude Code - exclude personal/machine-specific knowledge
+.claude/kb/local-system-info.md
+.claude/kb/*-local.md
+.claude/kb/personal-*.md
