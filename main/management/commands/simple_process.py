@@ -53,12 +53,41 @@ class Command(BaseCommand):
                 item.completed_at = timezone.now()
                 item.save()
                 
+                # Update order status if all items are completed
+                self.update_order_status(item.order)
+                
             except Exception as e:
                 item.status = 'failed'
                 item.error_message = str(e)
                 item.completed_at = timezone.now()
                 item.save()
+                self.update_order_status(item.order)
                 self.stdout.write(self.style.ERROR(f'❌ Error processing order item {item.id}: {e}'))
+    
+    def update_order_status(self, order):
+        """Update order status based on item completion."""
+        items = order.orderitem_set.all()
+        completed_items = items.filter(status='completed')
+        failed_items = items.filter(status='failed')
+        
+        if completed_items.count() == items.count():
+            # All items completed successfully
+            order.status = 'completed'
+            order.completed_at = timezone.now()
+            order.save()
+            self.stdout.write(f'  📋 Order {order.id} marked as completed')
+        elif failed_items.count() == items.count():
+            # All items failed
+            order.status = 'failed'
+            order.completed_at = timezone.now()
+            order.save()
+            self.stdout.write(f'  📋 Order {order.id} marked as failed')
+        elif (completed_items.count() + failed_items.count()) == items.count():
+            # Mixed results - mark as completed if at least one succeeded
+            order.status = 'completed'
+            order.completed_at = timezone.now()
+            order.save()
+            self.stdout.write(f'  📋 Order {order.id} marked as completed (with some failures)')
     
     def process_fal_item(self, item, machine_name):
         """Process item using fal.ai"""

@@ -118,7 +118,7 @@ def place_order_api(request):
             project_name=data.get('project_name', ''),
         )
         
-        # Create order items
+        # Create order items (signal will automatically trigger processing)
         for i in range(order.quantity):
             OrderItem.objects.create(
                 order=order,
@@ -130,7 +130,7 @@ def place_order_api(request):
         return JsonResponse({
             'success': True,
             'order_id': order.id,
-            'message': f'Order placed successfully! {order.quantity} items created.'
+            'message': f'Order placed successfully! {order.quantity} items are being generated.'
         })
         
     except Exception as e:

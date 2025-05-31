@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from .products import Product
 
 
@@ -123,3 +125,31 @@ class OrderItem(models.Model):
             from django.utils import timezone
             return timezone.now() - self.started_at
         return None
+
+
+@receiver(post_save, sender=OrderItem)
+def trigger_order_item_processing(sender, instance, created, **kwargs):
+    """
+    Automatically trigger processing when OrderItem is created.
+    This ensures AI generation happens immediately without manual intervention.
+    """
+    if created and instance.status == 'pending':
+        # Import here to avoid circular imports
+        from ..tasks import process_order_items_async
+        import threading
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        logger.info(f"Auto-triggering processing for OrderItem {instance.id}")
+        
+        try:
+            # Process in background thread
+            thread = threading.Thread(
+                target=process_order_items_async,
+                args=([instance],)
+            )
+            thread.daemon = True
+            thread.start()
+        except Exception as e:
+            logger.error(f"Failed to trigger background processing for OrderItem {instance.id}: {e}")
+            # Don't raise the exception - we don't want to break order creation

@@ -137,6 +137,14 @@ python manage.py load_seed_data
 5. Run tests: `python manage.py test`
 6. Commit when feature works: `git add . && git commit -m "description"`
 
+### AI Generation Workflow
+1. **Place Orders**: Use web interface at http://127.0.0.1:8000/ to create orders
+2. **Automatic Processing**: AI generation starts immediately in the background
+3. **View Results**: Check inventory at http://127.0.0.1:8000/inventory/ for generated images  
+4. **Monitor Status**: Orders automatically update from "pending" → "processing" → "completed"
+
+**Note**: Generation happens automatically when orders are placed. No manual commands needed!
+
 ## Development Commands
 
 **Note:** Always activate the virtual environment before running Django commands.
@@ -168,6 +176,12 @@ python manage.py load_seed_data
 
 # Load seed data (reset existing)
 python manage.py load_seed_data --reset
+
+# Process pending AI generation orders (manual/debugging only)
+python manage.py simple_process
+
+# Process specific order item (manual/debugging only) 
+python manage.py simple_process --order-item-id 1
 ```
 
 ## Code Organization Patterns
