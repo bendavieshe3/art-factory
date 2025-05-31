@@ -61,13 +61,78 @@ The application follows a factory abstraction pattern:
 - **CSS Framework**: Tailwind, Bootstrap, or custom CSS
 - **Task Queue Backend**: Redis, PostgreSQL, or in-memory for development
 
-## Development Commands
+## Development Environment Setup
 
-## Development Commands
-
-Standard Django development workflow:
+### Virtual Environment
+The project uses Python's built-in venv for dependency isolation:
 
 ```bash
+# Create virtual environment (one time setup)
+python3 -m venv venv
+
+# Activate virtual environment (each session)
+source venv/bin/activate
+
+# Deactivate when done
+deactivate
+```
+
+### Dependencies
+```bash
+# Install Django and project dependencies
+pip install django
+pip install fal-client  # AI provider client
+```
+
+## Development Workflow
+
+### Terminal Setup
+Use **two terminal windows/tabs** for efficient development:
+
+**Terminal 1 - Development Server:**
+```bash
+cd /Volumes/Ceres/data/Projects/art-factory
+source venv/bin/activate
+python manage.py runserver
+# Keep this running - Django auto-reloads on file changes
+```
+
+**Terminal 2 - Development Commands:**
+```bash
+cd /Volumes/Ceres/data/Projects/art-factory
+source venv/bin/activate
+# Use for migrations, testing, git commands, etc.
+```
+
+### Browser Setup
+Keep these browser windows open during development:
+- **Main Application**: http://127.0.0.1:8000/
+- **Admin Portal**: http://127.0.0.1:8000/admin/
+- **Auto-refresh** both when making changes
+
+### Initial Setup (One-time)
+```bash
+# In Terminal 2 - Create admin user
+python manage.py createsuperuser
+# Recommended: username=admin, email=admin@example.com, password=admin123
+```
+
+### Development Cycle
+1. Make code changes (models, views, templates)
+2. Run migrations if models changed: `python manage.py makemigrations && python manage.py migrate`
+3. Django auto-reloads development server
+4. Refresh browser to test changes
+5. Run tests: `python manage.py test`
+6. Commit when feature works: `git add . && git commit -m "description"`
+
+## Development Commands
+
+**Note:** Always activate the virtual environment before running Django commands.
+
+```bash
+# Activate virtual environment first
+source venv/bin/activate
+
 # Development server
 python manage.py runserver
 
@@ -82,6 +147,9 @@ python manage.py test
 python manage.py createsuperuser
 python manage.py shell
 python manage.py collectstatic
+
+# Create requirements file
+pip freeze > requirements.txt
 ```
 
 ## Code Organization Patterns
@@ -162,6 +230,12 @@ python manage.py collectstatic
 - Database optimization using Django ORM best practices
 - Efficient file handling for generated media
 - Caching strategy using Django's cache framework
+
+## Development Workflow Guidelines
+
+- Always verify accomplishments with tests
+- Update documentation to reflect changes
+- Check into source code locally before pushing to remote repositories
 
 ## Local Knowledge Management
 

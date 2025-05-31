@@ -113,10 +113,25 @@ celerybeat-schedule
 # Mac
 .DS_Store
 
+# Django development
+*.log
+*.pot
+*.pyc
+*.pyo
+local_settings.py
+db.sqlite3-journal
+
 # Art Factory specific
 art-factory-old/
 generated_products/
 *.backup
+
+# AI Provider API Keys - NEVER commit these
+.env.local
+.env.production
+fal_api_key.txt
+replicate_token.txt
+civitai_key.txt
 
 # Claude Code - exclude personal/machine-specific knowledge
 .claude/kb/local-system-info.md
