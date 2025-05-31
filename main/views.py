@@ -118,12 +118,16 @@ def place_order_api(request):
             project_name=data.get('project_name', ''),
         )
         
+        # Merge machine defaults with user parameters (user parameters take precedence)
+        merged_parameters = machine.default_parameters.copy()
+        merged_parameters.update(order.base_parameters)
+        
         # Create order items (signal will automatically trigger processing)
         for i in range(order.quantity):
             OrderItem.objects.create(
                 order=order,
                 prompt=order.prompt,
-                parameters=order.base_parameters,
+                parameters=merged_parameters,
                 status='pending'
             )
         

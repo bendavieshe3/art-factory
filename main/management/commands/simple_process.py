@@ -104,6 +104,8 @@ class Command(BaseCommand):
         }
         
         self.stdout.write(f'  Submitting to {machine_name}...')
+        if 'enable_safety_checker' in arguments:
+            self.stdout.write(f'    Safety checker enabled: {arguments["enable_safety_checker"]}')
         
         # Submit and get result
         handle = fal_client.submit(machine_name, arguments=arguments)
@@ -151,6 +153,8 @@ class Command(BaseCommand):
         }
         
         self.stdout.write(f'  Submitting to {machine_name}...')
+        if 'disable_safety_checker' in input_params:
+            self.stdout.write(f'    Safety checker disabled: {input_params["disable_safety_checker"]}')
         
         # Submit and get result
         output = replicate.run(machine_name, input=input_params)
