@@ -31,13 +31,94 @@
 - Enhanced voice quality and multilingual support
 
 **Technical Integration:**
-```python
-# Basic fal.ai client usage
-from fal_client import submit
 
-result = submit("fal-ai/stable-diffusion-xl", {
-    "prompt": "a beautiful landscape"
-})
+*Installation:*
+```bash
+pip install fal-client
+```
+
+*Authentication Setup:*
+```bash
+# Set API key as environment variable
+export FAL_KEY="your_api_key_here"
+```
+
+*Basic Usage (Synchronous):*
+```python
+import fal_client
+
+# Recommended: Queue-based submission
+result = fal_client.subscribe(
+    "fal-ai/flux/dev",
+    arguments={
+        "prompt": "a beautiful landscape",
+        "seed": 6252023
+    }
+)
+
+# Alternative: Direct submission (not recommended for production)
+result = fal_client.submit(
+    "fal-ai/stable-diffusion-xl",
+    arguments={"prompt": "a beautiful landscape"}
+)
+```
+
+*Async Usage:*
+```python
+import asyncio
+import fal_client
+
+async def generate_image():
+    result = await fal_client.submit_async(
+        "fal-ai/flux/dev",
+        arguments={"prompt": "a beautiful landscape"}
+    )
+    return result
+
+# Run async function
+result = asyncio.run(generate_image())
+```
+
+*File Upload Support:*
+```python
+# Upload file for image-to-image tasks
+file_url = fal_client.upload_file("path/to/local/image.jpg")
+
+result = fal_client.subscribe(
+    "fal-ai/stable-diffusion-xl/image-to-image",
+    arguments={
+        "prompt": "artistic style transfer",
+        "image_url": file_url
+    }
+)
+```
+
+*Error Handling:*
+```python
+try:
+    result = fal_client.subscribe(
+        "fal-ai/flux/dev",
+        arguments={"prompt": "test prompt"}
+    )
+except Exception as e:
+    # Check if error is retryable via X-Fal-Retryable header
+    # Handle specific error types based on HTTP status codes
+    print(f"Generation failed: {e}")
+```
+
+*Queue Management:*
+```python
+# Submit to queue and track progress
+request_id = fal_client.queue.submit(
+    "fal-ai/flux/dev", 
+    arguments={"prompt": "landscape"}
+)
+
+# Check status
+status = fal_client.queue.status(request_id)
+
+# Get result when ready
+result = fal_client.queue.result(request_id)
 ```
 
 ### Replicate (2024-2025)
@@ -120,24 +201,107 @@ FLUX.1 represents a significant advancement in open-source text-to-image generat
 - Replicate's auto-scaling fits variable demand patterns
 - CivitAI's community models provide diverse artistic styles
 
-**Integration Patterns:**
-- Use provider-specific SDKs for best performance
-- Implement fallback providers for reliability
-- Cache popular models to reduce cold start times
-- Consider cost optimization across providers
+**Django Integration Patterns:**
+```python
+# Django settings.py configuration
+import os
 
-**Authentication:**
+FAL_API_KEY = os.getenv('FAL_KEY')
+REPLICATE_API_TOKEN = os.getenv('REPLICATE_API_TOKEN')
+CIVITAI_API_KEY = os.getenv('CIVITAI_API_KEY')
+
+# Django model integration
+from django.conf import settings
+import fal_client
+
+class FalFactoryMachine:
+    def __init__(self):
+        # Configure client with Django settings
+        os.environ['FAL_KEY'] = settings.FAL_API_KEY
+    
+    async def generate_image(self, prompt, model="fal-ai/flux/dev"):
+        try:
+            result = await fal_client.submit_async(
+                model,
+                arguments={"prompt": prompt}
+            )
+            return result
+        except Exception as e:
+            # Log error using Django logging
+            logger.error(f"fal.ai generation failed: {e}")
+            raise
+```
+
+**Background Task Integration:**
+```python
+# Using Django's async views (Django 4.1+)
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+async def async_generate_view(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        prompt = data.get('prompt')
+        
+        try:
+            result = await fal_client.submit_async(
+                "fal-ai/flux/dev",
+                arguments={"prompt": prompt}
+            )
+            return JsonResponse({"success": True, "result": result})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)})
+```
+
+**Queue Integration with Django Signals:**
+```python
+# models.py
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+class ProductOrder(models.Model):
+    prompt = models.TextField()
+    status = models.CharField(max_length=20, default='pending')
+    fal_request_id = models.CharField(max_length=100, blank=True)
+    
+@receiver(post_save, sender=ProductOrder)
+def submit_to_fal_queue(sender, instance, created, **kwargs):
+    if created:
+        # Submit to fal.ai queue and store request_id
+        request_id = fal_client.queue.submit(
+            "fal-ai/flux/dev",
+            arguments={"prompt": instance.prompt}
+        )
+        instance.fal_request_id = request_id
+        instance.status = 'queued'
+        instance.save()
+```
+
+**Authentication & Security:**
 - All platforms require API keys
-- Implement secure key management in Django settings
-- Use environment variables for API keys
-- Consider rate limiting for cost control
+- Store keys in environment variables, never in code
+- Use Django's settings management for API configuration
+- Implement rate limiting for cost control
+- Consider API key rotation strategies
+
+**Error Handling Best Practices:**
+- Use Django's logging framework for API errors
+- Implement retry logic with exponential backoff
+- Store failed requests for manual retry
+- Monitor API quota usage and costs
 
 ## Metadata
-- **Last Updated**: 2025-05-24
+- **Last Updated**: 2025-05-31
 - **Version**: Current as of May 2025
 - **Sources**: 
-  - https://fal.ai/
-  - https://replicate.com/
-  - https://civitai.com/
+  - https://docs.fal.ai/clients/python/ - Official Python client documentation
+  - https://pypi.org/project/fal-client/ - fal-client package information
+  - https://docs.fal.ai/quick-start/ - Quick start guide
+  - https://fal.ai/ - Main platform
+  - https://replicate.com/ - Replicate platform
+  - https://civitai.com/ - CivitAI platform
   - Platform changelogs and documentation
   - Recent funding announcements and feature releases

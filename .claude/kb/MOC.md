@@ -36,4 +36,4 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - Knowledge is kept current through regular updates prioritizing frequently-changing topics
 
 ## Last Updated
-2025-05-24 - Added Claude Code comprehensive guide: CLI commands, memory system, security, configuration
+2025-05-31 - Updated AI Image Generation APIs with comprehensive fal.ai Python client documentation, Django integration patterns, async support, and error handling
