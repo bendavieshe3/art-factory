@@ -62,7 +62,21 @@ def process_order_items_async(order_items):
                 item.completed_at = timezone.now()
                 item.save()
                 processor.update_order_status(item.order)
-                logger.error(f"❌ Error processing order item {item.id}: {e}")
+                
+                # Log to both Python logger and database
+                error_msg = f"Failed processing order item {item.id}: {e}"
+                logger.error(f"❌ {error_msg}")
+                
+                # Create database log entry for easier debugging
+                try:
+                    from .models import LogEntry
+                    LogEntry.objects.create(
+                        level='ERROR',
+                        message=error_msg,
+                        details={'order_id': item.order.id, 'item_id': item.id, 'provider': item.order.provider}
+                    )
+                except Exception as log_error:
+                    logger.error(f"Failed to create log entry: {log_error}")
         
         logger.info(f"Completed background processing of {len(order_items)} order items")
         

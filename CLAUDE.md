@@ -176,6 +176,11 @@ python manage.py collectstatic
 python manage.py load_seed_data          # Load factory machine definitions
 python manage.py simple_process          # Process pending orders manually
 
+# Debugging and monitoring  
+python manage.py debug_orders            # Show recent order status and failures
+python manage.py debug_orders --order-id 123  # Debug specific order
+python manage.py debug_orders --failed-only    # Show only failed orders
+
 # Development utilities
 pip freeze > requirements.txt           # Update requirements file
 
