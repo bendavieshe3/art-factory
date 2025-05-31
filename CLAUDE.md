@@ -145,6 +145,9 @@ python manage.py load_seed_data
 
 **Note**: Generation happens automatically when orders are placed. No manual commands needed!
 
+### NSFW Safety Checkers
+All AI models have NSFW safety checkers **disabled by default** to prevent false positives that result in blank/black images. Safety checkers often incorrectly flag innocent content as inappropriate, leading to censored outputs. If you need safety checking enabled, you can add `"enable_safety_checker": true` to the parameters when placing an order.
+
 ## Development Commands
 
 **Note:** Always activate the virtual environment before running Django commands.
