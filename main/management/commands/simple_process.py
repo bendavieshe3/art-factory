@@ -127,7 +127,7 @@ class Command(BaseCommand):
                 metadata={
                     'width': image_info.get('width'),
                     'height': image_info.get('height'),
-                    'seed': result.get('seed'),
+                    'seed': self.safe_seed_value(result.get('seed')),
                     'provider_id': str(result.get('request_id', ''))
                 },
                 provider='fal.ai',
@@ -177,7 +177,7 @@ class Command(BaseCommand):
                     metadata={
                         'width': input_params.get('width', 1024),
                         'height': input_params.get('height', 1024),
-                        'seed': input_params.get('seed'),
+                        'seed': self.safe_seed_value(input_params.get('seed')),
                         'provider_id': f"replicate_{timezone.now().timestamp()}"
                     },
                     provider='replicate',
@@ -226,3 +226,26 @@ class Command(BaseCommand):
         self.stdout.write(f'    Created product {product.id}: {file_path}')
         
         return product
+    
+    def safe_seed_value(self, seed):
+        """Convert seed to safe value for SQLite BigIntegerField."""
+        if seed is None:
+            return None
+            
+        try:
+            # Convert to int if it's a string
+            if isinstance(seed, str):
+                seed = int(seed)
+            
+            # SQLite's INTEGER max is 2^63-1 (9223372036854775807)
+            # If seed is larger, use modulo to fit within range
+            max_sqlite_int = 9223372036854775807
+            if seed > max_sqlite_int:
+                return seed % max_sqlite_int
+            elif seed < -max_sqlite_int:
+                return -((-seed) % max_sqlite_int)
+            
+            return seed
+        except (ValueError, TypeError):
+            # If conversion fails, return None
+            return None
