@@ -118,16 +118,25 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Order placed successfully! Order ID: ' + data.order_id);
+                Toast.success(
+                    `Order #${data.order_id} placed successfully! ${formData.quantity} images are being generated.`,
+                    'Order Placed'
+                );
                 form.reset();
                 descriptionDiv.classList.add('hidden');
             } else {
-                alert('Error placing order: ' + data.error);
+                Toast.error(
+                    data.error || 'Unknown error occurred',
+                    'Order Failed'
+                );
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error placing order: ' + error.message);
+            Toast.error(
+                'Network error: ' + error.message,
+                'Connection Failed'
+            );
         })
         .finally(() => {
             submitBtn.disabled = false;

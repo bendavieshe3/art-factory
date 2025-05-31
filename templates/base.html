@@ -144,6 +144,84 @@
             border: 1px solid #f5c6cb;
         }
         
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+        
+        .toast {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            padding: 16px;
+            border-left: 4px solid #3498db;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            border-left-color: #27ae60;
+        }
+        
+        .toast.error {
+            border-left-color: #e74c3c;
+        }
+        
+        .toast.warning {
+            border-left-color: #f39c12;
+        }
+        
+        .toast.info {
+            border-left-color: #3498db;
+        }
+        
+        .toast-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            color: #999;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toast-close:hover {
+            color: #666;
+        }
+        
+        .toast-message {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #666;
+        }
+        
         /* Footer */
         footer {
             background: #34495e;
@@ -180,6 +258,9 @@
         </div>
     </header>
 
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <main>
         <div class="container">
             {% if messages %}
@@ -204,6 +285,84 @@
             <p>&copy; 2025 AI Art Factory - Local Development</p>
         </div>
     </footer>
+    
+    <!-- Global Toast Notification System -->
+    <script>
+    // Global Toast Notification System
+    window.Toast = {
+        show: function(message, type = 'info', title = null, duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const toastId = 'toast_' + Date.now();
+            toast.id = toastId;
+            
+            // Default titles based on type
+            if (!title) {
+                const titles = {
+                    'success': 'Success',
+                    'error': 'Error', 
+                    'warning': 'Warning',
+                    'info': 'Info'
+                };
+                title = titles[type] || 'Notification';
+            }
+            
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <div class="toast-title">${title}</div>
+                    <button class="toast-close" onclick="Toast.hide('${toastId}')">&times;</button>
+                </div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Show animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto-hide after duration
+            if (duration > 0) {
+                setTimeout(() => {
+                    this.hide(toastId);
+                }, duration);
+            }
+            
+            return toastId;
+        },
+        
+        hide: function(toastId) {
+            const toast = document.getElementById(toastId);
+            if (toast) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }
+        },
+        
+        success: function(message, title = null, duration = 5000) {
+            return this.show(message, 'success', title, duration);
+        },
+        
+        error: function(message, title = null, duration = 7000) {
+            return this.show(message, 'error', title, duration);
+        },
+        
+        warning: function(message, title = null, duration = 6000) {
+            return this.show(message, 'warning', title, duration);
+        },
+        
+        info: function(message, title = null, duration = 5000) {
+            return this.show(message, 'info', title, duration);
+        }
+    };
+    </script>
     
     {% block extra_js %}{% endblock %}
 </body>
