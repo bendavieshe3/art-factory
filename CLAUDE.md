@@ -156,23 +156,28 @@ source venv/bin/activate
 # Development server
 python manage.py runserver
 
+# Testing
+python manage.py test                    # Run all tests
+python manage.py test main.tests         # Run app-specific tests  
+python manage.py test main.tests.ModelTestCase  # Run specific test class
+python manage.py test -v 2               # Verbose test output
+python manage.py test --keepdb           # Reuse test database (faster)
+
 # Database operations
 python manage.py makemigrations
 python manage.py migrate
-
-# Testing
-python manage.py test
 
 # Administrative
 python manage.py createsuperuser
 python manage.py shell
 python manage.py collectstatic
 
-# Create requirements file
-pip freeze > requirements.txt
+# Data management
+python manage.py load_seed_data          # Load factory machine definitions
+python manage.py simple_process          # Process pending orders manually
 
-# Load seed data
-python manage.py load_seed_data
+# Development utilities
+pip freeze > requirements.txt           # Update requirements file
 
 # Load seed data (reset existing)
 python manage.py load_seed_data --reset
