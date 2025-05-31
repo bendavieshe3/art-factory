@@ -36,4 +36,4 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - Knowledge is kept current through regular updates prioritizing frequently-changing topics
 
 ## Last Updated
-2025-05-31 - Updated AI Image Generation APIs with comprehensive fal.ai Python client documentation, Django integration patterns, async support, and error handling
+2025-05-31 - Enhanced AI Image Generation APIs with comprehensive Replicate Python client documentation, fine-tuning API, deployments, streaming support, webhooks, and advanced Django integration patterns

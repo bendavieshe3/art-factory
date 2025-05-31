@@ -82,6 +82,7 @@ deactivate
 # Install Django and project dependencies
 pip install django
 pip install fal-client  # AI provider client
+pip install replicate   # Replicate API client
 ```
 
 ## Development Workflow
@@ -115,6 +116,9 @@ Keep these browser windows open during development:
 # In Terminal 2 - Create admin user
 python manage.py createsuperuser
 # Recommended: username=admin, email=admin@example.com, password=admin123
+
+# Load factory machine seed data
+python manage.py load_seed_data
 ```
 
 ### Development Cycle
@@ -150,6 +154,12 @@ python manage.py collectstatic
 
 # Create requirements file
 pip freeze > requirements.txt
+
+# Load seed data
+python manage.py load_seed_data
+
+# Load seed data (reset existing)
+python manage.py load_seed_data --reset
 ```
 
 ## Code Organization Patterns

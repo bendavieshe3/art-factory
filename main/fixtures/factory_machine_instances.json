@@ -1,0 +1,77 @@
+[
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 1,
+    "fields": {
+      "machine_definition": 1,
+      "instance_id": "flux-dev-01",
+      "status": "idle",
+      "current_operation": null,
+      "current_order_item": null,
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0,
+      "last_operation_at": null
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 2,
+    "fields": {
+      "machine_definition": 2,
+      "instance_id": "flux-schnell-01",
+      "status": "idle",
+      "current_operation": null,
+      "current_order_item": null,
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0,
+      "last_operation_at": null
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 3,
+    "fields": {
+      "machine_definition": 2,
+      "instance_id": "flux-schnell-02",
+      "status": "idle",
+      "current_operation": null,
+      "current_order_item": null,
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0,
+      "last_operation_at": null
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 4,
+    "fields": {
+      "machine_definition": 3,
+      "instance_id": "replicate-flux-01",
+      "status": "idle",
+      "current_operation": null,
+      "current_order_item": null,
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0,
+      "last_operation_at": null
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 5,
+    "fields": {
+      "machine_definition": 4,
+      "instance_id": "sdxl-replicate-01",
+      "status": "idle",
+      "current_operation": null,
+      "current_order_item": null,
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0,
+      "last_operation_at": null
+    }
+  }
+]
