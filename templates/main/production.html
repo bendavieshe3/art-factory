@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block page_description %}
+<p>Monitor production status and system activity.</p>
+{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    <!-- Recent Orders -->
+    <div class="card">
+        <h2>Recent Orders</h2>
+        {% if recent_orders %}
+            <div style="margin-top: 1rem;">
+                {% for order in recent_orders %}
+                    <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <div style="flex: 1;">
+                                <h4>Order {{ order.id }}{% if order.title %}: {{ order.title }}{% endif %}</h4>
+                                <p style="color: #666; margin: 0.25rem 0;">{{ order.prompt|truncatechars:60 }}</p>
+                                <small style="color: #888;">
+                                    {{ order.provider }} - {{ order.quantity }} item{{ order.quantity|pluralize }} - {{ order.created_at|date:"M d, H:i" }}
+                                </small>
+                            </div>
+                            <div style="margin-left: 1rem;">
+                                <span style="padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; 
+                                           {% if order.status == 'completed' %}background: #d4edda; color: #155724;
+                                           {% elif order.status == 'processing' %}background: #fff3cd; color: #856404;
+                                           {% elif order.status == 'failed' %}background: #f8d7da; color: #721c24;
+                                           {% else %}background: #f8f9fa; color: #6c757d;{% endif %}">
+                                    {{ order.status|title }}
+                                </span>
+                            </div>
+                        </div>
+                        {% if order.completion_percentage > 0 %}
+                            <div style="margin-top: 0.5rem;">
+                                <div style="background: #f8f9fa; border-radius: 4px; height: 6px; overflow: hidden;">
+                                    <div style="background: #28a745; height: 100%; width: {{ order.completion_percentage }}%; transition: width 0.3s;"></div>
+                                </div>
+                                <small style="color: #666;">{{ order.completion_percentage }}% complete</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666; text-align: center; padding: 1rem;">No orders yet.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Machine Status -->
+    <div class="card">
+        <h2>Factory Machines</h2>
+        {% if machine_instances %}
+            <div style="margin-top: 1rem;">
+                {% for instance in machine_instances %}
+                    <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <div style="flex: 1;">
+                                <h4>{{ instance.machine_definition.display_name }}</h4>
+                                <p style="color: #666; margin: 0.25rem 0;">{{ instance.machine_definition.provider }} - {{ instance.machine_definition.modality }}</p>
+                                <small style="color: #888;">
+                                    Operations: {{ instance.total_operations }} 
+                                    ({{ instance.success_rate|floatformat:1 }}% success)
+                                </small>
+                            </div>
+                            <div style="margin-left: 1rem;">
+                                <span style="padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;
+                                           {% if instance.status == 'idle' %}background: #d4edda; color: #155724;
+                                           {% elif instance.status == 'busy' %}background: #fff3cd; color: #856404;
+                                           {% elif instance.status == 'error' %}background: #f8d7da; color: #721c24;
+                                           {% else %}background: #f8f9fa; color: #6c757d;{% endif %}">
+                                    {{ instance.status|title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666; text-align: center; padding: 1rem;">
+                No machine instances configured. 
+                <a href="{% url 'admin:main_factorymachineinstance_add' %}" target="_blank">Add one</a>
+            </p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- System Logs -->
+<div class="card">
+    <h2>Recent Activity</h2>
+    {% if recent_logs %}
+        <div style="margin-top: 1rem; max-height: 400px; overflow-y: auto;">
+            {% for log in recent_logs %}
+                <div style="border-bottom: 1px solid #f0f0f0; padding: 0.75rem 0; font-family: monospace; font-size: 0.9rem;">
+                    <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                        <span style="color: #666; white-space: nowrap;">{{ log.timestamp|date:"H:i:s" }}</span>
+                        <span style="padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: bold; white-space: nowrap;
+                                   {% if log.level == 'ERROR' or log.level == 'CRITICAL' %}background: #f8d7da; color: #721c24;
+                                   {% elif log.level == 'WARNING' %}background: #fff3cd; color: #856404;
+                                   {% elif log.level == 'INFO' %}background: #d1ecf1; color: #0c5460;
+                                   {% else %}background: #f8f9fa; color: #6c757d;{% endif %}">
+                            {{ log.level }}
+                        </span>
+                        <span style="flex: 1;">{{ log.message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: #666; text-align: center; padding: 1rem;">No log entries yet.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

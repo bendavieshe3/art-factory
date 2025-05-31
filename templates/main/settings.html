@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block page_description %}
+<p>Configure your AI Art Factory settings and API keys.</p>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>API Configuration</h2>
+    <p style="color: #666; margin-bottom: 1.5rem;">
+        Configure your API keys as environment variables. These are required for generating products with AI providers.
+    </p>
+    
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 4px; font-family: monospace;">
+        <h3 style="margin-bottom: 1rem;">Environment Variables</h3>
+        <p><strong>fal.ai:</strong></p>
+        <code>export FAL_KEY="your_fal_api_key_here"</code><br><br>
+        
+        <p><strong>Replicate:</strong></p>
+        <code>export REPLICATE_API_TOKEN="your_replicate_token_here"</code><br><br>
+        
+        <p><strong>CivitAI:</strong></p>
+        <code>export CIVITAI_API_KEY="your_civitai_key_here"</code>
+    </div>
+    
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 4px;">
+        <h4>⚠️ Security Note</h4>
+        <p>Never commit API keys to git. Always use environment variables or secure configuration files that are excluded from version control.</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Factory Machine Configuration</h2>
+    <p style="color: #666; margin-bottom: 1rem;">
+        Manage your AI model configurations through the Django admin interface.
+    </p>
+    
+    <div style="display: flex; gap: 1rem;">
+        <a href="{% url 'admin:main_factorymachinedefinition_changelist' %}" 
+           target="_blank"
+           style="background: #3498db; color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 4px;">
+            Manage Factory Machines
+        </a>
+        
+        <a href="{% url 'admin:main_factorymachinedefinition_add' %}" 
+           target="_blank"
+           style="background: #27ae60; color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 4px;">
+            Add New Machine
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>System Information</h2>
+    <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.9rem;">
+        <p><strong>Application:</strong> AI Art Factory</p>
+        <p><strong>Version:</strong> Development</p>
+        <p><strong>Django Version:</strong> {{ DJANGO_VERSION|default:"5.2.1" }}</p>
+        <p><strong>Database:</strong> SQLite (Development)</p>
+        <p><strong>Debug Mode:</strong> {% if debug %}Enabled{% else %}Disabled{% endif %}</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Quick Actions</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <a href="{% url 'admin:index' %}" 
+           target="_blank"
+           style="background: #2c3e50; color: white; text-decoration: none; padding: 1rem; border-radius: 4px; text-align: center;">
+            Django Admin
+        </a>
+        
+        <a href="{% url 'main:inventory' %}" 
+           style="background: #8e44ad; color: white; text-decoration: none; padding: 1rem; border-radius: 4px; text-align: center;">
+            View Products
+        </a>
+        
+        <a href="{% url 'main:production' %}" 
+           style="background: #e67e22; color: white; text-decoration: none; padding: 1rem; border-radius: 4px; text-align: center;">
+            Production Status
+        </a>
+        
+        <a href="{% url 'main:order' %}" 
+           style="background: #27ae60; color: white; text-decoration: none; padding: 1rem; border-radius: 4px; text-align: center;">
+            Create Order
+        </a>
+    </div>
+</div>
+
+{% endblock %}
