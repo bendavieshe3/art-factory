@@ -127,6 +127,7 @@ generated_products/
 *.backup
 
 # AI Provider API Keys - NEVER commit these
+.env
 .env.local
 .env.production
 fal_api_key.txt

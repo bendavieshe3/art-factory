@@ -130,9 +130,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Art Factory specific settings
-import os
+from decouple import config
 
-# API Keys (to be set as environment variables)
-FAL_API_KEY = os.getenv('FAL_KEY')
-REPLICATE_API_TOKEN = os.getenv('REPLICATE_API_TOKEN')
-CIVITAI_API_KEY = os.getenv('CIVITAI_API_KEY')
+# API Keys (from .env file or environment variables)
+FAL_API_KEY = config('FAL_KEY', default=None)
+REPLICATE_API_TOKEN = config('REPLICATE_API_TOKEN', default=None)
+CIVITAI_API_KEY = config('CIVITAI_API_KEY', default=None)

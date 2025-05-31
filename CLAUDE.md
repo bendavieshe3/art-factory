@@ -81,8 +81,9 @@ deactivate
 ```bash
 # Install Django and project dependencies
 pip install django
-pip install fal-client  # AI provider client
-pip install replicate   # Replicate API client
+pip install fal-client      # AI provider client
+pip install replicate       # Replicate API client
+pip install python-decouple # .env file support
 ```
 
 ## Development Workflow
@@ -113,7 +114,14 @@ Keep these browser windows open during development:
 
 ### Initial Setup (One-time)
 ```bash
-# In Terminal 2 - Create admin user
+# In Terminal 2 - Set up API keys
+cp .env.example .env
+# Edit .env file with your actual API keys from:
+# - fal.ai: https://fal.ai/dashboard/keys  
+# - Replicate: https://replicate.com/account/api-tokens
+# - CivitAI: https://civitai.com/user/account (optional)
+
+# Create admin user
 python manage.py createsuperuser
 # Recommended: username=admin, email=admin@example.com, password=admin123
 
