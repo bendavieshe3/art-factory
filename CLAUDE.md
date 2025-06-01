@@ -206,11 +206,15 @@ python manage.py collectstatic
 # Data management
 python manage.py load_seed_data          # Load factory machine definitions
 
-# Order processing and monitoring
-python manage.py process_pending_orders  # Retry stuck/pending orders (recommended for production)
+# Worker system (autonomous processing)
+python manage.py worker_status           # Show current worker and queue status
+python manage.py run_worker              # Manually run a single worker (debugging)
+python manage.py run_foreman             # Manually run foreman process (debugging)
+
+# Legacy order processing (for emergencies)
+python manage.py process_pending_orders  # Retry stuck/pending orders (backup approach)
 python manage.py process_pending_orders --retry-failed  # Also retry failed orders
 python manage.py monitor_orders          # Show current order processing status
-python manage.py monitor_orders --pending-only  # Show only problematic orders
 python manage.py simple_process          # Process pending orders manually (legacy)
 
 # Debugging and monitoring  
