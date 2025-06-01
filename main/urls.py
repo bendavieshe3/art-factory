@@ -11,6 +11,7 @@ urlpatterns = [
     path('production/', views.production_view, name='production'),
     path('settings/', views.settings_view, name='settings'),
     
+    
     # API endpoints for AJAX
     path('api/factory-machines/', views.factory_machines_api, name='factory_machines_api'),
     path('api/place-order/', views.place_order_api, name='place_order_api'),

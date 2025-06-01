@@ -17,7 +17,7 @@ def order_view(request):
         'factory_machines': factory_machines,
         'page_title': 'Place Order',
     }
-    return render(request, 'main/order.html', context)
+    return render(request, 'main/order_bootstrap.html', context)
 
 
 def inventory_view(request):

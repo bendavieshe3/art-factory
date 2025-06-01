@@ -21,7 +21,8 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - [AI Image Generation APIs](./ai-image-generation-apis.md) - fal.ai, Replicate, CivitAI features and integration guide
 
 ### Development Practices
-*No articles yet*
+- [Django UI Patterns](./django-ui-patterns.md) - Toast notifications, CSS organization, JavaScript integration, UI testing
+- [CSS Frameworks Comparison](./css-frameworks-comparison.md) - Tailwind, Bootstrap, Bulma analysis with Django integration considerations
 
 ### Troubleshooting & Solutions
 *No articles yet*
@@ -36,4 +37,4 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - Knowledge is kept current through regular updates prioritizing frequently-changing topics
 
 ## Last Updated
-2025-05-31 - Enhanced AI Image Generation APIs with comprehensive Replicate Python client documentation, fine-tuning API, deployments, streaming support, webhooks, and advanced Django integration patterns
+2025-06-01 - Added Django UI Patterns covering toast notification systems, CSS organization strategies, JavaScript integration patterns, and UI testing approaches based on Art Factory project implementation
