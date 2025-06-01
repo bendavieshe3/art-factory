@@ -22,7 +22,16 @@ The following technical choices have been made during implementation:
 Remaining technical choices to be made based on requirements:
 
 - **Real-time Communication**: Django Channels (WebSockets), Server-Sent Events, or AJAX polling  
-- **Background Tasks**: Celery, Django-RQ, or Django's async views
+
+### Background Processing Architecture (Finalized)
+- **Background Tasks**: Pure Django autonomous worker architecture  
+- **Task Queue**: Leverages existing OrderItem model with `status='pending'`
+- **Resource Management**: Uses FactoryMachineDefinition and FactoryMachineInstance
+- **Process Management**: Smart workers with automatic spawning and graceful exit
+- **Monitoring**: Foreman process for health monitoring and failure recovery
+- **Integration**: Zero external dependencies, fully Django-native approach
+
+See `docs/worker-architecture.md` for detailed architecture specification.
 
 ## Deployment Environment
 
