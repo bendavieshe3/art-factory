@@ -81,11 +81,21 @@ The application uses a header navigation with main sections:
 - Advanced parameters (collapsible)
 - "Place Order" button with validation
 
-**Recent Orders List** (bottom):
-- Table/list of recent orders
+**Preview Area** (top/right):
+- A place to show the outputs of the last generation when it is complete
+- If we implement result streaming from the APIs, the product will be progressively rendered or have actual progress shown
+
+**Recent Products**
+- strip of recently created product as cards. 
+- Updated live; when a new product is generated it is added to the left, and products are removed from the right. 
+
+
+**Recent Orders List** (bottom/right):
 - Shows: ID, model used, status, timestamp
 - Expandable to show order items
 - Status updates in real-time
+
+
 
 #### Functionality
 - Dynamic form field updates based on model selection
