@@ -15,7 +15,18 @@ def process_order_items_async(order_items):
     This function runs in a separate thread to avoid blocking the web request.
     """
     try:
+        # Import LogEntry for logging
+        from .models import LogEntry
+        
         logger.info(f"Starting background processing of {len(order_items)} order items")
+        
+        # Log start of processing
+        LogEntry.objects.create(
+            level='INFO',
+            message=f'Started processing {len(order_items)} order items',
+            logger_name='main.tasks',
+            extra_data={'event_type': 'processing_started', 'item_count': len(order_items)}
+        )
         
         # Create an instance of our existing processing command
         processor = SimpleProcessCommand()
@@ -29,6 +40,16 @@ def process_order_items_async(order_items):
                 item.status = 'processing'
                 item.started_at = timezone.now()
                 item.save()
+                
+                # Log item processing start
+                LogEntry.objects.create(
+                    level='INFO',
+                    message=f'Processing order item {item.id} for order {item.order.id}',
+                    logger_name='main.tasks',
+                    order=item.order,
+                    order_item=item,
+                    extra_data={'event_type': 'item_processing', 'machine': item.order.factory_machine_name}
+                )
                 
                 # Get machine info
                 machine_name = item.order.factory_machine_name
@@ -45,10 +66,30 @@ def process_order_items_async(order_items):
                     item.status = 'completed'
                     item.product = result
                     logger.info(f"✅ Completed order item {item.id}")
+                    
+                    # Log completion
+                    LogEntry.objects.create(
+                        level='INFO',
+                        message=f'Completed order item {item.id} - Generated product {result.id}',
+                        logger_name='main.tasks',
+                        order=item.order,
+                        order_item=item,
+                        extra_data={'event_type': 'item_completed', 'product_id': result.id}
+                    )
                 else:
                     item.status = 'failed'
                     item.error_message = 'Generation failed'
                     logger.error(f"❌ Failed order item {item.id}")
+                    
+                    # Log failure
+                    LogEntry.objects.create(
+                        level='ERROR',
+                        message=f'Failed order item {item.id} - Generation failed',
+                        logger_name='main.tasks',
+                        order=item.order,
+                        order_item=item,
+                        extra_data={'event_type': 'item_failed'}
+                    )
                 
                 item.completed_at = timezone.now()
                 item.save()
@@ -69,11 +110,13 @@ def process_order_items_async(order_items):
                 
                 # Create database log entry for easier debugging
                 try:
-                    from .models import LogEntry
                     LogEntry.objects.create(
                         level='ERROR',
                         message=error_msg,
-                        details={'order_id': item.order.id, 'item_id': item.id, 'provider': item.order.provider}
+                        logger_name='main.tasks',
+                        order=item.order,
+                        order_item=item,
+                        extra_data={'event_type': 'item_error', 'provider': item.order.provider}
                     )
                 except Exception as log_error:
                     logger.error(f"Failed to create log entry: {log_error}")
