@@ -53,13 +53,26 @@ The application follows a factory abstraction pattern:
 - **Database**: SQLite (development) → PostgreSQL (production migration path)
 - **ORM**: Django ORM (built-in)
 - **Development Server**: Django's built-in development server
+- **CSS Framework**: Bootstrap 5 with django-bootstrap5 package
+- **Frontend Approach**: Django templates + JavaScript with Bootstrap components
 
 ### To Be Determined
 - **Real-time Communication**: Options include Django Channels (WebSockets), Server-Sent Events, or polling
 - **Background Tasks**: Options include Celery, Django-RQ, or Django's async views
-- **Frontend Approach**: Django templates + JavaScript vs. more sophisticated SPA approach
-- **CSS Framework**: Tailwind, Bootstrap, or custom CSS
 - **Task Queue Backend**: Redis, PostgreSQL, or in-memory for development
+
+### CSS Framework Decision (Bootstrap 5)
+
+**Rationale**: Bootstrap 5 was chosen based on three key criteria:
+1. **Understandability/Simplicity**: Clear, semantic class names that translate well from user instructions
+2. **UI Widget Availability**: Comprehensive component library (cards, modals, forms, navigation)
+3. **Dense Desktop Interface Support**: Excellent for compact, desktop-like applications
+
+**Implementation Notes**:
+- Use `django-bootstrap5` package for form integration
+- Preserve custom components (like toast notifications) when Bootstrap alternatives are inferior
+- Leverage Bootstrap's responsive grid system and utility classes
+- Follow Bootstrap's semantic HTML patterns for accessibility
 
 ## Development Environment Setup
 
@@ -147,6 +160,21 @@ python manage.py load_seed_data
 
 ### NSFW Safety Checkers
 All AI models have NSFW safety checkers **disabled by default** to prevent false positives that result in blank/black images. Safety checkers often incorrectly flag innocent content as inappropriate, leading to censored outputs. If you need safety checking enabled, you can add `"enable_safety_checker": true` to the parameters when placing an order.
+
+## Known Issues & Bugs
+
+### Critical Bugs
+- **Non-SDXL Model Orders Failing**: Orders for non-SDXL models (like Flux models) are currently broken, likely due to parameter mismatch between model types. Different model architectures expect different parameter schemas and defaults.
+
+### Technical Debt
+- **Provider-Based Product Storage**: Current product storage by provider is not scalable. Need combined product storage system.
+- **Missing Model-Specific Defaults**: Parameter defaults are generic rather than model-specific, causing compatibility issues with different model architectures.
+
+### Enhancement Backlog
+- Real-time order progress feedback
+- Inventory interface optimization (compact cards, sidebar details)
+- Model catalog expansion with favorites management
+- Order page layout improvements
 
 ## Development Commands
 
@@ -281,6 +309,64 @@ python manage.py simple_process --order-item-id 1
 - Always verify accomplishments with tests
 - Update documentation to reflect changes
 - Check into source code locally before pushing to remote repositories
+
+## UI/UX Development Guidelines
+
+### Using ux.md for Implementation Guidance
+
+The `docs/ux.md` file contains comprehensive UI/UX specifications and should be consulted for ALL interface work:
+
+**Before Implementation**:
+1. **Read relevant UX sections** for the feature you're implementing
+2. **Follow specified interaction patterns** (selection, actions, real-time updates)
+3. **Use defined component structures** (product cards, parameter forms, status indicators)
+4. **Implement accessibility requirements** (keyboard nav, ARIA labels, contrast)
+
+**Key UX Principles to Follow**:
+- **Progressive Disclosure**: Hide complexity behind collapsible sections
+- **Immediate Feedback**: Provide real-time status updates and validation
+- **Consistent Patterns**: Reuse established component designs and behaviors
+- **Desktop-First**: Optimize for desktop use with professional interface design
+
+**Example Application**:
+- Order page sidebar follows the "dynamic parameter form" specification
+- Bootstrap cards implement the "product card" component pattern
+- Toast notifications provide the "immediate feedback" for user actions
+
+### CSS Framework Integration
+
+Bootstrap 5 classes should map to UX specifications:
+- Use `card` components for product displays and forms
+- Use `collapse` for progressive disclosure (advanced parameters)
+- Use `list-group` for sidebar model selection
+- Preserve custom toast system for superior user feedback
+
+### Documentation Maintenance Process
+
+**IMPORTANT**: Always propose documentation updates when making architectural or design changes:
+
+**When to Update Documentation**:
+1. **Technology Decisions**: When finalizing framework choices, architectural patterns, or implementation approaches
+2. **UX Changes**: When modifying interface layouts, interaction patterns, or component designs  
+3. **Bug Discovery**: When identifying new issues or technical debt
+4. **Requirements Evolution**: When project scope or constraints change
+
+**Required User Permission**:
+- **Always ask user permission** before updating design documentation files (requirements.md, ux.md, design.md)
+- **Automatically update** CLAUDE.md and knowledge base files for development guidance
+- **Propose specific updates** with clear rationale for user approval
+
+**Documentation Files Requiring Permission**:
+- `docs/requirements.md` - Technical requirements and constraints
+- `docs/ux.md` - User interface specifications and interaction patterns
+- `docs/design.md` - Detailed technical architecture
+- `docs/features.md` - Functional requirements and implementation phases
+
+**Example Process**:
+```
+"I've implemented Bootstrap 5 integration. Should I update docs/requirements.md 
+to reflect this technology decision and move it from 'To Be Made' to 'Finalized'?"
+```
 
 ## Local Knowledge Management
 

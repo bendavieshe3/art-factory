@@ -11,13 +11,18 @@ This document outlines the technical requirements and constraints for Art Factor
 - **Development Server**: Django's built-in development server
 - **Project Structure**: Standard Django project layout with apps
 
-### Technology Decisions (To Be Made)
-The following technical choices will be made during implementation based on actual requirements:
+### Technology Decisions (Finalized)
+The following technical choices have been made during implementation:
 
-- **Real-time Communication**: Django Channels (WebSockets), Server-Sent Events, or AJAX polling
+- **CSS Framework**: Bootstrap 5 with django-bootstrap5 package
+- **Frontend Approach**: Django templates + JavaScript with Bootstrap components
+- **Toast Notifications**: Custom implementation (superior to Bootstrap modals)
+
+### Technology Decisions (To Be Made)
+Remaining technical choices to be made based on requirements:
+
+- **Real-time Communication**: Django Channels (WebSockets), Server-Sent Events, or AJAX polling  
 - **Background Tasks**: Celery, Django-RQ, or Django's async views
-- **Frontend Approach**: Django templates + minimal JavaScript vs. component-based architecture
-- **CSS Framework**: Tailwind, Bootstrap, or custom CSS
 
 ## Deployment Environment
 
