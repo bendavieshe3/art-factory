@@ -103,7 +103,7 @@ class OrderItem(models.Model):
     assigned_worker = models.ForeignKey('Worker', on_delete=models.SET_NULL, null=True, blank=True)
     
     # Result
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
