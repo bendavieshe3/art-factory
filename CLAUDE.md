@@ -396,7 +396,11 @@ gh issue create --title "[BUG] Description" --label "critical,bug,backend/genera
 
 # Update issue
 gh issue edit 1 --add-label "high"
+gh issue edit 1 --milestone "v0.1 MVP"
 gh issue close 1
+
+# Create milestone
+gh api repos/:owner/:repo/milestones -X POST -f title="v0.3 Scale" -f description="Description" -f due_on="2025-09-01T00:00:00Z"
 ```
 
 ### Milestone Planning
