@@ -113,11 +113,15 @@ def bulk_delete_products(request):
         product_ids = request.POST.getlist('product_ids')
         
         if product_ids:
-            # Delete products
-            deleted_count = Product.objects.filter(id__in=product_ids).delete()[0]
+            # Count products before deletion to get accurate count
+            products_to_delete = Product.objects.filter(id__in=product_ids)
+            product_count = products_to_delete.count()
             
-            if deleted_count > 0:
-                messages.success(request, f'Successfully deleted {deleted_count} product(s).')
+            # Delete products (this will cascade delete related OrderItems)
+            products_to_delete.delete()
+            
+            if product_count > 0:
+                messages.success(request, f'Successfully deleted {product_count} product(s).')
             else:
                 messages.warning(request, 'No products were deleted.')
         else:
