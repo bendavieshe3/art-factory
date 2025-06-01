@@ -368,6 +368,58 @@ Bootstrap 5 classes should map to UX specifications:
 to reflect this technology decision and move it from 'To Be Made' to 'Finalized'?"
 ```
 
+## Project Management & Issues
+
+### GitHub Issues Workflow
+
+**IMPORTANT**: Use GitHub Issues for all task management instead of local TodoWrite tool for better persistence and collaboration.
+
+**Issue Creation Process**:
+1. **Check existing issues** before creating duplicates: `gh issue list`
+2. **Use appropriate templates** (.github/ISSUE_TEMPLATE/) for consistency
+3. **Apply correct labels** for priority, type, and component
+4. **Reference milestone** (v0.1 MVP, v0.2 Polish, etc.) when creating issues
+
+**Labels System**:
+- **Priority**: `critical`, `high`, `medium`, `low`
+- **Type**: `bug`, `enhancement`, `documentation`, `technical-debt`
+- **Component**: `ui/order-page`, `ui/inventory`, `backend/generation`, `backend/models`
+
+**Commands**:
+```bash
+# List issues
+gh issue list --milestone "v0.1 MVP"
+gh issue list --label "critical"
+
+# Create issue (use templates)
+gh issue create --title "[BUG] Description" --label "critical,bug,backend/generation"
+
+# Update issue
+gh issue edit 1 --add-label "high"
+gh issue close 1
+```
+
+### Milestone Planning
+
+**v0.1 MVP** - "Functional Image Generation Tool"
+- **Goal**: Solidly functional tool for image generation without major blockers
+- **Core Requirements**: 
+  - All model types work (SDXL, Flux, etc.)
+  - Usable order interface with clear feedback
+  - Basic inventory management (view, delete, download)
+  - Essential workflow: order → generate → view → manage
+  - No critical crashes or data loss
+
+**Future Milestones**:
+- **v0.2 Polish**: UX improvements, real-time updates, enhanced interface
+- **v0.3 Scale**: More models, projects, templates, advanced features
+
+**Prioritization Guidelines**:
+- `critical`: Blocks MVP core functionality
+- `high`: Important for MVP usability and completeness
+- `medium`: Nice-to-have for MVP, required for polish
+- `low`: Post-MVP enhancements
+
 ## Local Knowledge Management
 
 @./.claude/kb/MOC.md
