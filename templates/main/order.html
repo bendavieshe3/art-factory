@@ -283,6 +283,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize page data
     loadPageData();
     
+    // Periodically refresh data every 30 seconds
+    setInterval(loadPageData, 30000);
+    
     // Error banner functionality
     window.showErrorBanner = function(message, details = null) {
         const banner = document.getElementById('errorBanner');
@@ -373,21 +376,107 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadRecentProducts() {
-        // TODO: Implement API endpoint for recent products
-        // For now, show placeholder
-        const placeholder = document.getElementById('recentProductsPlaceholder');
-        const content = document.getElementById('recentProductsContent');
-        placeholder.style.display = 'block';
-        content.style.display = 'none';
+        fetch('{% url "main:recent_products_api" %}')
+            .then(response => response.json())
+            .then(data => {
+                const placeholder = document.getElementById('recentProductsPlaceholder');
+                const content = document.getElementById('recentProductsContent');
+                
+                if (data.products && data.products.length > 0) {
+                    content.innerHTML = '';
+                    data.products.forEach(product => {
+                        const productCard = `
+                            <div class="col-3 col-sm-2 col-md-1">
+                                <div class="card">
+                                    <div class="ratio ratio-1x1">
+                                        <img src="${product.file_url}" alt="${product.title}" 
+                                             class="card-img-top object-fit-cover rounded" 
+                                             style="cursor: pointer;"
+                                             onclick="window.open('/products/${product.id}/', '_blank')">
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        content.insertAdjacentHTML('beforeend', productCard);
+                    });
+                    placeholder.style.display = 'none';
+                    content.style.display = 'flex';
+                } else {
+                    placeholder.style.display = 'block';
+                    content.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading recent products:', error);
+                const placeholder = document.getElementById('recentProductsPlaceholder');
+                placeholder.style.display = 'block';
+            });
     }
     
     function loadRecentOrders() {
-        // TODO: Implement API endpoint for recent orders  
-        // For now, show placeholder
-        const placeholder = document.getElementById('recentOrdersPlaceholder');
-        const content = document.getElementById('recentOrdersContent');
-        placeholder.style.display = 'block';
-        content.style.display = 'none';
+        fetch('{% url "main:recent_orders_api" %}')
+            .then(response => response.json())
+            .then(data => {
+                const placeholder = document.getElementById('recentOrdersPlaceholder');
+                const content = document.getElementById('recentOrdersContent');
+                const tableBody = document.getElementById('recentOrdersTable');
+                
+                if (data.orders && data.orders.length > 0) {
+                    tableBody.innerHTML = '';
+                    data.orders.forEach(order => {
+                        const statusBadge = getStatusBadge(order.status);
+                        const progressBar = order.progress > 0 && order.progress < 100 ? 
+                            `<div class="progress" style="height: 4px;"><div class="progress-bar" style="width: ${order.progress}%"></div></div>` : '';
+                        
+                        const row = `
+                            <tr class="order-row" data-order-id="${order.id}">
+                                <td><strong>#${order.id}</strong></td>
+                                <td>
+                                    <div>${order.title}</div>
+                                    <small class="text-muted">${order.prompt}</small>
+                                </td>
+                                <td><small>${order.factory_machine_name}</small></td>
+                                <td>
+                                    ${statusBadge}
+                                    ${progressBar}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">${order.completed_items}/${order.total_items}</span>
+                                </td>
+                                <td><small>${new Date(order.created_at).toLocaleString()}</small></td>
+                                <td>
+                                    ${order.status === 'processing' ? 
+                                        '<div class="spinner-border spinner-border-sm text-primary" role="status"></div>' : 
+                                        '<a href="/production/" class="btn btn-sm btn-outline-primary">View</a>'
+                                    }
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                    placeholder.style.display = 'none';
+                    content.style.display = 'block';
+                } else {
+                    placeholder.style.display = 'block';
+                    content.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading recent orders:', error);
+                const placeholder = document.getElementById('recentOrdersPlaceholder');
+                placeholder.style.display = 'block';
+            });
+    }
+    
+    function getStatusBadge(status) {
+        const badges = {
+            'pending': '<span class="badge bg-secondary">Pending</span>',
+            'processing': '<span class="badge bg-warning">Processing</span>',
+            'completed': '<span class="badge bg-success">Completed</span>',
+            'failed': '<span class="badge bg-danger">Failed</span>',
+            'partial': '<span class="badge bg-warning">Partial</span>'
+        };
+        return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
     }
     
     // Load saved form values
@@ -671,33 +760,125 @@ document.addEventListener('DOMContentLoaded', function() {
     // Order polling for real-time updates
     function startOrderPolling(orderId) {
         let pollCount = 0;
-        const maxPolls = 60; // Poll for up to 5 minutes
+        const maxPolls = 120; // Poll for up to 6 minutes
+        let lastProgress = 0;
         
         const pollInterval = setInterval(() => {
             pollCount++;
             
-            // Simulate progress updates
-            const progress = Math.min(90, 20 + (pollCount * 2));
-            updateProgressBar(progress);
+            // Poll the actual order status
+            fetch(`/api/order-status/${orderId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    const progress = data.progress || 0;
+                    const status = data.status || 'pending';
+                    
+                    // Update progress bar
+                    updateProgressBar(progress);
+                    
+                    // Update progress text based on status
+                    if (status === 'pending') {
+                        updateProgressText(`Order #${orderId} queued...`);
+                    } else if (status === 'processing') {
+                        const completed = data.status_counts?.completed || 0;
+                        const total = data.total_items || 1;
+                        updateProgressText(`Processing ${completed}/${total} images...`);
+                    } else if (status === 'completed') {
+                        updateProgressText('Generation complete!');
+                        updateProgressBar(100);
+                        
+                        // Show latest product in preview if available
+                        if (data.latest_product) {
+                            setTimeout(() => {
+                                showPreviewResult(data.latest_product);
+                                loadPageData(); // Refresh all data
+                            }, 1000);
+                        } else {
+                            setTimeout(() => {
+                                hideOrderProgress();
+                                loadPageData();
+                            }, 1000);
+                        }
+                        
+                        clearInterval(pollInterval);
+                        
+                        // Show success notification
+                        Toast.success(
+                            `Order #${orderId} completed! Generated ${data.total_items} image(s).`,
+                            'Generation Complete'
+                        );
+                        
+                    } else if (status === 'failed') {
+                        updateProgressText('Generation failed');
+                        updateProgressBar(100);
+                        clearInterval(pollInterval);
+                        
+                        // Show error in banner
+                        const errorMsg = data.error_messages?.length > 0 ? 
+                            data.error_messages[0] : 'Generation failed for unknown reason';
+                        showErrorBanner('Generation failed', errorMsg);
+                        
+                        setTimeout(() => {
+                            hideOrderProgress();
+                            loadPageData();
+                        }, 2000);
+                        
+                    } else if (status === 'partial') {
+                        updateProgressText('Generation partially completed');
+                        updateProgressBar(100);
+                        clearInterval(pollInterval);
+                        
+                        // Show latest product if available
+                        if (data.latest_product) {
+                            setTimeout(() => {
+                                showPreviewResult(data.latest_product);
+                                loadPageData();
+                            }, 1000);
+                        }
+                        
+                        // Show warning notification
+                        const completed = data.status_counts?.completed || 0;
+                        const failed = data.status_counts?.failed || 0;
+                        Toast.warning(
+                            `Order #${orderId} partially completed: ${completed} succeeded, ${failed} failed.`,
+                            'Partial Success'
+                        );
+                    }
+                    
+                    // Stop polling if no progress for too long
+                    if (progress === lastProgress && pollCount > 20) {
+                        if (status === 'pending' || status === 'processing') {
+                            updateProgressText('Generation taking longer than expected...');
+                        }
+                    }
+                    lastProgress = progress;
+                })
+                .catch(error => {
+                    console.error('Error polling order status:', error);
+                    
+                    if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        updateProgressText('Unable to get status updates');
+                        showErrorBanner('Status polling failed', 'Lost connection to server');
+                        setTimeout(() => {
+                            hideOrderProgress();
+                            loadPageData();
+                        }, 3000);
+                    }
+                });
             
+            // Safety timeout
             if (pollCount >= maxPolls) {
                 clearInterval(pollInterval);
-                updateProgressText('Generation taking longer than expected...');
-                return;
-            }
-            
-            // TODO: Implement actual order status polling
-            // For now, simulate completion after 10 polls
-            if (pollCount >= 10) {
-                clearInterval(pollInterval);
-                updateProgressText('Generation complete!');
-                updateProgressBar(100);
-                
-                // Simulate showing result after delay
+                updateProgressText('Polling timeout - check production page for status');
                 setTimeout(() => {
                     hideOrderProgress();
-                    loadPageData(); // Refresh all data
-                }, 1000);
+                    loadPageData();
+                }, 3000);
             }
         }, 3000); // Poll every 3 seconds
     }

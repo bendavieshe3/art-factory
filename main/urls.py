@@ -15,6 +15,9 @@ urlpatterns = [
     # API endpoints for AJAX
     path('api/factory-machines/', views.factory_machines_api, name='factory_machines_api'),
     path('api/place-order/', views.place_order_api, name='place_order_api'),
+    path('api/recent-orders/', views.recent_orders_api, name='recent_orders_api'),
+    path('api/recent-products/', views.recent_products_api, name='recent_products_api'),
+    path('api/order-status/<int:order_id>/', views.order_status_api, name='order_status_api'),
     
     # Product management
     path('products/<int:product_id>/', views.product_detail, name='product_detail'),
