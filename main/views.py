@@ -85,6 +85,47 @@ def product_delete(request, product_id):
     return redirect('main:inventory')
 
 
+def product_download(request, product_id):
+    """Download a product file."""
+    product = get_object_or_404(Product, id=product_id)
+    
+    if not product.file:
+        messages.error(request, 'No file available for download.')
+        return redirect('main:inventory')
+    
+    # Prepare the file response
+    file_path = product.file.path
+    file_name = f"{product.provider}_{product.id}_{product.created_at.strftime('%Y%m%d_%H%M%S')}.png"
+    
+    try:
+        with open(file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/octet-stream')
+            response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+            return response
+    except FileNotFoundError:
+        messages.error(request, 'File not found.')
+        return redirect('main:inventory')
+
+
+def bulk_delete_products(request):
+    """Delete multiple products at once."""
+    if request.method == 'POST':
+        product_ids = request.POST.getlist('product_ids')
+        
+        if product_ids:
+            # Delete products
+            deleted_count = Product.objects.filter(id__in=product_ids).delete()[0]
+            
+            if deleted_count > 0:
+                messages.success(request, f'Successfully deleted {deleted_count} product(s).')
+            else:
+                messages.warning(request, 'No products were deleted.')
+        else:
+            messages.error(request, 'No products selected for deletion.')
+    
+    return redirect('main:inventory')
+
+
 # API Views
 def factory_machines_api(request):
     """API endpoint to get available factory machines."""

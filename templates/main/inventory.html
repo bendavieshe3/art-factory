@@ -1,94 +1,271 @@
-{% extends 'base.html' %}
+{% extends 'base_bootstrap.html' %}
+{% load django_bootstrap5 %}
 
 {% block page_description %}
-<p>View and manage your generated products.</p>
+<p class="lead">View and manage your generated products.</p>
 {% endblock %}
 
 {% block content %}
 <div class="card">
-    <h2>Product Gallery</h2>
-    
-    {% if products %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
-            {% for product in products %}
-                <div class="product-card" style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: white;">
-                    <div style="aspect-ratio: 16/9; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #666;">
-                        {% if product.file_url %}
-                            <img src="{{ product.file_url }}" alt="{{ product.title|default:'Generated product' }}" 
-                                 style="width: 100%; height: 100%; object-fit: cover;">
-                        {% else %}
-                            <span>{{ product.product_type|title }} Preview</span>
-                        {% endif %}
-                    </div>
-                    
-                    <div style="padding: 1rem;">
-                        <h4 style="margin-bottom: 0.5rem;">
-                            {% if product.title %}
-                                {{ product.title }}
-                            {% else %}
-                                Product {{ product.id }}
-                            {% endif %}
-                        </h4>
-                        
-                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">
-                            {{ product.prompt|truncatechars:80 }}
-                        </p>
-                        
-                        <div style="font-size: 0.8rem; color: #888; margin-bottom: 1rem;">
-                            <div>{{ product.provider }} - {{ product.model_name }}</div>
-                            <div>{{ product.created_at|date:"M d, Y H:i" }}</div>
-                            {% if product.width and product.height %}
-                                <div>{{ product.width }}×{{ product.height }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div style="display: flex; gap: 0.5rem;">
-                            <a href="{% url 'main:product_detail' product.id %}" 
-                               style="flex: 1; background: #3498db; color: white; text-decoration: none; padding: 0.5rem; border-radius: 4px; text-align: center; font-size: 0.9rem;">
-                                View
-                            </a>
-                            
-                            <form method="post" action="{% url 'main:product_delete' product.id %}" 
-                                  style="display: inline;" 
-                                  onsubmit="return confirm('Are you sure you want to delete this product?')">
-                                {% csrf_token %}
-                                <button type="submit" 
-                                        style="background: #e74c3c; padding: 0.5rem; font-size: 0.9rem;">
-                                    Delete
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-        
-        <!-- Pagination -->
-        {% if page_obj.has_other_pages %}
-            <div style="margin-top: 2rem; text-align: center;">
-                <div style="display: inline-flex; gap: 0.5rem;">
-                    {% if page_obj.has_previous %}
-                        <a href="?page=1" style="padding: 0.5rem 1rem; background: #3498db; color: white; text-decoration: none; border-radius: 4px;">First</a>
-                        <a href="?page={{ page_obj.previous_page_number }}" style="padding: 0.5rem 1rem; background: #3498db; color: white; text-decoration: none; border-radius: 4px;">Previous</a>
-                    {% endif %}
-                    
-                    <span style="padding: 0.5rem 1rem; background: #34495e; color: white; border-radius: 4px;">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                    </span>
-                    
-                    {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}" style="padding: 0.5rem 1rem; background: #3498db; color: white; text-decoration: none; border-radius: 4px;">Next</a>
-                        <a href="?page={{ page_obj.paginator.num_pages }}" style="padding: 0.5rem 1rem; background: #3498db; color: white; text-decoration: none; border-radius: 4px;">Last</a>
-                    {% endif %}
-                </div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">Product Gallery</h2>
+        {% if products %}
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                    <i class="bi bi-check2-square"></i> Select All
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn" style="display: none;">
+                    <i class="bi bi-square"></i> Deselect All
+                </button>
+                <button type="button" class="btn btn-sm btn-success" id="bulkDownloadBtn" disabled>
+                    <i class="bi bi-download"></i> Download Selected
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteBtn" disabled>
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
             </div>
         {% endif %}
+    </div>
+    <div class="card-body">
+        {% if products %}
+            <div class="row g-3">
+                {% for product in products %}
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <div class="card h-100 shadow-sm product-card" data-product-id="{{ product.id }}">
+                            <div class="position-absolute top-0 start-0 p-2" style="z-index: 10;">
+                                <input type="checkbox" class="form-check-input product-checkbox" 
+                                       value="{{ product.id }}" 
+                                       id="product-{{ product.id }}">
+                            </div>
+                            <div class="ratio ratio-16x9 bg-light">
+                                {% if product.file_url %}
+                                    <img src="{{ product.file_url }}" 
+                                         alt="{{ product.title|default:'Generated product' }}" 
+                                         class="card-img-top object-fit-cover">
+                                {% else %}
+                                    <div class="d-flex align-items-center justify-content-center text-muted">
+                                        <span>{{ product.product_type|title }} Preview</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {% if product.title %}
+                                        {{ product.title }}
+                                    {% else %}
+                                        Product {{ product.id }}
+                                    {% endif %}
+                                </h5>
+                                
+                                <p class="card-text text-muted small">
+                                    {{ product.prompt|truncatechars:80 }}
+                                </p>
+                                
+                                <div class="text-muted small mb-3">
+                                    <div>{{ product.provider }} - {{ product.model_name }}</div>
+                                    <div>{{ product.created_at|date:"M d, Y H:i" }}</div>
+                                    {% if product.width and product.height %}
+                                        <div>{{ product.width }}×{{ product.height }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'main:product_detail' product.id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        <a href="{% url 'main:product_download' product.id %}" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-download"></i> Download
+                                        </a>
+                                    </div>
+                                    
+                                    <form method="post" action="{% url 'main:product_delete' product.id %}" 
+                                          onsubmit="return confirm('Are you sure you want to delete this product?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger w-100">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         
-    {% else %}
-        <div style="text-align: center; padding: 2rem; color: #666;">
-            <h3>No Products Yet</h3>
-            <p>You haven't generated any products yet. <a href="{% url 'main:order' %}">Place your first order</a> to get started!</p>
-        </div>
-    {% endif %}
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Product pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">First</span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link">Last</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <h3 class="text-muted">No Products Yet</h3>
+                <p class="text-muted">You haven't generated any products yet.</p>
+                <a href="{% url 'main:order' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Place your first order
+                </a>
+            </div>
+        {% endif %}
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    
+    function updateButtonStates() {
+        const checkedCount = document.querySelectorAll('.product-checkbox:checked').length;
+        const anyChecked = checkedCount > 0;
+        const allChecked = checkedCount === checkboxes.length;
+        
+        bulkDownloadBtn.disabled = !anyChecked;
+        bulkDeleteBtn.disabled = !anyChecked;
+        
+        if (allChecked && checkboxes.length > 0) {
+            selectAllBtn.style.display = 'none';
+            deselectAllBtn.style.display = 'inline-block';
+        } else {
+            selectAllBtn.style.display = 'inline-block';
+            deselectAllBtn.style.display = 'none';
+        }
+        
+        // Update button text with count
+        if (anyChecked) {
+            bulkDownloadBtn.innerHTML = `<i class="bi bi-download"></i> Download (${checkedCount})`;
+            bulkDeleteBtn.innerHTML = `<i class="bi bi-trash"></i> Delete (${checkedCount})`;
+        } else {
+            bulkDownloadBtn.innerHTML = '<i class="bi bi-download"></i> Download Selected';
+            bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
+        }
+    }
+    
+    // Select all functionality
+    selectAllBtn?.addEventListener('click', function() {
+        checkboxes.forEach(cb => cb.checked = true);
+        updateButtonStates();
+    });
+    
+    // Deselect all functionality
+    deselectAllBtn?.addEventListener('click', function() {
+        checkboxes.forEach(cb => cb.checked = false);
+        updateButtonStates();
+    });
+    
+    // Individual checkbox change
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateButtonStates);
+    });
+    
+    // Bulk download functionality
+    bulkDownloadBtn?.addEventListener('click', function() {
+        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        if (selectedIds.length === 0) return;
+        
+        // Download each selected product
+        selectedIds.forEach(id => {
+            const link = document.createElement('a');
+            link.href = `/products/${id}/download/`;
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // Show success message
+        showToast('success', `Downloading ${selectedIds.length} product(s)...`);
+    });
+    
+    // Bulk delete functionality
+    bulkDeleteBtn?.addEventListener('click', function() {
+        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        if (selectedIds.length === 0) return;
+        
+        if (!confirm(`Are you sure you want to delete ${selectedIds.length} product(s)? This action cannot be undone.`)) {
+            return;
+        }
+        
+        // Create form for bulk delete
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "main:bulk_delete_products" %}';
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                         '{{ csrf_token }}';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Add product IDs
+        selectedIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'product_ids';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+    });
+    
+    // Initialize button states
+    updateButtonStates();
+});
+</script>
 {% endblock %}
