@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         advancedIcon.className = 'bi bi-chevron-right';
     });
     
-    // Show machine description when selected
+    // Show machine description and update parameters when selected
     machineSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption.value) {
@@ -270,10 +270,123 @@ document.addEventListener('DOMContentLoaded', function() {
                 <strong>Description:</strong> ${description}
             `;
             descriptionDiv.style.display = 'block';
+            
+            // Update dynamic parameters based on selected model
+            updateDynamicParameters(selectedOption.value);
         } else {
             descriptionDiv.style.display = 'none';
+            clearDynamicParameters();
         }
     });
+    
+    // Dynamic parameter management functions
+    function updateDynamicParameters(machineId) {
+        // Fetch machine parameter schema from API
+        fetch('{% url "main:factory_machines_api" %}')
+            .then(response => response.json())
+            .then(data => {
+                const machine = data.machines.find(m => m.id == machineId);
+                if (machine && machine.parameter_schema) {
+                    generateParameterFields(machine);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching machine parameters:', error);
+                // Fallback to basic parameters
+                generateBasicParameters();
+            });
+    }
+    
+    function generateParameterFields(machine) {
+        const container = document.getElementById('dynamicParameters');
+        container.innerHTML = '';
+        
+        // Handle different parameter schema formats
+        let schema = machine.parameter_schema;
+        let defaults = machine.default_parameters || {};
+        
+        // Handle JSON schema format vs simple object format
+        if (schema.type === 'object' && schema.properties) {
+            // JSON Schema format (FLUX models)
+            generateFromJsonSchema(schema.properties, defaults, container);
+        } else {
+            // Simple object format (SDXL models)
+            generateFromSimpleSchema(schema, defaults, container);
+        }
+    }
+    
+    function generateFromJsonSchema(properties, defaults, container) {
+        for (const [key, config] of Object.entries(properties)) {
+            if (key === 'prompt') continue; // Skip prompt, it's handled separately
+            
+            const defaultValue = defaults[key] !== undefined ? defaults[key] : config.default;
+            const fieldHtml = createParameterField(key, config, defaultValue);
+            if (fieldHtml) {
+                container.insertAdjacentHTML('beforeend', fieldHtml);
+            }
+        }
+    }
+    
+    function generateFromSimpleSchema(schema, defaults, container) {
+        for (const [key, value] of Object.entries(schema)) {
+            if (key === 'prompt') continue; // Skip prompt
+            
+            const defaultValue = defaults[key] !== undefined ? defaults[key] : value;
+            const config = { type: typeof value === 'number' ? 'number' : 'string', default: defaultValue };
+            const fieldHtml = createParameterField(key, config, defaultValue);
+            if (fieldHtml) {
+                container.insertAdjacentHTML('beforeend', fieldHtml);
+            }
+        }
+    }
+    
+    function createParameterField(key, config, defaultValue) {
+        const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const inputType = config.type === 'integer' || config.type === 'number' ? 'number' : 'text';
+        const step = config.type === 'number' && key.includes('scale') ? '0.1' : '';
+        const min = config.minimum || '';
+        const max = config.maximum || '';
+        
+        return `
+            <div class="col-md-3">
+                <label for="${key}" class="form-label">${label}</label>
+                <input type="${inputType}" class="form-control form-control-sm" 
+                       id="${key}" name="${key}" value="${defaultValue}"
+                       ${step ? `step="${step}"` : ''}
+                       ${min ? `min="${min}"` : ''}
+                       ${max ? `max="${max}"` : ''}>
+                ${config.description ? `<small class="form-text text-muted">${config.description}</small>` : ''}
+            </div>
+        `;
+    }
+    
+    function generateBasicParameters() {
+        // Fallback basic parameters
+        const container = document.getElementById('dynamicParameters');
+        container.innerHTML = `
+            <div class="col-md-3">
+                <label for="width" class="form-label">Width</label>
+                <input type="number" class="form-control form-control-sm" id="width" name="width" value="1024">
+            </div>
+            <div class="col-md-3">
+                <label for="height" class="form-label">Height</label>
+                <input type="number" class="form-control form-control-sm" id="height" name="height" value="1024">
+            </div>
+            <div class="col-md-3">
+                <label for="num_inference_steps" class="form-label">Steps</label>
+                <input type="number" class="form-control form-control-sm" id="num_inference_steps" name="num_inference_steps" value="25">
+            </div>
+            <div class="col-md-3">
+                <label for="guidance_scale" class="form-label">Guidance</label>
+                <input type="number" class="form-control form-control-sm" id="guidance_scale" name="guidance_scale" value="7.5" step="0.1">
+            </div>
+        `;
+    }
+    
+    function clearDynamicParameters() {
+        const container = document.getElementById('dynamicParameters');
+        container.innerHTML = '<div class="col-12 text-muted"><small>Select a model to see available parameters</small></div>';
+    }
     
     // Handle form submission
     form.addEventListener('submit', function(e) {
@@ -282,18 +395,31 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Placing Order...';
         
+        // Collect dynamic parameters from the form
+        const parameters = {};
+        const parameterInputs = document.querySelectorAll('#dynamicParameters input');
+        parameterInputs.forEach(input => {
+            const key = input.name;
+            let value = input.value;
+            
+            // Convert to appropriate type
+            if (input.type === 'number') {
+                value = input.step && input.step !== '1' ? parseFloat(value) : parseInt(value);
+            }
+            
+            // Only include non-empty values
+            if (value !== '' && value !== null && !isNaN(value)) {
+                parameters[key] = value;
+            }
+        });
+        
         const formData = {
             title: document.getElementById('title').value,
             prompt: document.getElementById('prompt').value,
             machine_id: document.getElementById('machine').value,
             quantity: parseInt(document.getElementById('quantity').value),
             project_name: document.getElementById('project_name').value,
-            parameters: {
-                width: parseInt(document.getElementById('width').value) || 1024,
-                height: parseInt(document.getElementById('height').value) || 1024,
-                num_inference_steps: parseInt(document.getElementById('steps').value) || 25,
-                guidance_scale: parseFloat(document.getElementById('guidance').value) || 7.5
-            }
+            parameters: parameters
         };
         
         fetch('{% url "main:place_order_api" %}', {
@@ -378,8 +504,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (template) {
             document.getElementById('title').value = template.title;
             document.getElementById('prompt').value = template.prompt;
-            document.getElementById('width').value = template.width;
-            document.getElementById('height').value = template.height;
+            
+            // Apply template parameters to dynamic fields if they exist
+            for (const [key, value] of Object.entries(template)) {
+                if (key !== 'title' && key !== 'prompt') {
+                    const input = document.getElementById(key);
+                    if (input) {
+                        input.value = value;
+                    }
+                }
+            }
             
             Toast.info(`Loaded ${type} template`, 'Template Applied');
         }
