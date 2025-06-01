@@ -5,18 +5,6 @@
 <p class="text-muted mb-0">Select an AI model and create your generation request</p>
 {% endblock %}
 
-{% block page_actions %}
-<div class="btn-group" role="group">
-    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadTemplate('fantasy')">
-        <i class="bi bi-magic"></i> Fantasy Template
-    </button>
-    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadTemplate('portrait')">
-        <i class="bi bi-person"></i> Portrait Template
-    </button>
-    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadTemplate('landscape')">
-        <i class="bi bi-image"></i> Landscape Template
-    </button>
-</div>
 {% endblock %}
 
 {% block content %}
@@ -40,61 +28,8 @@
 </div>
 
 <div class="row">
-    <!-- AI Models Sidebar -->
-    <div class="col-lg-3">
-        <div class="card card-compact">
-            <div class="card-header bg-primary text-white">
-                <h6 class="mb-0"><i class="bi bi-cpu"></i> AI Models</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    {% for machine in factory_machines %}
-                        <a href="#" class="list-group-item list-group-item-action model-option" 
-                           data-machine-id="{{ machine.id }}"
-                           data-provider="{{ machine.provider }}"
-                           data-modality="{{ machine.modality }}"
-                           data-description="{{ machine.description }}">
-                            <div class="d-flex w-100 justify-content-between">
-                                <small class="fw-bold">{{ machine.display_name }}</small>
-                                <span class="badge bg-secondary rounded-pill">{{ machine.provider }}</span>
-                            </div>
-                            <small class="text-muted">{{ machine.description|truncatechars:60 }}</small>
-                        </a>
-                    {% empty %}
-                        <div class="list-group-item">
-                            <small class="text-muted">No models configured</small>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quick Stats -->
-        <div class="card card-compact mt-3">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-graph-up"></i> Quick Stats</h6>
-            </div>
-            <div class="card-body">
-                <div class="row g-2 text-center">
-                    <div class="col-6">
-                        <div class="small text-muted">Today</div>
-                        <div class="fw-bold" id="todayCount">--</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="small text-muted">Total</div>
-                        <div class="fw-bold" id="totalCount">--</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Main Content Area -->
-    <div class="col-lg-9">
-        <!-- Order Form and Preview Row -->
-        <div class="row">
-            <!-- Order Form (Left) -->
-            <div class="col-lg-8">
+        <!-- Order Form (Left) -->
+        <div class="col-lg-8">
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Order</h5>
@@ -102,29 +37,7 @@
                     <div class="card-body">
                         <form id="orderForm" class="form-dense">
                             <div class="row g-3">
-                                <!-- Title and Project -->
-                                <div class="col-md-6">
-                                    <label for="title" class="form-label">Order Title</label>
-                                    <input type="text" class="form-control" id="title" name="title" 
-                                           placeholder="e.g., Fantasy landscapes for project X">
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <label for="project_name" class="form-label">Project</label>
-                                    <input type="text" class="form-control" id="project_name" name="project_name" 
-                                           placeholder="Project name for organization">
-                                </div>
-                                
-                                <!-- Prompt -->
-                                <div class="col-12">
-                                    <label for="prompt" class="form-label">Prompt <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" id="prompt" name="prompt" rows="3" 
-                                              placeholder="A beautiful landscape with mountains and a lake at sunset" 
-                                              required></textarea>
-                                    <div class="form-text">Describe what you want to generate in detail</div>
-                                </div>
-                                
-                                <!-- Model Selection -->
+                                <!-- Model Selection - First and required -->
                                 <div class="col-md-8">
                                     <label for="machine" class="form-label">AI Model <span class="text-danger">*</span></label>
                                     <select class="form-select" id="machine" name="machine" required>
@@ -153,6 +66,23 @@
                                             <i class="bi bi-plus"></i>
                                         </button>
                                     </div>
+                                </div>
+                                
+                                <!-- Prompt - Second required field -->
+                                <div class="col-12">
+                                    <label for="prompt" class="form-label">Prompt <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="prompt" name="prompt" rows="3" 
+                                              placeholder="A beautiful landscape with mountains and a lake at sunset" 
+                                              required></textarea>
+                                    <div class="form-text">Describe what you want to generate in detail</div>
+                                </div>
+                                
+                                <!-- Optional Title -->
+                                <div class="col-12">
+                                    <label for="title" class="form-label">Optional Order Title</label>
+                                    <input type="text" class="form-control" id="title" name="title" 
+                                           placeholder="e.g., Fantasy landscapes for portfolio">
+                                    <div class="form-text">Give this order a memorable name (optional)</div>
                                 </div>
                             </div>
                             
@@ -383,19 +313,65 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load stats and recent data
     function loadPageData() {
-        // Load stats
-        loadStats();
         // Load recent products
         loadRecentProducts();
         // Load recent orders
         loadRecentOrders();
     }
     
-    function loadStats() {
-        // TODO: Implement API endpoint for stats
-        // For now, show placeholder
-        document.getElementById('todayCount').textContent = '--';
-        document.getElementById('totalCount').textContent = '--';
+    // Form persistence functions
+    function saveFormValues() {
+        const formData = {
+            machine: document.getElementById('machine').value,
+            prompt: document.getElementById('prompt').value,
+            title: document.getElementById('title').value,
+            quantity: document.getElementById('quantity').value
+        };
+        
+        // Save advanced parameters
+        const parameterInputs = document.querySelectorAll('#dynamicParameters input');
+        const advancedParams = {};
+        parameterInputs.forEach(input => {
+            if (input.value !== '') {
+                advancedParams[input.name] = input.value;
+            }
+        });
+        formData.advancedParams = advancedParams;
+        
+        localStorage.setItem('orderFormData', JSON.stringify(formData));
+    }
+    
+    function loadFormValues() {
+        const savedData = localStorage.getItem('orderFormData');
+        if (savedData) {
+            try {
+                const formData = JSON.parse(savedData);
+                
+                // Restore basic form fields
+                if (formData.machine) {
+                    document.getElementById('machine').value = formData.machine;
+                    // Trigger change event to load parameters
+                    document.getElementById('machine').dispatchEvent(new Event('change'));
+                }
+                if (formData.prompt) document.getElementById('prompt').value = formData.prompt;
+                if (formData.title) document.getElementById('title').value = formData.title;
+                if (formData.quantity) document.getElementById('quantity').value = formData.quantity;
+                
+                // Restore advanced parameters after a short delay to ensure they're generated
+                if (formData.advancedParams) {
+                    setTimeout(() => {
+                        for (const [key, value] of Object.entries(formData.advancedParams)) {
+                            const input = document.getElementById(key);
+                            if (input) {
+                                input.value = value;
+                            }
+                        }
+                    }, 500);
+                }
+            } catch (e) {
+                console.error('Error loading saved form data:', e);
+            }
+        }
     }
     
     function loadRecentProducts() {
@@ -416,26 +392,24 @@ document.addEventListener('DOMContentLoaded', function() {
         content.style.display = 'none';
     }
     
-    // Model sidebar selection
-    document.querySelectorAll('.model-option').forEach(option => {
-        option.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active state from all options
-            document.querySelectorAll('.model-option').forEach(opt => {
-                opt.classList.remove('active');
-            });
-            
-            // Add active state to clicked option
-            this.classList.add('active');
-            
-            // Set the select value
-            const machineId = this.dataset.machineId;
-            machineSelect.value = machineId;
-            
-            // Trigger change event
-            machineSelect.dispatchEvent(new Event('change'));
-        });
+    // Load saved form values
+    loadFormValues();
+    
+    // Auto-save form values on change
+    const formFields = ['machine', 'prompt', 'title', 'quantity'];
+    formFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', saveFormValues);
+            field.addEventListener('input', saveFormValues);
+        }
+    });
+    
+    // Save advanced parameters when they change
+    document.addEventListener('change', function(e) {
+        if (e.target.closest('#dynamicParameters')) {
+            saveFormValues();
+        }
     });
     
     // Advanced parameters collapse icon toggle
@@ -612,7 +586,6 @@ document.addEventListener('DOMContentLoaded', function() {
             prompt: document.getElementById('prompt').value,
             machine_id: document.getElementById('machine').value,
             quantity: parseInt(document.getElementById('quantity').value),
-            project_name: document.getElementById('project_name').value,
             parameters: parameters
         };
         
@@ -637,13 +610,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Start polling for results
                 startOrderPolling(data.order_id);
                 
-                // Clear form
-                form.reset();
+                // Don't clear form - keep values for next order
                 descriptionDiv.style.display = 'none';
-                // Remove active state from sidebar
-                document.querySelectorAll('.model-option').forEach(opt => {
-                    opt.classList.remove('active');
-                });
                 
                 // Refresh page data
                 loadPageData();
@@ -742,15 +710,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentValue = parseInt(quantityInput.value) || 1;
         const newValue = Math.max(1, Math.min(10, currentValue + delta));
         quantityInput.value = newValue;
+        saveFormValues(); // Save when quantity changes
     };
     
     window.clearForm = function() {
+        // Clear form and localStorage
         form.reset();
+        localStorage.removeItem('orderFormData');
         descriptionDiv.style.display = 'none';
-        document.querySelectorAll('.model-option').forEach(opt => {
-            opt.classList.remove('active');
-        });
         hideOrderProgress();
+        clearDynamicParameters();
     };
     
     window.loadTemplate = function(type) {
