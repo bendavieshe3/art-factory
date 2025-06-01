@@ -382,13 +382,18 @@ to reflect this technology decision and move it from 'To Be Made' to 'Finalized'
 
 ### GitHub Issues Workflow
 
-**IMPORTANT**: Use GitHub Issues for all task management instead of local TodoWrite tool for better persistence and collaboration.
+**CRITICAL**: ALWAYS use GitHub Issues for ALL task management. NEVER use the local TodoWrite tool for project tasks. GitHub Issues provide persistence, collaboration, and milestone tracking.
+
+**When to Use GitHub Issues vs TodoWrite**:
+- **GitHub Issues**: ALL project development tasks, bugs, enhancements, features
+- **TodoWrite Tool**: ONLY for conversation-specific ephemeral tasks (e.g., "read these 3 files", "check this function")
 
 **Issue Creation Process**:
 1. **Check existing issues** before creating duplicates: `gh issue list`
-2. **Use appropriate templates** (.github/ISSUE_TEMPLATE/) for consistency
-3. **Apply correct labels** for priority, type, and component
-4. **Reference milestone** (v0.1 MVP, v0.2 Polish, etc.) when creating issues
+2. **Review milestones** to understand project priorities: `gh issue list --milestone "v0.1 MVP"`
+3. **Use appropriate templates** (.github/ISSUE_TEMPLATE/) for consistency
+4. **Apply correct labels** for priority, type, and component
+5. **ALWAYS reference milestone** (v0.1 MVP, v0.2 Polish, etc.) when creating issues
 
 **Labels System**:
 - **Priority**: `critical`, `high`, `medium`, `low`
@@ -415,6 +420,15 @@ gh api repos/:owner/:repo/milestones -X POST -f title="v0.3 Scale" -f descriptio
 
 ### Milestone Planning
 
+**IMPORTANT**: Always check current milestone progress before starting work:
+```bash
+# View all milestones
+gh api repos/:owner/:repo/milestones
+
+# Check v0.1 MVP progress
+gh issue list --milestone "v0.1 MVP" --state all
+```
+
 **v0.1 MVP** - "Functional Image Generation Tool"
 - **Goal**: Solidly functional tool for image generation without major blockers
 - **Core Requirements**: 
@@ -433,6 +447,12 @@ gh api repos/:owner/:repo/milestones -X POST -f title="v0.3 Scale" -f descriptio
 - `high`: Important for MVP usability and completeness
 - `medium`: Nice-to-have for MVP, required for polish
 - `low`: Post-MVP enhancements
+
+**Issue Management Best Practices**:
+1. **Start each conversation** by checking open issues: `gh issue list --state open`
+2. **Reference issues in commits**: Use "Fixes #123" or "Part of #123"
+3. **Update issue progress** with comments when making significant changes
+4. **Close issues** only after verifying the fix works
 
 ## Local Knowledge Management
 

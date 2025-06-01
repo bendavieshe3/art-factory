@@ -199,13 +199,31 @@ class Foreman:
                 
                 LogEntry.objects.create(
                     level='WARNING',
-                    message=f'Alert: {pending_items} pending items but no active workers',
+                    message=f'Alert: {pending_items} pending items but no active workers - spawning worker',
                     logger_name='foreman',
                     extra_data={
                         'event_type': 'no_workers_alert',
                         'pending_items': pending_items
                     }
                 )
+                
+                # Spawn a worker to handle the pending work
+                try:
+                    from .workers import spawn_worker_automatically
+                    spawn_worker_automatically()
+                    logger.info("Foreman spawned worker to handle pending work")
+                    
+                    LogEntry.objects.create(
+                        level='INFO',
+                        message='Foreman spawned worker to handle pending work',
+                        logger_name='foreman',
+                        extra_data={
+                            'event_type': 'worker_spawned_by_foreman',
+                            'pending_items': pending_items
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"Foreman failed to spawn worker: {e}")
             
         except Exception as e:
             logger.error(f"Error logging system status: {e}")
