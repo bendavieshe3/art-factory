@@ -138,6 +138,11 @@ FAL_API_KEY = config('FAL_KEY', default=None)
 REPLICATE_API_TOKEN = config('REPLICATE_API_TOKEN', default=None)
 CIVITAI_API_KEY = config('CIVITAI_API_KEY', default=None)
 
+# Ensure logs directory exists
+import os
+LOGS_DIR = BASE_DIR / 'logs'
+os.makedirs(LOGS_DIR, exist_ok=True)
+
 # Logging Configuration
 LOGGING = {
     'version': 1,
