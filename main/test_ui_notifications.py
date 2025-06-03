@@ -2,11 +2,14 @@
 Tests for UI notification system and order placement workflow.
 """
 import json
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from unittest.mock import patch
 
 from .models import FactoryMachineDefinition
+
+
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 
 
 class NotificationSystemTestCase(TestCase):

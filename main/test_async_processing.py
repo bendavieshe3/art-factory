@@ -2,7 +2,7 @@
 Tests for asynchronous order processing and retry mechanisms.
 """
 import json
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from datetime import timedelta
 from unittest.mock import patch, Mock
@@ -12,6 +12,7 @@ from django.core.management import call_command
 from .models import FactoryMachineDefinition, Order, OrderItem, LogEntry
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class AsyncProcessingTestCase(TestCase):
     """Test asynchronous order processing and retry mechanisms."""
     

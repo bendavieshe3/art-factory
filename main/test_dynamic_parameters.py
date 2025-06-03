@@ -2,12 +2,13 @@
 Tests for dynamic parameter handling in the order page.
 """
 import json
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from unittest.mock import patch
 
 from .models import FactoryMachineDefinition
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class DynamicParametersTestCase(TestCase):
     """Test dynamic parameter generation based on model selection."""
     

@@ -5,7 +5,7 @@ import os
 import time
 import threading
 from unittest.mock import patch, Mock
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from datetime import timedelta
 
@@ -15,6 +15,7 @@ from .workers import SmartWorker, spawn_worker_automatically
 from .foreman import Foreman
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class WorkerSystemTestCase(TestCase):
     """Test the autonomous worker system."""
     
@@ -44,7 +45,8 @@ class WorkerSystemTestCase(TestCase):
             is_active=True
         )
     
-    def test_worker_model_creation(self):
+    @patch('main.workers.spawn_worker_automatically')
+    def test_worker_model_creation(self, mock_spawn):
         """Test Worker model creation and basic functionality."""
         worker = Worker.objects.create(
             name='test-worker',
@@ -89,7 +91,7 @@ class WorkerSystemTestCase(TestCase):
         )
         
         self.assertEqual(item.status, 'assigned')
-        self.assertTrue(item.can_be_assigned())  # Should be False for assigned items
+        self.assertFalse(item.can_be_assigned())  # Should be False for assigned items
         
         # Test stalled status
         item.status = 'stalled'
@@ -98,16 +100,15 @@ class WorkerSystemTestCase(TestCase):
     
     def test_smart_worker_initialization(self):
         """Test SmartWorker initialization."""
-        worker = SmartWorker(provider='fal.ai', max_batch_size=3)
+        worker = SmartWorker(max_batch_size=3)
         
-        self.assertEqual(worker.provider, 'fal.ai')
         self.assertEqual(worker.max_batch_size, 3)
         self.assertTrue(worker.is_running)
         self.assertIsNotNone(worker.process_id)
         self.assertIsNotNone(worker.name)
     
-    @patch('main.workers.SimpleProcessCommand')
-    def test_worker_work_claiming(self, mock_processor_class):
+    @patch('main.workers.spawn_worker_automatically')
+    def test_worker_work_claiming(self, mock_spawn):
         """Test worker work claiming logic."""
         # Create test order items
         order = Order.objects.create(
@@ -128,9 +129,10 @@ class WorkerSystemTestCase(TestCase):
             )
             items.append(item)
         
-        # Create and register worker
-        worker = SmartWorker(provider='fal.ai', max_batch_size=2)
-        worker.register_worker()
+        # Create and register worker with mock PID to avoid conflicts
+        with patch('os.getpid', return_value=11111):
+            worker = SmartWorker(max_batch_size=2)
+            worker.register_worker()
         
         # Test work claiming
         claimed_items = worker.claim_work_batch()
@@ -153,9 +155,10 @@ class WorkerSystemTestCase(TestCase):
         self.assertEqual(remaining_item.status, 'pending')
         self.assertIsNone(remaining_item.assigned_worker)
     
-    def test_worker_no_work_exit(self):
+    @patch('main.workers.spawn_worker_automatically')
+    def test_worker_no_work_exit(self, mock_spawn):
         """Test that worker exits when no work is available."""
-        worker = SmartWorker(provider='fal.ai', max_batch_size=5)
+        worker = SmartWorker(max_batch_size=5)
         worker.register_worker()
         
         # No OrderItems exist, so worker should find no work
@@ -169,7 +172,8 @@ class WorkerSystemTestCase(TestCase):
         # Worker record should be cleaned up
         self.assertFalse(Worker.objects.filter(id=worker.worker_record.id).exists())
     
-    def test_foreman_stalled_worker_detection(self):
+    @patch('main.workers.spawn_worker_automatically')
+    def test_foreman_stalled_worker_detection(self, mock_spawn):
         """Test foreman detection of stalled workers."""
         # Create a stalled worker
         old_time = timezone.now() - timedelta(minutes=5)
@@ -214,7 +218,8 @@ class WorkerSystemTestCase(TestCase):
             self.assertEqual(item.status, 'pending')
             self.assertIsNone(item.assigned_worker)
     
-    def test_foreman_orphaned_work_detection(self):
+    @patch('main.workers.spawn_worker_automatically')
+    def test_foreman_orphaned_work_detection(self, mock_spawn):
         """Test foreman detection of orphaned work."""
         # Create orphaned work (assigned but no worker)
         order = Order.objects.create(
@@ -245,13 +250,14 @@ class WorkerSystemTestCase(TestCase):
         """Test automatic worker spawning."""
         # Mock the threading to avoid actual thread creation in tests
         with patch('main.workers.threading.Thread') as mock_thread:
-            spawn_worker_automatically(provider='fal.ai')
+            spawn_worker_automatically()
             
             # Verify thread was created and started
             mock_thread.assert_called_once()
             mock_thread.return_value.start.assert_called_once()
     
-    def test_worker_batch_processing_scenario(self):
+    @patch('main.workers.spawn_worker_automatically')
+    def test_worker_batch_processing_scenario(self, mock_spawn):
         """Test the scenario described: 20 items with 5-item limit."""
         # Create order with 20 items
         order = Order.objects.create(
@@ -273,7 +279,7 @@ class WorkerSystemTestCase(TestCase):
             items.append(item)
         
         # Create worker with 5-item batch limit
-        worker = SmartWorker(provider='fal.ai', max_batch_size=5)
+        worker = SmartWorker(max_batch_size=5)
         worker.register_worker()
         
         # Worker should be able to claim multiple batches
@@ -299,7 +305,8 @@ class WorkerSystemTestCase(TestCase):
         self.assertEqual(assigned_count, 5)   # Second batch
         self.assertEqual(pending_count, 10)   # Remaining
     
-    def test_multiple_workers_different_providers(self):
+    @patch('main.workers.spawn_worker_automatically')
+    def test_multiple_workers_different_providers(self, mock_spawn):
         """Test multiple workers for different providers."""
         # Create Replicate machine
         replicate_machine = FactoryMachineDefinition.objects.create(
@@ -339,23 +346,23 @@ class WorkerSystemTestCase(TestCase):
                     status='pending'
                 )
         
-        # Create workers for different providers
-        fal_worker = SmartWorker(provider='fal.ai', max_batch_size=5)
-        fal_worker.register_worker()
+        # Create universal workers (no provider specificity)
+        # Mock different process IDs to avoid UNIQUE constraint violation
+        with patch('os.getpid', side_effect=[12345, 12346]):
+            worker1 = SmartWorker(max_batch_size=5)
+            worker1.register_worker()
+            
+            worker2 = SmartWorker(max_batch_size=5)
+            worker2.register_worker()
         
-        replicate_worker = SmartWorker(provider='replicate', max_batch_size=5)
-        replicate_worker.register_worker()
+        # First worker should claim available work
+        first_claimed = worker1.claim_work_batch()
+        second_claimed = worker2.claim_work_batch()
         
-        # Each worker should only claim work for their provider
-        fal_claimed = fal_worker.claim_work_batch()
-        replicate_claimed = replicate_worker.claim_work_batch()
+        # Total claimed should be 4 items (all available work)
+        total_claimed = len(first_claimed) + len(second_claimed)
+        self.assertEqual(total_claimed, 4)
         
-        self.assertEqual(len(fal_claimed), 2)
-        self.assertEqual(len(replicate_claimed), 2)
-        
-        # Verify provider isolation
-        for item in fal_claimed:
-            self.assertEqual(item.order.provider, 'fal.ai')
-        
-        for item in replicate_claimed:
-            self.assertEqual(item.order.provider, 'replicate')
+        # All items should be assigned
+        assigned_items = OrderItem.objects.filter(status='assigned')
+        self.assertEqual(assigned_items.count(), 4)
