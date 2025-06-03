@@ -100,7 +100,7 @@ class Command(BaseCommand):
                         "cost_per_operation": "0.04"
                     },
                     {
-                        "name": "stability-ai/stable-diffusion-xl-base-1.0",
+                        "name": "stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
                         "display_name": "Stable Diffusion XL (Replicate)",
                         "description": "High-resolution text-to-image generation with excellent detail and composition. Industry standard model.",
                         "provider": "replicate",
