@@ -961,3 +961,87 @@ class RetryMechanismTestCase(TestCase):
         
         # Should be completed (partial success)
         self.assertEqual(order2.status, 'completed')
+
+
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
+class LoggingTestCase(TestCase):
+    """Test logging configuration and functionality."""
+    
+    def test_logging_configuration_exists(self):
+        """Test that logging configuration is properly set up."""
+        from django.conf import settings
+        
+        # Verify logging configuration exists
+        self.assertIn('LOGGING', dir(settings))
+        logging_config = settings.LOGGING
+        
+        # Verify essential components exist
+        self.assertIn('handlers', logging_config)
+        self.assertIn('loggers', logging_config)
+        self.assertIn('formatters', logging_config)
+        
+        # Verify our specific handlers exist
+        handlers = logging_config['handlers']
+        self.assertIn('file', handlers)
+        self.assertIn('worker_file', handlers)
+        self.assertIn('console', handlers)
+    
+    def test_logs_directory_exists(self):
+        """Test that logs directory is created."""
+        from django.conf import settings
+        import os
+        
+        logs_dir = settings.BASE_DIR / 'logs'
+        self.assertTrue(os.path.exists(logs_dir), "Logs directory should exist")
+        self.assertTrue(os.path.isdir(logs_dir), "Logs path should be a directory")
+    
+    def test_logger_functionality(self):
+        """Test that loggers can write messages without errors."""
+        import logging
+        import tempfile
+        import os
+        
+        # Test worker logger
+        worker_logger = logging.getLogger('main.workers')
+        
+        # These should not raise exceptions
+        worker_logger.info("Test info message from test")
+        worker_logger.warning("Test warning message from test")
+        worker_logger.error("Test error message from test")
+        
+        # Test factory machine logger
+        factory_logger = logging.getLogger('main.factory_machines_sync')
+        factory_logger.info("Test factory message from test")
+        
+        # Test general Django logger
+        django_logger = logging.getLogger('django')
+        django_logger.info("Test Django message from test")
+    
+    def test_log_file_creation(self):
+        """Test that log files can be created and logging works without errors."""
+        from django.conf import settings
+        import logging
+        import os
+        
+        # Check that log files exist (they're created when loggers are first used)
+        worker_log_path = settings.BASE_DIR / 'logs' / 'workers.log'
+        app_log_path = settings.BASE_DIR / 'logs' / 'art_factory.log'
+        
+        # Get loggers and ensure they can log without raising exceptions
+        worker_logger = logging.getLogger('main.workers')
+        app_logger = logging.getLogger('django')
+        
+        # These should not raise exceptions
+        try:
+            worker_logger.info("Test log message from unittest")
+            app_logger.info("Test app log message from unittest")
+        except Exception as e:
+            self.fail(f"Logging should not raise exceptions: {e}")
+        
+        # Verify log files exist after logging
+        self.assertTrue(os.path.exists(worker_log_path), "Worker log file should exist")
+        self.assertTrue(os.path.exists(app_log_path), "App log file should exist")
+        
+        # Verify files are not empty (have some content)
+        self.assertGreater(os.path.getsize(worker_log_path), 0, "Worker log file should not be empty")
+        self.assertGreater(os.path.getsize(app_log_path), 0, "App log file should not be empty")
