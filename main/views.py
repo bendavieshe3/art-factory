@@ -295,6 +295,11 @@ def place_order_api(request):
         # Get the factory machine
         machine = get_object_or_404(FactoryMachineDefinition, id=data.get('machine_id'))
         
+        # Get generation parameters
+        generation_count = data.get('generation_count', 1)
+        batch_size = data.get('batch_size', 4)
+        total_products = generation_count * batch_size
+        
         # Create the order
         order = Order.objects.create(
             title=data.get('title', ''),
@@ -302,7 +307,7 @@ def place_order_api(request):
             base_parameters=data.get('parameters', {}),
             factory_machine_name=machine.name,
             provider=machine.provider,
-            quantity=data.get('quantity', 1),
+            quantity=total_products,  # Store total products for compatibility
             project_name=data.get('project_name', ''),
         )
         
@@ -310,19 +315,34 @@ def place_order_api(request):
         merged_parameters = machine.default_parameters.copy()
         merged_parameters.update(order.base_parameters)
         
-        # Create order items (signal will automatically trigger processing)
-        for i in range(order.quantity):
+        # Validate batch size
+        max_batch_size = 4  # Both fal.ai and Replicate support up to 4
+        validated_batch_size = min(batch_size, max_batch_size)
+        
+        if machine.provider == 'fal.ai':
+            batch_param = 'num_images'
+        else:  # replicate
+            batch_param = 'num_outputs'
+        
+        # Create order items - one for each generation
+        for generation in range(generation_count):
+            # Set batch parameter in the item's parameters
+            item_parameters = merged_parameters.copy()
+            item_parameters[batch_param] = validated_batch_size
+            
             OrderItem.objects.create(
                 order=order,
                 prompt=order.prompt,
-                parameters=merged_parameters,
+                parameters=item_parameters,
+                total_quantity=validated_batch_size,
+                batch_size=validated_batch_size,
                 status='pending'
             )
         
         return JsonResponse({
             'success': True,
             'order_id': order.id,
-            'message': f'Order placed successfully! {order.quantity} items are being generated.'
+            'message': f'Order placed successfully! {generation_count} generations will create {total_products} products.'
         })
         
     except Exception as e:

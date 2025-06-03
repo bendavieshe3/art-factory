@@ -324,6 +324,106 @@ claude config set --global <key> <value>  # Global setting
 - Environment-specific configurations
 - Shareable project configurations
 
+### MCP (Model Context Protocol) Integration
+
+**Overview:**
+Claude Code supports MCP servers, allowing connection to external tools and data sources. This extends Claude Code's capabilities beyond built-in tools.
+
+**Adding MCP Servers:**
+
+**Stdio Servers (Local Executables):**
+```bash
+# Basic server addition
+claude mcp add <name> -- /path/to/server arg1 arg2
+
+# With environment variables
+claude mcp add <name> -e API_KEY=123 -e DB_URL=postgres://... -- /path/to/server
+
+# Example: Filesystem server
+claude mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem /allowed/path
+```
+
+**SSE (Server-Sent Events) Servers:**
+```bash
+# Remote server via URL
+claude mcp add --transport sse <name> <url>
+
+# With authentication
+claude mcp add --transport sse -e AUTH_TOKEN=xyz <name> https://api.example.com/mcp
+```
+
+**Server Management:**
+```bash
+# List all configured servers
+claude mcp list
+
+# Get server details
+claude mcp get <server-name>
+
+# Remove a server
+claude mcp remove <server-name>
+
+# Test server connectivity
+claude mcp test <server-name>
+```
+
+**Server Scopes:**
+
+**1. Local Scope (Default):**
+- Project-specific configuration
+- Not shared with team
+- Stored locally
+
+**2. Project Scope:**
+- Shared via `.mcp.json` in project root
+- Team members can use same servers
+- Version controlled
+
+**3. User Scope:**
+- Available across all projects
+- Personal server configurations
+- Stored in user config
+
+**Configuration File (`.mcp.json`):**
+```json
+{
+  "servers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
+    }
+  }
+}
+```
+
+**Environment Variables:**
+- Use `-e` flag for secrets
+- Reference with `${VAR_NAME}` in config files
+- Set timeout with `MCP_TIMEOUT` (default 10s)
+
+**Security Considerations:**
+- Only use trusted MCP servers
+- Review server permissions carefully
+- Be cautious with internet-connected servers
+- Avoid servers that can execute arbitrary code
+
+**Popular MCP Servers for Development:**
+- `@modelcontextprotocol/server-filesystem` - File operations
+- `@modelcontextprotocol/server-github` - GitHub integration
+- `@modelcontextprotocol/server-postgres` - PostgreSQL access
+- `@modelcontextprotocol/server-sqlite` - SQLite operations
+- `@modelcontextprotocol/server-git` - Git repository management
+
 ### Enterprise Integration
 
 **Supported Platforms:**
@@ -346,11 +446,44 @@ claude config set --global <key> <value>  # Global setting
 - Security permissions appropriate for web development
 - CLI integration supports Django workflow commands
 
+**MCP Server Setup for Django:**
+```bash
+# Add SQLite server for direct database access
+claude mcp add sqlite -- npx -y @modelcontextprotocol/server-sqlite \
+  /Volumes/Ceres/data/Projects/art-factory/db.sqlite3
+
+# Add filesystem server for project directory
+claude mcp add art-factory-fs -- npx -y @modelcontextprotocol/server-filesystem \
+  /Volumes/Ceres/data/Projects/art-factory
+
+# Add GitHub server for issue management
+claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=your_token \
+  -- npx -y @modelcontextprotocol/server-github
+```
+
+**Project-wide MCP Configuration (`.mcp.json`):**
+```json
+{
+  "servers": {
+    "project-db": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "./db.sqlite3"]
+    },
+    "project-files": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    }
+  }
+}
+```
+
 **Development Workflow Integration:**
 - Use for Django management commands
 - Integrate with git workflow for commits/PRs
 - Leverage for testing and linting automation
 - Utilize for database migration management
+- Direct database queries via MCP SQLite server
+- File operations via MCP filesystem server
 
 **Custom Slash Commands for Art Factory:**
 Create project-specific commands for common Django workflows:
@@ -392,15 +525,15 @@ echo "Configure AI model parameters for $ARGUMENTS. Include parameter validation
 - Maintain project slash commands in version control
 
 ## Metadata
-- **Last Updated**: 2025-05-24
-- **Version**: Current as of May 2025
+- **Last Updated**: 2025-06-02
+- **Version**: Current as of June 2025 (includes MCP support)
 - **Sources**: 
   - https://docs.anthropic.com/en/docs/claude-code/overview
   - https://docs.anthropic.com/en/docs/claude-code/cli-usage
   - https://docs.anthropic.com/en/docs/claude-code/memory
   - https://docs.anthropic.com/en/docs/claude-code/security
   - https://docs.anthropic.com/en/docs/claude-code/settings
-  - https://docs.anthropic.com/en/docs/claude-code/tutorials
+  - https://docs.anthropic.com/en/docs/claude-code/tutorials#set-up-model-context-protocol-mcp
   - https://www.anthropic.com/engineering/claude-code-best-practices
   - GitHub issues and community discussions
   - Official Claude Code documentation

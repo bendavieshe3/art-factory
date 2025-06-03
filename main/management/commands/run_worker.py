@@ -11,12 +11,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--provider',
-            type=str,
-            default='fal.ai',
-            help='Provider to process work for (default: fal.ai)'
-        )
-        parser.add_argument(
             '--batch-size',
             type=int,
             default=5,
@@ -24,15 +18,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        provider = options['provider']
         batch_size = options['batch_size']
         
         self.stdout.write(
-            f"Starting smart worker for provider '{provider}' with batch size {batch_size}"
+            f"Starting universal smart worker with batch size {batch_size}"
         )
         
         # Run the worker (this will block until worker exits)
-        run_smart_worker(provider=provider, max_batch_size=batch_size)
+        run_smart_worker(max_batch_size=batch_size)
         
         self.stdout.write(
             self.style.SUCCESS("Worker completed and exited")

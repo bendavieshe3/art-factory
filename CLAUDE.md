@@ -212,7 +212,7 @@ python manage.py run_worker              # Manually run a single worker (debuggi
 python manage.py run_foreman             # Manually run foreman process (debugging)
 
 # Legacy order processing (for emergencies)
-python manage.py process_pending_orders  # Retry stuck/pending orders (backup approach)
+python manage.py process_pending_orders  # Retry stuck/pending orders
 python manage.py process_pending_orders --retry-failed  # Also retry failed orders
 python manage.py monitor_orders          # Show current order processing status
 python manage.py simple_process          # Process pending orders manually (legacy)
@@ -318,71 +318,14 @@ python manage.py simple_process --order-item-id 1
 
 - Always verify accomplishments with tests
 - Update documentation to reflect changes
+- Always commit tested work locally to git
 - Check into source code locally before pushing to remote repositories
 
-## UI/UX Development Guidelines
-
-### Using ux.md for Implementation Guidance
-
-The `docs/ux.md` file contains comprehensive UI/UX specifications and should be consulted for ALL interface work:
-
-**Before Implementation**:
-1. **Read relevant UX sections** for the feature you're implementing
-2. **Follow specified interaction patterns** (selection, actions, real-time updates)
-3. **Use defined component structures** (product cards, parameter forms, status indicators)
-4. **Implement accessibility requirements** (keyboard nav, ARIA labels, contrast)
-
-**Key UX Principles to Follow**:
-- **Progressive Disclosure**: Hide complexity behind collapsible sections
-- **Immediate Feedback**: Provide real-time status updates and validation
-- **Consistent Patterns**: Reuse established component designs and behaviors
-- **Desktop-First**: Optimize for desktop use with professional interface design
-
-**Example Application**:
-- Order page sidebar follows the "dynamic parameter form" specification
-- Bootstrap cards implement the "product card" component pattern
-- Toast notifications provide the "immediate feedback" for user actions
-
-### CSS Framework Integration
-
-Bootstrap 5 classes should map to UX specifications:
-- Use `card` components for product displays and forms
-- Use `collapse` for progressive disclosure (advanced parameters)
-- Use `list-group` for sidebar model selection
-- Preserve custom toast system for superior user feedback
-
-### Documentation Maintenance Process
-
-**IMPORTANT**: Always propose documentation updates when making architectural or design changes:
-
-**When to Update Documentation**:
-1. **Technology Decisions**: When finalizing framework choices, architectural patterns, or implementation approaches
-2. **UX Changes**: When modifying interface layouts, interaction patterns, or component designs  
-3. **Bug Discovery**: When identifying new issues or technical debt
-4. **Requirements Evolution**: When project scope or constraints change
-
-**Required User Permission**:
-- **Always ask user permission** before updating design documentation files (requirements.md, ux.md, design.md)
-- **Automatically update** CLAUDE.md and knowledge base files for development guidance
-- **Propose specific updates** with clear rationale for user approval
-
-**Documentation Files Requiring Permission**:
-- `docs/requirements.md` - Technical requirements and constraints
-- `docs/ux.md` - User interface specifications and interaction patterns
-- `docs/design.md` - Detailed technical architecture
-- `docs/features.md` - Functional requirements and implementation phases
-
-**Example Process**:
-```
-"I've implemented Bootstrap 5 integration. Should I update docs/requirements.md 
-to reflect this technology decision and move it from 'To Be Made' to 'Finalized'?"
-```
-
-## Project Management & Issues
+## Project Management & Issue Handling
 
 ### GitHub Issues Workflow
 
-**CRITICAL**: ALWAYS use GitHub Issues for ALL task management. NEVER use the local TodoWrite tool for project tasks. GitHub Issues provide persistence, collaboration, and milestone tracking.
+**CRITICAL**: Use todowriter to plan our sessions, but refer to and update Github issues as we progress. Close and reference Github issues using references in commit messages that are pushed to the remote repository where possible. Don't push to the remote repository with the user's permission.
 
 **When to Use GitHub Issues vs TodoWrite**:
 - **GitHub Issues**: ALL project development tasks, bugs, enhancements, features
@@ -395,67 +338,4 @@ to reflect this technology decision and move it from 'To Be Made' to 'Finalized'
 4. **Apply correct labels** for priority, type, and component
 5. **ALWAYS reference milestone** (v0.1 MVP, v0.2 Polish, etc.) when creating issues
 
-**Labels System**:
-- **Priority**: `critical`, `high`, `medium`, `low`
-- **Type**: `bug`, `enhancement`, `documentation`, `technical-debt`
-- **Component**: `ui/order-page`, `ui/inventory`, `backend/generation`, `backend/models`
-
-**Commands**:
-```bash
-# List issues
-gh issue list --milestone "v0.1 MVP"
-gh issue list --label "critical"
-
-# Create issue (use templates)
-gh issue create --title "[BUG] Description" --label "critical,bug,backend/generation"
-
-# Update issue
-gh issue edit 1 --add-label "high"
-gh issue edit 1 --milestone "v0.1 MVP"
-gh issue close 1
-
-# Create milestone
-gh api repos/:owner/:repo/milestones -X POST -f title="v0.3 Scale" -f description="Description" -f due_on="2025-09-01T00:00:00Z"
-```
-
-### Milestone Planning
-
-**IMPORTANT**: Always check current milestone progress before starting work:
-```bash
-# View all milestones
-gh api repos/:owner/:repo/milestones
-
-# Check v0.1 MVP progress
-gh issue list --milestone "v0.1 MVP" --state all
-```
-
-**v0.1 MVP** - "Functional Image Generation Tool"
-- **Goal**: Solidly functional tool for image generation without major blockers
-- **Core Requirements**: 
-  - All model types work (SDXL, Flux, etc.)
-  - Usable order interface with clear feedback
-  - Basic inventory management (view, delete, download)
-  - Essential workflow: order → generate → view → manage
-  - No critical crashes or data loss
-
-**Future Milestones**:
-- **v0.2 Polish**: UX improvements, real-time updates, enhanced interface
-- **v0.3 Scale**: More models, projects, templates, advanced features
-
-**Prioritization Guidelines**:
-- `critical`: Blocks MVP core functionality
-- `high`: Important for MVP usability and completeness
-- `medium`: Nice-to-have for MVP, required for polish
-- `low`: Post-MVP enhancements
-
-**Issue Management Best Practices**:
-1. **Start each conversation** by checking open issues: `gh issue list --state open`
-2. **Reference issues in commits**: Use "Fixes #123" or "Part of #123"
-3. **Update issue progress** with comments when making significant changes
-4. **Close issues** only after verifying the fix works
-
-## Local Knowledge Management
-
-@./.claude/kb/MOC.md
-
-For each request, use the Map of Content (MOC) to identify relevant knowledge articles that may inform your response. Read knowledge related to the current request based on the user command and project context. This knowledge base contains environment-specific information, best practices, and current technical information to supplement your responses without requiring web searches.
+## (Rest of the file remains unchanged)

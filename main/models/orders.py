@@ -102,8 +102,13 @@ class OrderItem(models.Model):
     # Worker assignment
     assigned_worker = models.ForeignKey('Worker', on_delete=models.SET_NULL, null=True, blank=True)
     
-    # Result
+    # Result - Changed to support multiple products per OrderItem for batch generation
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Batch generation fields
+    total_quantity = models.PositiveIntegerField(default=1, help_text="Total number of products to generate")
+    batch_size = models.PositiveIntegerField(default=1, help_text="Number of products per API call")
+    batches_completed = models.PositiveIntegerField(default=0, help_text="Number of completed batches")
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

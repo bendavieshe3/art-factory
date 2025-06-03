@@ -47,6 +47,18 @@
             "minimum": 1,
             "maximum": 50,
             "description": "Number of denoising steps"
+          },
+          "num_images": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 4,
+            "description": "Number of images to generate per API call"
+          },
+          "enable_safety_checker": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable safety checker (disable to avoid NSFW false positives)"
           }
         },
         "required": [
@@ -57,7 +69,8 @@
         "width": 1024,
         "height": 1024,
         "guidance_scale": 3.5,
-        "num_inference_steps": 28
+        "num_inference_steps": 28,
+        "enable_safety_checker": false
       },
       "max_concurrent_jobs": 3,
       "estimated_duration": "00:00:30",
@@ -104,6 +117,18 @@
             "minimum": 1,
             "maximum": 8,
             "description": "Number of denoising steps (fewer for speed)"
+          },
+          "num_images": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 4,
+            "description": "Number of images to generate per API call"
+          },
+          "enable_safety_checker": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable safety checker (disable to avoid NSFW false positives)"
           }
         },
         "required": [
@@ -113,7 +138,8 @@
       "default_parameters": {
         "width": 1024,
         "height": 1024,
-        "num_inference_steps": 4
+        "num_inference_steps": 4,
+        "enable_safety_checker": false
       },
       "max_concurrent_jobs": 5,
       "estimated_duration": "00:00:15",
@@ -188,7 +214,7 @@
     "model": "main.factorymachinedefinition",
     "pk": 4,
     "fields": {
-      "name": "stability-ai/stable-diffusion-xl-base-1.0",
+      "name": "stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
       "display_name": "Stable Diffusion XL (Replicate)",
       "description": "High-resolution text-to-image generation with excellent detail and composition. Industry standard model.",
       "provider": "replicate",
@@ -244,6 +270,18 @@
               "K_EULER_ANCESTRAL",
               "PNDM"
             ]
+          },
+          "num_outputs": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 4,
+            "description": "Number of images to generate"
+          },
+          "disable_safety_checker": {
+            "type": "boolean",
+            "default": true,
+            "description": "Disable safety checker to avoid NSFW false positives"
           }
         },
         "required": [
@@ -255,7 +293,9 @@
         "height": 1024,
         "guidance_scale": 7.5,
         "num_inference_steps": 25,
-        "scheduler": "DPMSolverMultistep"
+        "scheduler": "DPMSolverMultistep",
+        "num_outputs": 1,
+        "disable_safety_checker": true
       },
       "max_concurrent_jobs": 2,
       "estimated_duration": "00:01:00",

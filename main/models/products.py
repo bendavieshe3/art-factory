@@ -43,6 +43,9 @@ class Product(models.Model):
     tags = models.JSONField(default=list, help_text="List of tags for organization")
     is_favorite = models.BooleanField(default=False)
     
+    # Relationship to OrderItem (for batch generation support)
+    order_item = models.ForeignKey('OrderItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

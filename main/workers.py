@@ -22,11 +22,10 @@ class SmartWorker:
     Exits gracefully when no work is available.
     """
     
-    def __init__(self, provider='fal.ai', max_batch_size=5):
-        self.provider = provider
+    def __init__(self, max_batch_size=5):
         self.max_batch_size = max_batch_size
         self.process_id = os.getpid()
-        self.name = f"worker-{provider}-{int(time.time())}"
+        self.name = f"worker-{int(time.time())}"
         self.worker_record = None
         self.is_running = True
         
@@ -63,7 +62,7 @@ class SmartWorker:
         self.worker_record = Worker.objects.create(
             name=self.name,
             process_id=self.process_id,
-            provider=self.provider,
+            provider='universal',  # Can handle any provider
             max_batch_size=self.max_batch_size,
             status='starting'
         )
@@ -75,7 +74,7 @@ class SmartWorker:
             extra_data={
                 'event_type': 'worker_started',
                 'worker_id': self.worker_record.id,
-                'provider': self.provider
+                'provider': 'universal'
             }
         )
     
@@ -83,10 +82,9 @@ class SmartWorker:
         """Atomically claim multiple OrderItems for processing."""
         try:
             with transaction.atomic():
-                # Find available work for this provider
+                # Find available work for any provider
                 available_items = OrderItem.objects.select_for_update().filter(
-                    status='pending',
-                    order__provider=self.provider
+                    status='pending'
                 ).order_by('created_at')[:self.max_batch_size]
                 
                 claimed_items = []
@@ -147,9 +145,9 @@ class SmartWorker:
         self.worker_record.save()
     
     def process_single_item(self, order_item):
-        """Process a single OrderItem using existing processing logic."""
+        """Process a single OrderItem using synchronous batch factory machines."""
         # Import here to avoid circular imports
-        from .management.commands.simple_process import Command as SimpleProcessCommand
+        from .factory_machines_sync import execute_order_item_sync_batch
         
         # Update item status
         order_item.status = 'processing'
@@ -169,42 +167,66 @@ class SmartWorker:
             }
         )
         
-        # Use existing processing logic
-        processor = SimpleProcessCommand()
+        # Use synchronous batch factory machines
+        success = execute_order_item_sync_batch(order_item.id)
         
-        if order_item.order.provider == 'fal.ai':
-            result = processor.process_fal_item(order_item, order_item.order.factory_machine_name)
-        elif order_item.order.provider == 'replicate':
-            result = processor.process_replicate_item(order_item, order_item.order.factory_machine_name)
-        else:
-            raise ValueError(f"Unknown provider: {order_item.order.provider}")
-        
-        # Update item with result
-        if result:
-            order_item.status = 'completed'
-            order_item.product = result
-            order_item.completed_at = timezone.now()
-            order_item.save()
+        # Handle result
+        if success:
+            # Refresh order item to get updated data
+            order_item.refresh_from_db()
             
-            # Log completion
+            # Log completion with product count
+            products = order_item.products.all()
+            product_count = products.count()
+            
             LogEntry.objects.create(
                 level='INFO',
-                message=f'Worker {self.name} completed item {order_item.id} - product {result.id}',
+                message=f'Worker {self.name} completed item {order_item.id} - {product_count} products created',
                 logger_name='worker',
                 order=order_item.order,
                 order_item=order_item,
                 extra_data={
                     'event_type': 'item_completed',
                     'worker_id': self.worker_record.id,
-                    'product_id': result.id
+                    'products_created': product_count,
+                    'batch_complete': True
                 }
             )
             
+            # Update order status
+            self.update_order_status(order_item.order)
+            
         else:
-            raise Exception("Processing returned no result")
+            # Refresh order item to get current status
+            order_item.refresh_from_db()
+            # Update order status even on failure
+            self.update_order_status(order_item.order)
+            raise Exception("Processing failed - check logs for details")
+    
+    def update_order_status(self, order):
+        """Update order status based on its items."""
+        items = order.orderitem_set.all()
+        total_items = items.count()
         
-        # Update order status
-        processor.update_order_status(order_item.order)
+        if total_items == 0:
+            return
+            
+        completed_items = items.filter(status='completed').count()
+        failed_items = items.filter(status='failed').count()
+        
+        if completed_items == total_items:
+            order.status = 'completed'
+            order.completed_at = timezone.now()
+        elif failed_items == total_items:
+            order.status = 'failed'
+            order.completed_at = timezone.now()
+        elif completed_items + failed_items == total_items:
+            order.status = 'completed'  # Partial success
+            order.completed_at = timezone.now()
+        elif completed_items > 0 or failed_items > 0:
+            order.status = 'processing'
+        
+        order.save()
     
     def handle_item_failure(self, order_item, error_message):
         """Handle failure of a single OrderItem."""
@@ -226,6 +248,9 @@ class SmartWorker:
                 'error': error_message
             }
         )
+        
+        # Update order status after item failure
+        self.update_order_status(order_item.order)
     
     def update_heartbeat(self):
         """Update worker heartbeat."""
@@ -282,22 +307,22 @@ class SmartWorker:
         self.is_running = False
 
 
-def spawn_worker_automatically(provider='fal.ai'):
-    """Spawn a worker process automatically without user intervention."""
+def spawn_worker_automatically():
+    """Spawn a universal worker process automatically without user intervention."""
     try:
         # Start worker in background thread
-        worker = SmartWorker(provider=provider)
+        worker = SmartWorker()
         worker_thread = threading.Thread(target=worker.run)
         worker_thread.daemon = True
         worker_thread.start()
         
-        logger.info(f"Spawned worker thread for provider {provider}")
+        logger.info(f"Spawned universal worker thread")
         
     except Exception as e:
-        logger.error(f"Failed to spawn worker for provider {provider}: {e}")
+        logger.error(f"Failed to spawn worker: {e}")
 
 
-def run_smart_worker(provider='fal.ai', max_batch_size=5):
+def run_smart_worker(max_batch_size=5):
     """Run a smart worker (used for management commands)."""
-    worker = SmartWorker(provider=provider, max_batch_size=max_batch_size)
+    worker = SmartWorker(max_batch_size=max_batch_size)
     worker.run()

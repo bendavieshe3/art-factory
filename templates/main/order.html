@@ -36,7 +36,7 @@
                         <form id="orderForm" class="form-dense">
                             <div class="row g-3">
                                 <!-- Model Selection - First and required -->
-                                <div class="col-md-8">
+                                <div class="col-12">
                                     <label for="machine" class="form-label">AI Model <span class="text-danger">*</span></label>
                                     <select class="form-select" id="machine" name="machine" required>
                                         <option value="">Select an AI model...</option>
@@ -49,21 +49,6 @@
                                             </option>
                                         {% endfor %}
                                     </select>
-                                </div>
-                                
-                                <!-- Quantity -->
-                                <div class="col-md-4">
-                                    <label for="quantity" class="form-label">Number of Images</label>
-                                    <div class="input-group">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity(-1)">
-                                            <i class="bi bi-dash"></i>
-                                        </button>
-                                        <input type="number" class="form-control text-center" id="quantity" name="quantity" 
-                                               value="1" min="1" max="10">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity(1)">
-                                            <i class="bi bi-plus"></i>
-                                        </button>
-                                    </div>
                                 </div>
                                 
                                 <!-- Prompt - Second required field -->
@@ -81,6 +66,41 @@
                                     <input type="text" class="form-control" id="title" name="title" 
                                            placeholder="e.g., Fantasy landscapes for portfolio">
                                     <div class="form-text">Give this order a memorable name (optional)</div>
+                                </div>
+                                
+                                <!-- Generation Control -->
+                                <div class="col-md-4">
+                                    <label for="generationCount" class="form-label">Number of Generations</label>
+                                    <div class="input-group">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="changeGenerationCount(-1)">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <input type="number" class="form-control text-center" id="generationCount" name="generationCount" 
+                                               value="1" min="1" max="50">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="changeGenerationCount(1)">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">How many API calls to make</div>
+                                </div>
+                                
+                                <!-- Batch Size -->
+                                <div class="col-md-4">
+                                    <label for="batchSize" class="form-label">Batch Size</label>
+                                    <select class="form-select" id="batchSize" name="batchSize">
+                                        <option value="1">1 image per call</option>
+                                        <option value="2">2 images per call</option>
+                                        <option value="3">3 images per call</option>
+                                        <option value="4" selected>4 images per call</option>
+                                    </select>
+                                    <div class="form-text">Images generated per API call</div>
+                                </div>
+                                
+                                <!-- Total Products -->
+                                <div class="col-md-4">
+                                    <label class="form-label">Total Products</label>
+                                    <div class="form-control-plaintext fw-bold" id="totalProducts">4</div>
+                                    <div class="form-text">Total images that will be created</div>
                                 </div>
                             </div>
                             
@@ -283,6 +303,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize page data
     loadPageData();
     
+    // Generation count control functions
+    window.changeGenerationCount = function(delta) {
+        const input = document.getElementById('generationCount');
+        const currentValue = parseInt(input.value) || 1;
+        const newValue = Math.max(1, Math.min(50, currentValue + delta));
+        input.value = newValue;
+        updateTotalProducts();
+        saveFormValues();
+    };
+    
+    // Update total products calculation
+    function updateTotalProducts() {
+        const generationCount = parseInt(document.getElementById('generationCount').value) || 1;
+        const batchSize = parseInt(document.getElementById('batchSize').value) || 4;
+        const totalProducts = generationCount * batchSize;
+        
+        const totalEl = document.getElementById('totalProducts');
+        totalEl.textContent = totalProducts;
+        
+        // Add visual styling based on total
+        if (totalProducts > 10) {
+            totalEl.className = 'form-control-plaintext fw-bold text-primary';
+        } else {
+            totalEl.className = 'form-control-plaintext fw-bold';
+        }
+    }
+    
+    // Add event listeners for generation count and batch size changes
+    document.getElementById('batchSize').addEventListener('change', function() {
+        updateTotalProducts();
+        saveFormValues();
+    });
+    
+    document.getElementById('generationCount').addEventListener('input', function() {
+        updateTotalProducts();
+        saveFormValues();
+    });
+    
+    // Initialize calculations and load saved form values
+    loadFormValues();
+    updateTotalProducts();
+    
     // Periodically refresh data every 30 seconds
     setInterval(loadPageData, 30000);
     
@@ -326,7 +388,8 @@ document.addEventListener('DOMContentLoaded', function() {
             machine: document.getElementById('machine').value,
             prompt: document.getElementById('prompt').value,
             title: document.getElementById('title').value,
-            quantity: document.getElementById('quantity').value
+            generationCount: document.getElementById('generationCount').value,
+            batchSize: document.getElementById('batchSize').value
         };
         
         // Save advanced parameters
@@ -356,7 +419,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (formData.prompt) document.getElementById('prompt').value = formData.prompt;
                 if (formData.title) document.getElementById('title').value = formData.title;
-                if (formData.quantity) document.getElementById('quantity').value = formData.quantity;
+                if (formData.generationCount) document.getElementById('generationCount').value = formData.generationCount;
+                if (formData.batchSize) document.getElementById('batchSize').value = formData.batchSize;
                 
                 // Restore advanced parameters after a short delay to ensure they're generated
                 if (formData.advancedParams) {
@@ -367,8 +431,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 input.value = value;
                             }
                         }
+                        updateTotalProducts();
                     }, 500);
                 }
+                
+                // Update calculation after restoring values
+                updateTotalProducts();
             } catch (e) {
                 console.error('Error loading saved form data:', e);
             }
@@ -672,7 +740,8 @@ document.addEventListener('DOMContentLoaded', function() {
             title: document.getElementById('title').value,
             prompt: document.getElementById('prompt').value,
             machine_id: document.getElementById('machine').value,
-            quantity: parseInt(document.getElementById('quantity').value),
+            generation_count: parseInt(document.getElementById('generationCount').value),
+            batch_size: parseInt(document.getElementById('batchSize').value),
             parameters: parameters
         };
         
@@ -686,8 +755,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                const totalProducts = formData.generation_count * formData.batch_size;
                 Toast.success(
-                    `Order #${data.order_id} placed successfully! ${formData.quantity} images are being generated.`,
+                    `Order #${data.order_id} placed successfully! ${formData.generation_count} generations will create ${totalProducts} images.`,
                     'Order Placed'
                 );
                 
