@@ -90,6 +90,7 @@ class OrderItem(models.Model):
         ('processing', 'Processing'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
+        ('exhausted', 'Failed - Max Retries Exhausted'),
         ('stalled', 'Stalled - Manual Retry Required'),
         ('cancelled', 'Cancelled'),
     ]
@@ -98,6 +99,11 @@ class OrderItem(models.Model):
     # Provider tracking
     provider_request_id = models.CharField(max_length=200, blank=True, help_text="Provider's request ID")
     error_message = models.TextField(blank=True, help_text="Error details if failed")
+    
+    # Retry tracking
+    retry_count = models.PositiveIntegerField(default=0, help_text="Number of retry attempts")
+    max_retries = models.PositiveIntegerField(default=3, help_text="Maximum retry attempts for transient failures")
+    last_retry_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp of last retry attempt")
     
     # Worker assignment
     assigned_worker = models.ForeignKey('Worker', on_delete=models.SET_NULL, null=True, blank=True)
@@ -130,6 +136,45 @@ class OrderItem(models.Model):
     def can_be_assigned(self):
         """Check if this order item can be assigned to a worker."""
         return self.status == 'pending' and not self.assigned_worker
+    
+    def can_be_retried(self):
+        """Check if this order item can be retried after failure."""
+        return (self.status == 'failed' and 
+                self.retry_count < self.max_retries and
+                self.is_transient_failure())
+    
+    def is_transient_failure(self):
+        """Determine if the failure is transient and worth retrying."""
+        if not self.error_message:
+            return False
+            
+        # Common transient error patterns
+        transient_patterns = [
+            'Server disconnected without sending a response',
+            'Connection timeout',
+            'Network is unreachable',
+            'Connection reset by peer',
+            'Temporary failure',
+            'Service unavailable',
+            'Rate limit exceeded',
+            'Internal server error',
+            '502 Bad Gateway',
+            '503 Service Unavailable',
+            '504 Gateway Timeout',
+        ]
+        
+        error_lower = self.error_message.lower()
+        return any(pattern.lower() in error_lower for pattern in transient_patterns)
+    
+    def reset_for_retry(self):
+        """Reset order item for retry attempt."""
+        self.status = 'pending'
+        self.assigned_worker = None
+        self.retry_count += 1
+        self.last_retry_at = timezone.now()
+        self.provider_request_id = ''
+        # Keep error_message for tracking but clear other fields
+        self.save()
     
     @property
     def processing_duration(self):

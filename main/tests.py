@@ -10,7 +10,7 @@ from django.utils import timezone
 from io import StringIO
 
 from .models import (
-    Product, Order, OrderItem, 
+    Product, Order, OrderItem, Worker,
     FactoryMachineDefinition, FactoryMachineInstance, LogEntry
 )
 
@@ -647,3 +647,317 @@ class BatchGenerationTestCase(TestCase):
         self.assertEqual(item.products.count(), 3)
         # Products are ordered by -created_at, so newest first
         self.assertEqual(list(item.products.all().order_by('id')), products)
+
+
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
+class RetryMechanismTestCase(TestCase):
+    """Test the retry mechanism for failed order items."""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.factory_machine = FactoryMachineDefinition.objects.create(
+            name="test_machine",
+            display_name="Test Machine",
+            provider="test",
+            modality="image",
+            is_active=True,
+            parameter_schema={}
+        )
+        
+        self.order = Order.objects.create(
+            prompt="Test prompt",
+            factory_machine_name="test_machine",
+            provider="test"
+        )
+    
+    def test_transient_failure_detection(self):
+        """Test that transient failures are properly detected."""
+        order_item = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt",
+            parameters={}
+        )
+        
+        # Test transient error detection
+        transient_errors = [
+            "Server disconnected without sending a response",
+            "Connection timeout occurred",
+            "502 Bad Gateway",
+            "Service unavailable",
+            "Rate limit exceeded"
+        ]
+        
+        non_transient_errors = [
+            "Invalid API key",
+            "Model not found",
+            "Prompt contains inappropriate content",
+            "Insufficient credits"
+        ]
+        
+        for error in transient_errors:
+            order_item.error_message = error
+            self.assertTrue(
+                order_item.is_transient_failure(),
+                f"Should detect '{error}' as transient"
+            )
+        
+        for error in non_transient_errors:
+            order_item.error_message = error
+            self.assertFalse(
+                order_item.is_transient_failure(),
+                f"Should NOT detect '{error}' as transient"
+            )
+    
+    def test_retry_eligibility(self):
+        """Test retry eligibility logic."""
+        order_item = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt",
+            parameters={},
+            max_retries=3
+        )
+        
+        # Initially should not be retryable (not failed)
+        self.assertFalse(order_item.can_be_retried())
+        
+        # After transient failure, should be retryable
+        order_item.status = 'failed'
+        order_item.error_message = "Server disconnected without sending a response"
+        order_item.save()
+        self.assertTrue(order_item.can_be_retried())
+        
+        # After non-transient failure, should not be retryable
+        order_item.error_message = "Invalid API key"
+        order_item.save()
+        self.assertFalse(order_item.can_be_retried())
+        
+        # After max retries, should not be retryable
+        order_item.error_message = "Server disconnected without sending a response"
+        order_item.retry_count = 3
+        order_item.save()
+        self.assertFalse(order_item.can_be_retried())
+    
+    def test_retry_reset(self):
+        """Test that reset_for_retry works correctly."""
+        order_item = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt",
+            parameters={},
+            status='failed',
+            error_message="Server disconnected without sending a response",
+            retry_count=0,
+            max_retries=3
+        )
+        
+        # Reset for retry
+        order_item.reset_for_retry()
+        
+        # Check that fields are reset properly
+        self.assertEqual(order_item.status, 'pending')
+        self.assertIsNone(order_item.assigned_worker)
+        self.assertEqual(order_item.retry_count, 1)
+        self.assertIsNotNone(order_item.last_retry_at)
+        self.assertEqual(order_item.provider_request_id, '')
+        # Error message should be preserved for debugging
+        self.assertEqual(order_item.error_message, "Server disconnected without sending a response")
+    
+    def test_worker_claims_retry_items(self):
+        """Test that workers can claim failed items for retry."""
+        # Create a failed item that can be retried
+        order_item = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt",
+            parameters={},
+            status='failed',
+            error_message="Server disconnected without sending a response",
+            retry_count=0,
+            max_retries=3
+        )
+        
+        # Create worker
+        from main.workers import SmartWorker
+        worker = SmartWorker(max_batch_size=5)
+        worker.name = "test-worker"
+        worker.process_id = 12345
+        
+        # Mock worker registration
+        worker.worker_record = Worker.objects.create(
+            name=worker.name,
+            process_id=worker.process_id,
+            provider='universal',
+            max_batch_size=5,
+            status='starting'
+        )
+        
+        # Worker should claim the retryable item
+        claimed_items = worker.claim_work_batch()
+        
+        self.assertEqual(len(claimed_items), 1)
+        claimed_item = claimed_items[0]
+        self.assertEqual(claimed_item.id, order_item.id)
+        self.assertEqual(claimed_item.status, 'assigned')
+        self.assertEqual(claimed_item.retry_count, 1)
+        self.assertIsNotNone(claimed_item.last_retry_at)
+    
+    def test_worker_failure_handling_with_retries(self):
+        """Test that worker failure handling implements retry logic."""
+        order_item = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt",
+            parameters={},
+            retry_count=0,
+            max_retries=3
+        )
+        
+        # Create worker
+        from main.workers import SmartWorker
+        worker = SmartWorker()
+        worker.name = "test-worker"
+        worker.worker_record = Worker.objects.create(
+            name=worker.name,
+            process_id=12345,
+            provider='universal',
+            max_batch_size=5,
+            status='working'
+        )
+        
+        # Test transient failure (should be marked for retry)
+        worker.handle_item_failure(order_item, "Server disconnected without sending a response")
+        order_item.refresh_from_db()
+        
+        self.assertEqual(order_item.status, 'failed')
+        self.assertTrue(order_item.can_be_retried())
+        
+        # Test non-transient failure (should be permanently failed)
+        order_item2 = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt 2",
+            parameters={},
+            retry_count=0,
+            max_retries=3
+        )
+        
+        worker.handle_item_failure(order_item2, "Invalid API key")
+        order_item2.refresh_from_db()
+        
+        self.assertEqual(order_item2.status, 'failed')
+        self.assertFalse(order_item2.can_be_retried())
+        
+        # Test exhausted retries (should be marked as exhausted)
+        order_item3 = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt 3",
+            parameters={},
+            retry_count=3,
+            max_retries=3
+        )
+        
+        worker.handle_item_failure(order_item3, "Server disconnected without sending a response")
+        order_item3.refresh_from_db()
+        
+        self.assertEqual(order_item3.status, 'exhausted')
+        self.assertFalse(order_item3.can_be_retried())
+    
+    def test_worker_ignores_non_retryable_failed_items(self):
+        """Test that workers don't claim failed items that cannot be retried."""
+        # Create only non-retryable failed items
+        order_item1 = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt 1",
+            parameters={},
+            status='failed',
+            error_message="Invalid API key",  # Non-transient
+            retry_count=0,
+            max_retries=3
+        )
+        
+        order_item2 = OrderItem.objects.create(
+            order=self.order,
+            prompt="Test prompt 2",
+            parameters={},
+            status='exhausted',  # Already exhausted
+            error_message="Server disconnected without sending a response",
+            retry_count=3,
+            max_retries=3
+        )
+        
+        # Create worker
+        from main.workers import SmartWorker
+        worker = SmartWorker(max_batch_size=5)
+        worker.name = "test-worker"
+        worker.process_id = 12345
+        
+        # Mock worker registration
+        worker.worker_record = Worker.objects.create(
+            name=worker.name,
+            process_id=worker.process_id,
+            provider='universal',
+            max_batch_size=5,
+            status='starting'
+        )
+        
+        # Worker should not claim any items
+        claimed_items = worker.claim_work_batch()
+        self.assertEqual(len(claimed_items), 0)
+    
+    def test_order_status_with_retry_states(self):
+        """Test that order status calculation handles retry states correctly."""
+        # Test 1: Order with only retryable failed items should stay processing
+        order1 = Order.objects.create(
+            prompt="Test order with only retryable failures",
+            factory_machine_name="test_machine",
+            provider="test"
+        )
+        
+        failed_retry_item1 = OrderItem.objects.create(
+            order=order1,
+            prompt="Failed but retryable 1",
+            status='failed',
+            error_message="Server disconnected without sending a response",
+            retry_count=1,
+            max_retries=3
+        )
+        
+        failed_retry_item2 = OrderItem.objects.create(
+            order=order1,
+            prompt="Failed but retryable 2", 
+            status='failed',
+            error_message="Connection timeout",
+            retry_count=0,
+            max_retries=3
+        )
+        
+        from main.workers import SmartWorker
+        worker = SmartWorker()
+        worker.update_order_status(order1)
+        
+        # Should be processing (has retryable failed items)
+        order1.refresh_from_db()
+        self.assertEqual(order1.status, 'processing')
+        
+        # Test 2: Order with mixed states (completed + final states)
+        order2 = Order.objects.create(
+            prompt="Test order with mixed states",
+            factory_machine_name="test_machine",
+            provider="test"
+        )
+        
+        completed_item = OrderItem.objects.create(
+            order=order2,
+            prompt="Completed item",
+            status='completed'
+        )
+        
+        exhausted_item = OrderItem.objects.create(
+            order=order2,
+            prompt="Exhausted retries",
+            status='exhausted',
+            retry_count=3,
+            max_retries=3
+        )
+        
+        worker.update_order_status(order2)
+        order2.refresh_from_db()
+        
+        # Should be completed (partial success)
+        self.assertEqual(order2.status, 'completed')

@@ -82,14 +82,33 @@ class SmartWorker:
         """Atomically claim multiple OrderItems for processing."""
         try:
             with transaction.atomic():
-                # Find available work for any provider
+                # Find available work for any provider (including retries)
                 available_items = OrderItem.objects.select_for_update().filter(
                     status='pending'
                 ).order_by('created_at')[:self.max_batch_size]
                 
+                # Also look for failed items that can be retried
+                retry_items = OrderItem.objects.select_for_update().filter(
+                    status='failed'
+                ).order_by('last_retry_at')[:self.max_batch_size]
+                
+                # Check which failed items can be retried
+                retryable_items = []
+                for item in retry_items:
+                    if item.can_be_retried():
+                        retryable_items.append(item)
+                
+                # Combine available items and retryable items
+                all_items = list(available_items) + retryable_items
+                
                 claimed_items = []
-                for item in available_items:
+                for item in all_items[:self.max_batch_size]:
                     if self.can_process_item(item):
+                        if item.status == 'failed':
+                            # Reset for retry
+                            item.reset_for_retry()
+                            logger.info(f"Worker {self.name} retrying item {item.id} (attempt {item.retry_count})")
+                        
                         item.status = 'assigned'
                         item.assigned_worker = self.worker_record
                         item.save()
@@ -212,42 +231,99 @@ class SmartWorker:
             return
             
         completed_items = items.filter(status='completed').count()
-        failed_items = items.filter(status='failed').count()
+        failed_items = items.filter(status='failed')
+        exhausted_items = items.filter(status='exhausted').count()
+        pending_items = items.filter(status__in=['pending', 'assigned', 'processing']).count()
+        
+        # Separate retryable from non-retryable failed items
+        retryable_failed_items = 0
+        permanent_failed_items = 0
+        for item in failed_items:
+            if item.can_be_retried():
+                retryable_failed_items += 1
+            else:
+                permanent_failed_items += 1
+        
+        # Final states: completed, permanently failed, exhausted
+        # Retryable failed items are NOT considered final
+        final_items = completed_items + permanent_failed_items + exhausted_items
         
         if completed_items == total_items:
+            # All items completed successfully
             order.status = 'completed'
             order.completed_at = timezone.now()
-        elif failed_items == total_items:
-            order.status = 'failed'
+        elif retryable_failed_items > 0 or pending_items > 0:
+            # Has retryable items or still processing - keep as processing
+            order.status = 'processing'
+        elif final_items == total_items:
+            # All items are in final state (no retryable failures)
+            if completed_items > 0:
+                # At least some success - partial completion
+                order.status = 'completed'
+            else:
+                # No successes - total failure
+                order.status = 'failed'
             order.completed_at = timezone.now()
-        elif completed_items + failed_items == total_items:
-            order.status = 'completed'  # Partial success
-            order.completed_at = timezone.now()
-        elif completed_items > 0 or failed_items > 0:
+        else:
+            # Some progress made but not all final
             order.status = 'processing'
         
         order.save()
     
     def handle_item_failure(self, order_item, error_message):
-        """Handle failure of a single OrderItem."""
-        order_item.status = 'failed'
+        """Handle failure of a single OrderItem with retry logic."""
         order_item.error_message = error_message
         order_item.completed_at = timezone.now()
-        order_item.save()
         
-        # Log failure
-        LogEntry.objects.create(
-            level='ERROR',
-            message=f'Worker {self.name} failed item {order_item.id}: {error_message}',
-            logger_name='worker',
-            order=order_item.order,
-            order_item=order_item,
-            extra_data={
-                'event_type': 'item_failed',
-                'worker_id': self.worker_record.id,
-                'error': error_message
-            }
-        )
+        # Check if this is a transient failure that can be retried
+        if order_item.retry_count < order_item.max_retries and order_item.is_transient_failure():
+            # Mark as failed for now, but it will be picked up for retry
+            order_item.status = 'failed'
+            order_item.save()
+            
+            logger.info(f'Worker {self.name} marking item {order_item.id} for retry (attempt {order_item.retry_count + 1}/{order_item.max_retries}): {error_message}')
+            
+            # Log as INFO since it will be retried
+            LogEntry.objects.create(
+                level='INFO',
+                message=f'Worker {self.name} item {order_item.id} will retry (attempt {order_item.retry_count + 1}/{order_item.max_retries}): {error_message}',
+                logger_name='worker',
+                order=order_item.order,
+                order_item=order_item,
+                extra_data={
+                    'event_type': 'item_retry_scheduled',
+                    'worker_id': self.worker_record.id,
+                    'error': error_message,
+                    'retry_count': order_item.retry_count,
+                    'max_retries': order_item.max_retries
+                }
+            )
+        else:
+            # Permanent failure or max retries exhausted
+            if order_item.retry_count >= order_item.max_retries:
+                order_item.status = 'exhausted'
+                logger.error(f'Worker {self.name} item {order_item.id} exhausted retries: {error_message}')
+            else:
+                order_item.status = 'failed'
+                logger.error(f'Worker {self.name} item {order_item.id} permanent failure: {error_message}')
+            
+            order_item.save()
+            
+            # Log as ERROR since it won't be retried
+            LogEntry.objects.create(
+                level='ERROR',
+                message=f'Worker {self.name} failed item {order_item.id} (final): {error_message}',
+                logger_name='worker',
+                order=order_item.order,
+                order_item=order_item,
+                extra_data={
+                    'event_type': 'item_failed_final',
+                    'worker_id': self.worker_record.id,
+                    'error': error_message,
+                    'retry_count': order_item.retry_count,
+                    'max_retries': order_item.max_retries
+                }
+            )
         
         # Update order status after item failure
         self.update_order_status(order_item.order)
