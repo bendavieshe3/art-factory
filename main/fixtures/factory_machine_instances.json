@@ -6,12 +6,9 @@
       "machine_definition": 1,
       "instance_id": "flux-dev-01",
       "status": "idle",
-      "current_operation": null,
-      "current_order_item": null,
       "total_operations": 0,
       "successful_operations": 0,
-      "failed_operations": 0,
-      "last_operation_at": null
+      "failed_operations": 0
     }
   },
   {
@@ -21,12 +18,9 @@
       "machine_definition": 2,
       "instance_id": "flux-schnell-01",
       "status": "idle",
-      "current_operation": null,
-      "current_order_item": null,
       "total_operations": 0,
       "successful_operations": 0,
-      "failed_operations": 0,
-      "last_operation_at": null
+      "failed_operations": 0
     }
   },
   {
@@ -36,12 +30,9 @@
       "machine_definition": 2,
       "instance_id": "flux-schnell-02",
       "status": "idle",
-      "current_operation": null,
-      "current_order_item": null,
       "total_operations": 0,
       "successful_operations": 0,
-      "failed_operations": 0,
-      "last_operation_at": null
+      "failed_operations": 0
     }
   },
   {
@@ -51,12 +42,9 @@
       "machine_definition": 3,
       "instance_id": "replicate-flux-01",
       "status": "idle",
-      "current_operation": null,
-      "current_order_item": null,
       "total_operations": 0,
       "successful_operations": 0,
-      "failed_operations": 0,
-      "last_operation_at": null
+      "failed_operations": 0
     }
   },
   {
@@ -66,12 +54,93 @@
       "machine_definition": 4,
       "instance_id": "sdxl-replicate-01",
       "status": "idle",
-      "current_operation": null,
-      "current_order_item": null,
       "total_operations": 0,
       "successful_operations": 0,
-      "failed_operations": 0,
-      "last_operation_at": null
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 6,
+    "fields": {
+      "machine_definition": 5,
+      "instance_id": "fast-sdxl-01",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 7,
+    "fields": {
+      "machine_definition": 5,
+      "instance_id": "fast-sdxl-02",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 8,
+    "fields": {
+      "machine_definition": 6,
+      "instance_id": "lightning-sdxl-01",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 9,
+    "fields": {
+      "machine_definition": 6,
+      "instance_id": "lightning-sdxl-02",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 10,
+    "fields": {
+      "machine_definition": 7,
+      "instance_id": "turbo-sdxl-01",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 11,
+    "fields": {
+      "machine_definition": 8,
+      "instance_id": "replicate-lightning-01",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 12,
+    "fields": {
+      "machine_definition": 9,
+      "instance_id": "replicate-sdxl-01",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
     }
   }
 ]
