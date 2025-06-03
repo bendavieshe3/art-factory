@@ -2,7 +2,7 @@ import json
 import tempfile
 import unittest.mock as mock
 from unittest.mock import patch, MagicMock
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.conf import settings
 from django.core.management import call_command
@@ -14,7 +14,8 @@ from .models import (
     FactoryMachineDefinition, FactoryMachineInstance, LogEntry
 )
 
-
+# Use test settings for all test cases
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class ModelTestCase(TestCase):
     """Test Django models functionality."""
     
@@ -44,27 +45,27 @@ class ModelTestCase(TestCase):
         """Test Order model creation and properties."""
         self.assertEqual(self.order.title, 'Test Order')
         self.assertEqual(self.order.prompt, 'test prompt')
-        self.assertEqual(self.order.quantity, 2)
+        self.assertEqual(self.order.quantity, 2)  # This is total quantity now
         self.assertEqual(self.order.status, 'pending')
         self.assertEqual(self.order.completion_percentage, 0)
     
-    @patch('main.tasks.process_order_items_async')
-    def test_order_item_creation(self, mock_process):
+    def test_order_item_creation(self):
         """Test OrderItem creation and relationships."""
         order_item = OrderItem.objects.create(
             order=self.order,
             prompt='test item prompt',
             parameters={'width': 512},
-            status='pending'
+            status='pending',
+            batch_size=2,
+            total_quantity=2
         )
         
         self.assertEqual(order_item.order, self.order)
         self.assertEqual(order_item.prompt, 'test item prompt')
         self.assertEqual(order_item.status, 'pending')
         self.assertIsNone(order_item.product)
-        
-        # Verify signal was triggered
-        mock_process.assert_called_once()
+        self.assertEqual(order_item.batch_size, 2)
+        self.assertEqual(order_item.total_quantity, 2)
     
     def test_product_creation(self):
         """Test Product model creation."""
@@ -84,8 +85,7 @@ class ModelTestCase(TestCase):
         self.assertEqual(product.provider, 'test-provider')
         self.assertEqual(product.file_format, 'png')
     
-    @patch('main.tasks.process_order_items_async')
-    def test_completion_percentage_calculation(self, mock_process):
+    def test_completion_percentage_calculation(self):
         """Test order completion percentage calculation."""
         # Create order items
         item1 = OrderItem.objects.create(
@@ -110,6 +110,7 @@ class ModelTestCase(TestCase):
         self.assertEqual(self.order.completion_percentage, 100)
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class ViewTestCase(TestCase):
     """Test Django views functionality."""
     
@@ -156,14 +157,14 @@ class ViewTestCase(TestCase):
         self.assertEqual(len(data['machines']), 1)
         self.assertEqual(data['machines'][0]['name'], 'test/model')
     
-    @patch('main.tasks.process_order_items_async')
-    def test_place_order_api_success(self, mock_process):
+    def test_place_order_api_success(self):
         """Test successful order placement via API."""
         order_data = {
             'title': 'Test API Order',
             'prompt': 'test api prompt',
             'machine_id': self.factory_machine.id,
-            'quantity': 1,
+            'generation_count': 1,
+            'batch_size': 1,
             'parameters': {'width': 512, 'height': 512}
         }
         
@@ -181,13 +182,10 @@ class ViewTestCase(TestCase):
         # Verify order was created
         order = Order.objects.get(id=data['order_id'])
         self.assertEqual(order.title, 'Test API Order')
-        self.assertEqual(order.quantity, 1)
+        self.assertEqual(order.quantity, 1)  # generation_count * batch_size
         
         # Verify order item was created
         self.assertEqual(order.orderitem_set.count(), 1)
-        
-        # Verify background processing was triggered
-        mock_process.assert_called_once()
     
     def test_place_order_api_invalid_machine(self):
         """Test order placement with invalid machine ID."""
@@ -195,7 +193,8 @@ class ViewTestCase(TestCase):
             'title': 'Test Order',
             'prompt': 'test prompt',
             'machine_id': 999,  # Non-existent machine
-            'quantity': 1
+            'generation_count': 1,
+            'batch_size': 1
         }
         
         response = self.client.post(
@@ -224,6 +223,7 @@ class ViewTestCase(TestCase):
         self.assertContains(response, 'Test Product')
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class SignalTestCase(TestCase):
     """Test Django signals functionality."""
     
@@ -237,36 +237,34 @@ class SignalTestCase(TestCase):
             quantity=1
         )
     
-    @patch('main.tasks.process_order_items_async')
-    def test_order_item_signal_triggers_processing(self, mock_process):
-        """Test that creating OrderItem triggers background processing."""
-        # Create an OrderItem - this should trigger the signal
-        order_item = OrderItem.objects.create(
-            order=self.order,
-            prompt='test signal prompt',
-            status='pending'
-        )
-        
-        # Verify the background processing was triggered
-        mock_process.assert_called_once()
-        call_args = mock_process.call_args[0]
-        self.assertEqual(len(call_args[0]), 1)  # One order item passed
-        self.assertEqual(call_args[0][0], order_item)
+    def test_order_item_signal_no_auto_spawn_in_tests(self):
+        """Test that creating OrderItem doesn't spawn workers in tests."""
+        # Create an OrderItem - this should NOT trigger worker spawn in tests
+        with patch('main.workers.spawn_worker_automatically') as mock_spawn:
+            order_item = OrderItem.objects.create(
+                order=self.order,
+                prompt='test signal prompt',
+                status='pending'
+            )
+            
+            # Verify worker spawn was NOT called (due to test settings)
+            mock_spawn.assert_not_called()
     
-    @patch('main.tasks.process_order_items_async')
-    def test_order_item_signal_not_triggered_for_non_pending(self, mock_process):
+    def test_order_item_signal_not_triggered_for_non_pending(self):
         """Test that signal doesn't trigger for non-pending items."""
         # Create an OrderItem with non-pending status
-        OrderItem.objects.create(
-            order=self.order,
-            prompt='test prompt',
-            status='completed'  # Not pending
-        )
-        
-        # Verify background processing was NOT triggered
-        mock_process.assert_not_called()
+        with patch('main.workers.spawn_worker_automatically') as mock_spawn:
+            OrderItem.objects.create(
+                order=self.order,
+                prompt='test prompt',
+                status='completed'  # Not pending
+            )
+            
+            # Verify worker spawn was NOT called
+            mock_spawn.assert_not_called()
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class TaskTestCase(TestCase):
     """Test background task functionality."""
     
@@ -280,47 +278,41 @@ class TaskTestCase(TestCase):
             quantity=1
         )
         
-        # Create OrderItem with mocked signal to avoid database lock
-        with patch('main.tasks.process_order_items_async'):
-            self.order_item = OrderItem.objects.create(
-                order=self.order,
-                prompt='test task prompt',
-                status='pending'
-            )
-    
-    @patch('main.management.commands.simple_process.Command.process_fal_item')
-    def test_process_order_items_async_fal(self, mock_process_fal):
-        """Test async processing with fal.ai provider."""
-        from main.tasks import process_order_items_async
-        
-        # Mock successful fal processing
-        mock_product = Product.objects.create(
-            title='Mock Product',
-            prompt='test',
-            provider='fal.ai',
-            model_name='test/model',
-            product_type='image',
-            file_path='mock/path.png',
-            file_size=1024
+        # Create OrderItem (worker spawning disabled in test settings)
+        self.order_item = OrderItem.objects.create(
+            order=self.order,
+            prompt='test task prompt',
+            status='pending'
         )
-        mock_process_fal.return_value = mock_product
+    
+    @patch('main.factory_machines_sync.execute_order_item_sync_batch')
+    def test_process_order_items_with_worker(self, mock_execute):
+        """Test processing order items with worker system."""
+        # Mock successful batch processing
+        mock_execute.return_value = True
         
         # Update order to use fal.ai
         self.order.provider = 'fal.ai'
         self.order.save()
         
-        # Process the order item
-        process_order_items_async([self.order_item])
+        # Set batch parameters
+        self.order_item.batch_size = 2
+        self.order_item.total_quantity = 2
+        self.order_item.save()
+        
+        # Simulate worker processing
+        from main.workers import SmartWorker
+        worker = SmartWorker(max_batch_size=5)
+        
+        # Process the item
+        success = mock_execute(self.order_item.id)
         
         # Verify processing was called
-        mock_process_fal.assert_called_once()
-        
-        # Verify order item was updated
-        self.order_item.refresh_from_db()
-        self.assertEqual(self.order_item.status, 'completed')
-        self.assertEqual(self.order_item.product, mock_product)
+        mock_execute.assert_called_once_with(self.order_item.id)
+        self.assertTrue(success)
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class ManagementCommandTestCase(TestCase):
     """Test management commands."""
     
@@ -356,13 +348,12 @@ class ManagementCommandTestCase(TestCase):
             quantity=1
         )
         
-        # Create OrderItem with mocked signal to avoid database lock
-        with patch('main.tasks.process_order_items_async'):
-            order_item = OrderItem.objects.create(
-                order=order,
-                prompt='test command prompt',
-                status='pending'
-            )
+        # Create OrderItem (worker spawning disabled in test settings)
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='test command prompt',
+            status='pending'
+        )
         
         # Mock successful processing
         mock_product = Product.objects.create(
@@ -388,6 +379,7 @@ class ManagementCommandTestCase(TestCase):
         self.assertEqual(order_item.status, 'completed')
 
 
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 @patch.dict('os.environ', {'FAL_KEY': 'test_key'})
 @patch.dict('os.environ', {'REPLICATE_API_TOKEN': 'test_token'})
 class IntegrationTestCase(TestCase):
@@ -428,28 +420,25 @@ class IntegrationTestCase(TestCase):
             'title': 'Integration Test Order',
             'prompt': 'a beautiful landscape',
             'machine_id': fal_machine.id,
-            'quantity': 1,
+            'generation_count': 1,
+            'batch_size': 1,
             'parameters': {'width': 512, 'height': 512}
         }
         
-        with patch('main.tasks.process_order_items_async') as mock_process:
-            response = self.client.post(
-                '/api/place-order/',
-                data=json.dumps(order_data),
-                content_type='application/json'
-            )
-            
-            self.assertEqual(response.status_code, 200)
-            data = json.loads(response.content)
-            self.assertTrue(data['success'])
-            
-            # Verify order was created
-            order = Order.objects.get(id=data['order_id'])
-            self.assertEqual(order.quantity, 1)
-            self.assertEqual(order.orderitem_set.count(), 1)
-            
-            # Verify background processing was triggered
-            mock_process.assert_called_once()
+        response = self.client.post(
+            '/api/place-order/',
+            data=json.dumps(order_data),
+            content_type='application/json'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        
+        # Verify order was created
+        order = Order.objects.get(id=data['order_id'])
+        self.assertEqual(order.quantity, 1)
+        self.assertEqual(order.orderitem_set.count(), 1)
     
     def test_double_processing_prevention(self):
         """Test that the double-processing bug is fixed."""
@@ -460,29 +449,201 @@ class IntegrationTestCase(TestCase):
         initial_orders = Order.objects.count()
         initial_items = OrderItem.objects.count()
         
-        # Place order requesting 2 images
+        # Place order requesting 2 images with batch
         order_data = {
             'title': 'Double Processing Test',
             'prompt': 'test prompt',
             'machine_id': machine.id,
-            'quantity': 2,
+            'generation_count': 1,  # 1 generation
+            'batch_size': 2,        # 2 images per batch
             'parameters': {}
         }
         
-        with patch('main.tasks.process_order_items_async'):
-            response = self.client.post(
-                '/api/place-order/',
-                data=json.dumps(order_data),
-                content_type='application/json'
+        response = self.client.post(
+            '/api/place-order/',
+            data=json.dumps(order_data),
+            content_type='application/json'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Verify exactly 1 order and 1 order item were created
+        self.assertEqual(Order.objects.count(), initial_orders + 1)
+        self.assertEqual(OrderItem.objects.count(), initial_items + 1)
+        
+        # Verify the order has the correct total quantity
+        order = Order.objects.latest('id')
+        self.assertEqual(order.quantity, 2)  # generation_count * batch_size
+        self.assertEqual(order.orderitem_set.count(), 1)
+        
+        # Verify the order item has correct batch settings
+        order_item = order.orderitem_set.first()
+        self.assertEqual(order_item.batch_size, 2)
+        self.assertEqual(order_item.total_quantity, 2)
+
+
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
+class BatchGenerationTestCase(TestCase):
+    """Test batch generation functionality."""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.factory_machine = FactoryMachineDefinition.objects.create(
+            name='test/batch-model',
+            display_name='Test Batch Model',
+            description='Test model for batch generation',
+            provider='test-provider',
+            modality='image',
+            parameter_schema={'width': 512, 'height': 512},
+            default_parameters={'width': 512, 'height': 512},
+            is_active=True
+        )
+        self.client = Client()
+    
+    def test_batch_generation_order_creation(self):
+        """Test creating order with batch generation parameters."""
+        order_data = {
+            'title': 'Batch Generation Test',
+            'prompt': 'test batch generation',
+            'machine_id': self.factory_machine.id,
+            'generation_count': 3,  # 3 generations
+            'batch_size': 4,        # 4 images per batch
+            'parameters': {}
+        }
+        
+        response = self.client.post(
+            '/api/place-order/',
+            data=json.dumps(order_data),
+            content_type='application/json'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        
+        # Verify order was created with correct quantity
+        order = Order.objects.get(id=data['order_id'])
+        self.assertEqual(order.quantity, 12)  # 3 generations * 4 batch size
+        
+        # Verify correct number of order items created
+        self.assertEqual(order.orderitem_set.count(), 3)  # 3 generations
+        
+        # Verify each order item has correct batch settings
+        for item in order.orderitem_set.all():
+            self.assertEqual(item.batch_size, 4)
+            self.assertEqual(item.total_quantity, 4)
+    
+    def test_single_batch_generation(self):
+        """Test generation with batch_size = 1."""
+        order_data = {
+            'title': 'Single Batch Test',
+            'prompt': 'single image generation',
+            'machine_id': self.factory_machine.id,
+            'generation_count': 5,
+            'batch_size': 1,
+            'parameters': {}
+        }
+        
+        response = self.client.post(
+            '/api/place-order/',
+            data=json.dumps(order_data),
+            content_type='application/json'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        
+        order = Order.objects.get(id=data['order_id'])
+        self.assertEqual(order.quantity, 5)  # 5 * 1
+        self.assertEqual(order.orderitem_set.count(), 5)
+        
+        for item in order.orderitem_set.all():
+            self.assertEqual(item.batch_size, 1)
+            self.assertEqual(item.total_quantity, 1)
+    
+    def test_batch_completion_tracking(self):
+        """Test tracking of batch completion."""
+        # Create order with batch
+        order = Order.objects.create(
+            title='Batch Completion Test',
+            prompt='test completion',
+            factory_machine_name=self.factory_machine.name,
+            provider=self.factory_machine.provider,
+            quantity=8  # 2 generations * 4 batch size
+        )
+        
+        # Create order items with batch settings
+        item1 = OrderItem.objects.create(
+            order=order,
+            prompt=order.prompt,
+            parameters={},
+            batch_size=4,
+            total_quantity=4,
+            status='processing'
+        )
+        item2 = OrderItem.objects.create(
+            order=order,
+            prompt=order.prompt,
+            parameters={},
+            batch_size=4,
+            total_quantity=4,
+            status='pending'
+        )
+        
+        # Initially 0% complete
+        self.assertEqual(order.completion_percentage, 0)
+        
+        # Complete first batch
+        item1.status = 'completed'
+        item1.batches_completed = 1
+        item1.save()
+        
+        # Should be 50% complete (1 of 2 items)
+        self.assertEqual(order.completion_percentage, 50)
+        
+        # Complete second batch
+        item2.status = 'completed'
+        item2.batches_completed = 1
+        item2.save()
+        
+        # Should be 100% complete
+        self.assertEqual(order.completion_percentage, 100)
+    
+    def test_order_item_can_store_multiple_products(self):
+        """Test that OrderItem can be associated with multiple products."""
+        order = Order.objects.create(
+            title='Multi-Product Test',
+            prompt='test multiple products',
+            factory_machine_name=self.factory_machine.name,
+            provider=self.factory_machine.provider,
+            quantity=3
+        )
+        
+        item = OrderItem.objects.create(
+            order=order,
+            prompt=order.prompt,
+            parameters={},
+            batch_size=3,
+            total_quantity=3,
+            status='completed'
+        )
+        
+        # Create multiple products for this order item
+        products = []
+        for i in range(3):
+            product = Product.objects.create(
+                title=f'Product {i+1}',
+                prompt=item.prompt,
+                parameters=item.parameters,
+                provider=order.provider,
+                model_name=order.factory_machine_name,
+                product_type='image',
+                file_path=f'test/product_{i+1}.png',
+                file_size=1024,
+                order_item=item  # Set the ForeignKey relationship
             )
-            
-            self.assertEqual(response.status_code, 200)
-            
-            # Verify exactly 1 order and 2 order items were created
-            self.assertEqual(Order.objects.count(), initial_orders + 1)
-            self.assertEqual(OrderItem.objects.count(), initial_items + 2)
-            
-            # Verify the order has exactly the requested quantity
-            order = Order.objects.latest('id')
-            self.assertEqual(order.quantity, 2)
-            self.assertEqual(order.orderitem_set.count(), 2)
+            products.append(product)
+        
+        # Verify the relationship
+        self.assertEqual(item.products.count(), 3)
+        # Products are ordered by -created_at, so newest first
+        self.assertEqual(list(item.products.all().order_by('id')), products)

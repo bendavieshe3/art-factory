@@ -204,6 +204,11 @@ def trigger_worker_spawn_on_order_creation(sender, instance, created, **kwargs):
     Automatically spawn worker when OrderItem is created.
     This ensures immediate responsiveness for user orders.
     """
+    # Check if auto-spawning is disabled (e.g., during tests)
+    from django.conf import settings
+    if getattr(settings, 'DISABLE_AUTO_WORKER_SPAWN', False):
+        return
+    
     if created and instance.status == 'pending':
         # Import here to avoid circular imports
         from ..workers import spawn_worker_automatically
