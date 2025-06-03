@@ -116,11 +116,12 @@ class Command(BaseCommand):
                                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                                 "guidance_scale": {"type": "number", "default": 7.5, "minimum": 1.0, "maximum": 20.0},
                                 "num_inference_steps": {"type": "integer", "default": 25, "minimum": 10, "maximum": 50},
-                                "scheduler": {"type": "string", "default": "DPMSolverMultistep", "enum": ["DDIM", "DPMSolverMultistep", "HeunDiscrete", "K_EULER", "K_EULER_ANCESTRAL", "PNDM"]}
+                                "scheduler": {"type": "string", "default": "DPMSolverMultistep", "enum": ["DDIM", "DPMSolverMultistep", "HeunDiscrete", "K_EULER", "K_EULER_ANCESTRAL", "PNDM"]},
+                                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker to prevent false positives"}
                             },
                             "required": ["prompt"]
                         },
-                        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 7.5, "num_inference_steps": 25, "scheduler": "DPMSolverMultistep"},
+                        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 7.5, "num_inference_steps": 25, "scheduler": "DPMSolverMultistep", "disable_safety_checker": True},
                         "max_concurrent_jobs": 2,
                         "estimated_duration": timedelta(minutes=1),
                         "cost_per_operation": "0.08"
