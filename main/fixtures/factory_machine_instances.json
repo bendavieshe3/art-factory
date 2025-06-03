@@ -142,5 +142,53 @@
       "successful_operations": 0,
       "failed_operations": 0
     }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 13,
+    "fields": {
+      "machine_definition": 10,
+      "instance_id": "dreamshaper-xl-01",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 14,
+    "fields": {
+      "machine_definition": 10,
+      "instance_id": "dreamshaper-xl-02",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 15,
+    "fields": {
+      "machine_definition": 11,
+      "instance_id": "dreamshaper-turbo-01",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
+  },
+  {
+    "model": "main.factorymachineinstance",
+    "pk": 16,
+    "fields": {
+      "machine_definition": 11,
+      "instance_id": "dreamshaper-turbo-02",
+      "status": "idle",
+      "total_operations": 0,
+      "successful_operations": 0,
+      "failed_operations": 0
+    }
   }
 ]

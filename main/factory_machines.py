@@ -58,6 +58,28 @@ class BaseFactoryMachine(ABC):
             # Fallback to regular logging if database fails
             logger.info(f"[{level}] {message} (DB log failed: {e})")
     
+    def safe_seed_value(self, seed):
+        """Convert seed to safe value for SQLite BigIntegerField."""
+        if seed is None:
+            return None
+            
+        try:
+            # Convert to int if it's a string
+            if isinstance(seed, str):
+                seed = int(seed)
+            
+            # SQLite's INTEGER max is 2^63-1 (9223372036854775807)
+            # If seed is larger, use modulo to fit within range
+            max_sqlite_int = 9223372036854775807
+            if seed > max_sqlite_int:
+                return seed % max_sqlite_int
+            elif seed < -max_sqlite_int:
+                return -((-seed) % max_sqlite_int)
+            
+            return seed
+        except (ValueError, TypeError):
+            return 0
+    
     def update_order_item_status(self, order_item, status, error_message=None):
         """Update order item status and timestamps."""
         try:
@@ -177,7 +199,7 @@ class FalFactoryMachine(BaseFactoryMachine):
                         metadata = {
                             'width': image_info.get('width'),
                             'height': image_info.get('height'),
-                            'seed': result.get('seed', 0) + idx,  # Different seed for each image
+                            'seed': self.safe_seed_value(result.get('seed', 0) + idx),  # Different seed for each image
                             'provider_id': f"{result.get('request_id', '')}_{idx}"
                         }
                         
@@ -290,7 +312,7 @@ class ReplicateFactoryMachine(BaseFactoryMachine):
                             metadata = {
                                 'width': input_params.get('width', 1024),
                                 'height': input_params.get('height', 1024),
-                                'seed': (input_params.get('seed', 0) + idx) if input_params.get('seed') else None,
+                                'seed': self.safe_seed_value(input_params.get('seed', 0) + idx) if input_params.get('seed') else None,
                                 'provider_id': f"replicate_{timezone.now().timestamp()}_{idx}"
                             }
                             

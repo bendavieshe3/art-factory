@@ -9,6 +9,29 @@ from django.utils import timezone
 from .models import Product, LogEntry
 
 
+def safe_seed_value(seed):
+    """Convert seed to safe value for SQLite BigIntegerField."""
+    if seed is None:
+        return None
+        
+    try:
+        # Convert to int if it's a string
+        if isinstance(seed, str):
+            seed = int(seed)
+        
+        # SQLite's INTEGER max is 2^63-1 (9223372036854775807)
+        # If seed is larger, use modulo to fit within range
+        max_sqlite_int = 9223372036854775807
+        if seed > max_sqlite_int:
+            return seed % max_sqlite_int
+        elif seed < -max_sqlite_int:
+            return -((-seed) % max_sqlite_int)
+        
+        return seed
+    except (ValueError, TypeError):
+        return 0
+
+
 class SyncFalFactoryMachine:
     """Synchronous fal.ai factory machine for batch processing."""
     
@@ -67,7 +90,7 @@ class SyncFalFactoryMachine:
                         metadata={
                             'width': image_info.get('width'),
                             'height': image_info.get('height'),
-                            'seed': result.get('seed', 0) + idx,
+                            'seed': safe_seed_value(result.get('seed', 0) + idx),
                             'provider_id': f"{result.get('request_id', '')}_{idx}"
                         }
                     )
@@ -242,7 +265,7 @@ class SyncReplicateFactoryMachine:
                             metadata={
                                 'width': input_params.get('width', 1024),
                                 'height': input_params.get('height', 1024),
-                                'seed': (input_params.get('seed', 0) + idx) if input_params.get('seed') else None,
+                                'seed': safe_seed_value(input_params.get('seed', 0) + idx) if input_params.get('seed') else None,
                                 'provider_id': f"replicate_{timezone.now().timestamp()}_{idx}"
                             }
                         )

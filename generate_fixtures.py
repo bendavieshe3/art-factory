@@ -245,6 +245,62 @@ factory_machines = [
         "max_concurrent_jobs": 2,
         "estimated_duration": "00:00:45",
         "cost_per_operation": "0.06"
+    },
+    {
+        "pk": 10,
+        "name": "fal-ai/dreamshaper",
+        "display_name": "Dreamshaper XL (fal.ai)",
+        "description": "Popular SDXL fine-tune model optimized for artistic and creative outputs. Excels at photos, art, anime, and manga styles.",
+        "provider": "fal.ai",
+        "model_family": "stable-diffusion",
+        "modality": "text-to-image",
+        "parameter_schema": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "Text description of the image to generate"},
+                "negative_prompt": {"type": "string", "description": "What you don't want in the image"},
+                "width": {"type": "integer", "default": 1024, "minimum": 512, "maximum": 1536},
+                "height": {"type": "integer", "default": 1024, "minimum": 512, "maximum": 1536},
+                "seed": {"type": "integer", "description": "Random seed for reproducibility"},
+                "guidance_scale": {"type": "number", "default": 5.0, "minimum": 1.0, "maximum": 20.0},
+                "num_inference_steps": {"type": "integer", "default": 25, "minimum": 10, "maximum": 50},
+                "num_images": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4},
+                "enable_safety_checker": {"type": "boolean", "default": False, "description": "Enable the safety checker"}
+            },
+            "required": ["prompt"]
+        },
+        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 5.0, "num_inference_steps": 25, "num_images": 1, "enable_safety_checker": False},
+        "max_concurrent_jobs": 4,
+        "estimated_duration": "00:00:25",
+        "cost_per_operation": "0.045"
+    },
+    {
+        "pk": 11,
+        "name": "lucataco/dreamshaper-xl-turbo",
+        "display_name": "Dreamshaper XL Turbo (Replicate)",
+        "description": "Fast Dreamshaper variant for rapid artistic generation. Great for anime, manga, and stylized art. Runs in just 5 seconds.",
+        "provider": "replicate",
+        "model_family": "stable-diffusion",
+        "modality": "text-to-image",
+        "parameter_schema": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "Text description of the image to generate"},
+                "negative_prompt": {"type": "string", "description": "What you don't want in the image"},
+                "width": {"type": "integer", "default": 1024, "minimum": 512, "maximum": 1536},
+                "height": {"type": "integer", "default": 1024, "minimum": 512, "maximum": 1536},
+                "seed": {"type": "integer", "description": "Random seed for reproducibility"},
+                "guidance_scale": {"type": "number", "default": 2.0, "minimum": 1.0, "maximum": 10.0},
+                "num_inference_steps": {"type": "integer", "default": 6, "minimum": 4, "maximum": 8},
+                "num_outputs": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4},
+                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"}
+            },
+            "required": ["prompt"]
+        },
+        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 2.0, "num_inference_steps": 6, "num_outputs": 1, "disable_safety_checker": True},
+        "max_concurrent_jobs": 5,
+        "estimated_duration": "00:00:05",
+        "cost_per_operation": "0.041"
     }
 ]
 
