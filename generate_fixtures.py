@@ -276,7 +276,7 @@ factory_machines = [
     },
     {
         "pk": 11,
-        "name": "lucataco/dreamshaper-xl-turbo",
+        "name": "lucataco/dreamshaper-xl-turbo:0a1710e0187b01a255302738ca0158ff02a22f4638679533e111082f9dd1b615",
         "display_name": "Dreamshaper XL Turbo (Replicate)",
         "description": "Fast Dreamshaper variant for rapid artistic generation. Great for anime, manga, and stylized art. Runs in just 5 seconds.",
         "provider": "replicate",

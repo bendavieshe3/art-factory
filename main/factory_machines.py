@@ -190,10 +190,18 @@ class FalFactoryMachine(BaseFactoryMachine):
                     for idx, image_info in enumerate(result['images']):
                         image_url = image_info['url']
                         
-                        # Download the image
-                        response = await client.get(image_url)
-                        response.raise_for_status()
-                        image_content = response.content
+                        # Check if it's a base64 data URI
+                        if image_url.startswith('data:'):
+                            # Extract base64 data from data URI
+                            import base64
+                            # Format: data:image/jpeg;base64,/9j/4AAQ...
+                            header, base64_data = image_url.split(',', 1)
+                            image_content = base64.b64decode(base64_data)
+                        else:
+                            # Download the image from URL
+                            response = await client.get(image_url)
+                            response.raise_for_status()
+                            image_content = response.content
                         
                         # Create product
                         metadata = {

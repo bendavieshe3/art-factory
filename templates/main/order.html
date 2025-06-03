@@ -45,7 +45,8 @@
                                                     data-provider="{{ machine.provider }}"
                                                     data-modality="{{ machine.modality }}"
                                                     data-description="{{ machine.description }}">
-                                                {{ machine.display_name }} ({{ machine.provider }})
+                                                {# Display name already includes provider, don't duplicate #}
+                                                {{ machine.display_name }}
                                             </option>
                                         {% endfor %}
                                     </select>

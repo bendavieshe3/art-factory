@@ -77,15 +77,26 @@ class SyncFalFactoryMachine:
                 products_created = []
                 
                 for idx, image_info in enumerate(result['images']):
-                    # Download image
-                    response = requests.get(image_info['url'])
-                    response.raise_for_status()
+                    image_url = image_info['url']
+                    
+                    # Check if it's a base64 data URI
+                    if image_url.startswith('data:'):
+                        # Extract base64 data from data URI
+                        import base64
+                        # Format: data:image/jpeg;base64,/9j/4AAQ...
+                        header, base64_data = image_url.split(',', 1)
+                        image_content = base64.b64decode(base64_data)
+                    else:
+                        # Download image from URL
+                        response = requests.get(image_url)
+                        response.raise_for_status()
+                        image_content = response.content
                     
                     # Create product
                     file_name = f"fal_{order_item.id}_{idx}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                     product = self._create_product(
                         order_item=order_item,
-                        file_content=response.content,
+                        file_content=image_content,
                         file_name=file_name,
                         metadata={
                             'width': image_info.get('width'),
