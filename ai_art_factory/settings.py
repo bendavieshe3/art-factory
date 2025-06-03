@@ -137,3 +137,68 @@ from decouple import config
 FAL_API_KEY = config('FAL_KEY', default=None)
 REPLICATE_API_TOKEN = config('REPLICATE_API_TOKEN', default=None)
 CIVITAI_API_KEY = config('CIVITAI_API_KEY', default=None)
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'art_factory.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'worker_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'workers.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'main.workers': {
+            'handlers': ['worker_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'main.factory_machines': {
+            'handlers': ['worker_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'main.factory_machines_sync': {
+            'handlers': ['worker_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        '': {  # Root logger
+            'handlers': ['file'],
+            'level': 'INFO',
+        },
+    },
+}

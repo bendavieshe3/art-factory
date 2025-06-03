@@ -125,6 +125,7 @@ db.sqlite3-journal
 art-factory-old/
 generated_products/
 *.backup
+logs/
 
 # AI Provider API Keys - NEVER commit these
 .env

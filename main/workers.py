@@ -6,6 +6,7 @@ import os
 import time
 import threading
 import logging
+import random
 from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
@@ -24,8 +25,9 @@ class SmartWorker:
     
     def __init__(self, max_batch_size=5):
         self.max_batch_size = max_batch_size
-        self.process_id = os.getpid()
-        self.name = f"worker-{int(time.time())}"
+        # Generate unique process ID to avoid collisions between threads
+        self.process_id = os.getpid() * 1000 + random.randint(1, 999)
+        self.name = f"worker-{int(time.time())}-{random.randint(100, 999)}"
         self.worker_record = None
         self.is_running = True
         
@@ -58,14 +60,31 @@ class SmartWorker:
             self.error_exit(str(e))
     
     def register_worker(self):
-        """Register this worker in the database."""
-        self.worker_record = Worker.objects.create(
-            name=self.name,
-            process_id=self.process_id,
-            provider='universal',  # Can handle any provider
-            max_batch_size=self.max_batch_size,
-            status='starting'
-        )
+        """Register this worker in the database with retry logic."""
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                self.worker_record = Worker.objects.create(
+                    name=self.name,
+                    process_id=self.process_id,
+                    provider='universal',  # Can handle any provider
+                    max_batch_size=self.max_batch_size,
+                    status='starting'
+                )
+                break
+            except Exception as e:
+                if attempt == max_attempts - 1:
+                    logger.error(f"Failed to register worker after {max_attempts} attempts: {e}")
+                    raise
+                else:
+                    # If PID collision, generate new unique IDs
+                    if "UNIQUE constraint failed" in str(e):
+                        self.process_id = os.getpid() * 1000 + random.randint(1, 999)
+                        self.name = f"worker-{int(time.time())}-{random.randint(100, 999)}"
+                    
+                    # Wait before retry
+                    time.sleep(0.1 + (attempt * 0.1))
+                    logger.warning(f"Worker registration attempt {attempt + 1} failed, retrying: {e}")
         
         LogEntry.objects.create(
             level='INFO',
@@ -79,53 +98,61 @@ class SmartWorker:
         )
     
     def claim_work_batch(self):
-        """Atomically claim multiple OrderItems for processing."""
-        try:
-            with transaction.atomic():
-                # Find available work for any provider (including retries)
-                available_items = OrderItem.objects.select_for_update().filter(
-                    status='pending'
-                ).order_by('created_at')[:self.max_batch_size]
-                
-                # Also look for failed items that can be retried
-                retry_items = OrderItem.objects.select_for_update().filter(
-                    status='failed'
-                ).order_by('last_retry_at')[:self.max_batch_size]
-                
-                # Check which failed items can be retried
-                retryable_items = []
-                for item in retry_items:
-                    if item.can_be_retried():
-                        retryable_items.append(item)
-                
-                # Combine available items and retryable items
-                all_items = list(available_items) + retryable_items
-                
-                claimed_items = []
-                for item in all_items[:self.max_batch_size]:
-                    if self.can_process_item(item):
-                        if item.status == 'failed':
-                            # Reset for retry
-                            item.reset_for_retry()
-                            logger.info(f"Worker {self.name} retrying item {item.id} (attempt {item.retry_count})")
-                        
-                        item.status = 'assigned'
-                        item.assigned_worker = self.worker_record
-                        item.save()
-                        claimed_items.append(item)
-                
-                if claimed_items:
-                    # Update worker status
-                    self.worker_record.status = 'working'
-                    self.worker_record.save()
+        """Atomically claim multiple OrderItems for processing with retry logic."""
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                with transaction.atomic():
+                    # Find available work for any provider (including retries)
+                    available_items = OrderItem.objects.select_for_update().filter(
+                        status='pending'
+                    ).order_by('created_at')[:self.max_batch_size]
                     
-                    logger.info(f"Worker {self.name} claimed {len(claimed_items)} items")
-                
-                return claimed_items
-                
-        except Exception as e:
-            logger.error(f"Worker {self.name} failed to claim work: {e}")
-            return []
+                    # Also look for failed items that can be retried
+                    retry_items = OrderItem.objects.select_for_update().filter(
+                        status='failed'
+                    ).order_by('last_retry_at')[:self.max_batch_size]
+                    
+                    # Check which failed items can be retried
+                    retryable_items = []
+                    for item in retry_items:
+                        if item.can_be_retried():
+                            retryable_items.append(item)
+                    
+                    # Combine available items and retryable items
+                    all_items = list(available_items) + retryable_items
+                    
+                    claimed_items = []
+                    for item in all_items[:self.max_batch_size]:
+                        if self.can_process_item(item):
+                            if item.status == 'failed':
+                                # Reset for retry
+                                item.reset_for_retry()
+                                logger.info(f"Worker {self.name} retrying item {item.id} (attempt {item.retry_count})")
+                            
+                            item.status = 'assigned'
+                            item.assigned_worker = self.worker_record
+                            item.save()
+                            claimed_items.append(item)
+                    
+                    if claimed_items:
+                        # Update worker status
+                        self.worker_record.status = 'working'
+                        self.worker_record.save()
+                        
+                        logger.info(f"Worker {self.name} claimed {len(claimed_items)} items")
+                    
+                    return claimed_items
+                    
+            except Exception as e:
+                if attempt == max_attempts - 1:
+                    logger.error(f"Worker {self.name} failed to claim work after {max_attempts} attempts: {e}")
+                    return []
+                else:
+                    # Wait before retry for database lock issues
+                    wait_time = 0.1 + (attempt * 0.2)
+                    logger.warning(f"Worker {self.name} claim attempt {attempt + 1} failed, retrying in {wait_time}s: {e}")
+                    time.sleep(wait_time)
     
     def can_process_item(self, order_item):
         """Check if this item can be processed given current constraints."""
