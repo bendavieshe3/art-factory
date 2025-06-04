@@ -126,7 +126,7 @@ class AsyncProcessingTestCase(TestCase):
         item.refresh_from_db()
         self.assertEqual(item.status, 'pending')
     
-    @patch('main.tasks.process_order_items_async')
+    @patch('main.management.commands.process_pending_orders.process_order_items_async')
     def test_process_pending_orders_execution(self, mock_process):
         """Test actual execution of process_pending_orders command."""
         # Create old pending order
