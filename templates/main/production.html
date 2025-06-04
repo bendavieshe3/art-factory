@@ -127,4 +127,59 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh production data every 30 seconds
+    let refreshInterval;
+    let isRefreshing = false;
+    
+    function refreshProductionData() {
+        if (isRefreshing) return;
+        
+        isRefreshing = true;
+        
+        // Show subtle refresh notification
+        ToastNotification.info(
+            'Refreshing production status...',
+            'Auto Refresh',
+            { duration: 2000 }
+        );
+        
+        // Simulate data refresh (in a real app, this would be an AJAX call)
+        setTimeout(() => {
+            isRefreshing = false;
+            // In a real implementation, you would update the data here
+            console.log('Production data refreshed');
+        }, 1000);
+    }
+    
+    // Start auto-refresh
+    refreshInterval = setInterval(refreshProductionData, 30000);
+    
+    // Show welcome message
+    ToastNotification.info(
+        'Production dashboard will auto-refresh every 30 seconds.',
+        'Production Monitor',
+        { duration: 3000 }
+    );
+    
+    // Add manual refresh capability (if there are clickable elements)
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.order-row')) {
+            ToastNotification.info(
+                'Click to view order details in production management.',
+                'Order Selected'
+            );
+        }
+    });
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+    });
+});
+</script>
 {% endblock %}

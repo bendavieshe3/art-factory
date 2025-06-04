@@ -168,4 +168,38 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add toast notifications for quick action clicks
+    const quickActionBtns = document.querySelectorAll('.btn[href]');
+    
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            const text = this.textContent.trim();
+            
+            // Don't show toast for external links (admin pages)
+            if (href.includes('/admin/') && this.getAttribute('target') === '_blank') {
+                ToastNotification.info(
+                    `Opening ${text} in a new tab...`,
+                    'Navigating'
+                );
+            } else if (!href.startsWith('http') && !href.includes('/admin/')) {
+                ToastNotification.info(
+                    `Navigating to ${text}...`,
+                    'Navigation'
+                );
+            }
+        });
+    });
+    
+    // Show welcome toast on page load
+    ToastNotification.info(
+        'Configure your API keys and manage factory machines here.',
+        'Settings',
+        { duration: 4000 }
+    );
+});
+</script>
 {% endblock %}

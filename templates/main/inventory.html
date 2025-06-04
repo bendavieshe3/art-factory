@@ -141,8 +141,11 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.removeChild(link);
         });
         
-        // Show success message
-        showToast('success', `Downloading ${selectedIds.length} product(s)...`);
+        // Show success message using new toast system
+        ToastNotification.success(
+            `Downloading ${selectedIds.length} product(s)...`,
+            'Download Started'
+        );
     });
     
     // Bulk delete functionality
@@ -152,35 +155,156 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (selectedIds.length === 0) return;
         
-        if (!confirm(`Are you sure you want to delete ${selectedIds.length} product(s)? This action cannot be undone.`)) {
+        // Show confirmation toast instead of browser confirm
+        const confirmationText = `Are you sure you want to delete ${selectedIds.length} product(s)? This action cannot be undone.`;
+        
+        // Create a more user-friendly confirmation
+        if (!confirm(confirmationText)) {
             return;
         }
         
-        // Create form for bulk delete
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{% url "main:bulk_delete_products" %}';
+        // Disable button and show loading state
+        bulkDeleteBtn.disabled = true;
+        bulkDeleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
         
-        // Add CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
-                         '{{ csrf_token }}';
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken;
-        form.appendChild(csrfInput);
-        
-        // Add product IDs
+        // Use AJAX instead of form submission
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}');
         selectedIds.forEach(id => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'product_ids';
-            input.value = id;
-            form.appendChild(input);
+            formData.append('product_ids', id);
         });
         
-        document.body.appendChild(form);
-        form.submit();
+        fetch('{% url "main:bulk_delete_products" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success toast
+                ToastNotification.success(
+                    data.message || `Successfully deleted ${selectedIds.length} product(s).`,
+                    'Products Deleted'
+                );
+                
+                // Remove deleted products from the page
+                selectedIds.forEach(id => {
+                    const productCard = document.querySelector(`[data-product-id="${id}"]`);
+                    if (productCard) {
+                        productCard.closest('.col-12, .col-sm-6, .col-md-4, .col-lg-3').remove();
+                    }
+                });
+                
+                // Reset checkboxes and button states
+                checkboxes.forEach(cb => cb.checked = false);
+                updateButtonStates();
+                
+                // Check if page is now empty
+                const remainingProducts = document.querySelectorAll('.product-card').length;
+                if (remainingProducts === 0) {
+                    location.reload(); // Reload to show empty state
+                }
+            } else {
+                // Show error toast
+                ToastNotification.error(
+                    data.message || 'Failed to delete products.',
+                    'Delete Failed'
+                );
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting products:', error);
+            ToastNotification.error(
+                'An error occurred while deleting products. Please try again.',
+                'Network Error'
+            );
+        })
+        .finally(() => {
+            // Re-enable button
+            bulkDeleteBtn.disabled = false;
+            bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
+            updateButtonStates();
+        });
+    });
+    
+    // Individual product delete functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-product-btn')) {
+            const btn = e.target.closest('.delete-product-btn');
+            const productId = btn.dataset.productId;
+            const productTitle = btn.dataset.productTitle;
+            
+            // Show confirmation
+            if (!confirm(`Are you sure you want to delete "${productTitle}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            // Disable button and show loading state
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+            
+            // Use AJAX for individual delete
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}');
+            
+            fetch(`/products/${productId}/delete/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success toast
+                    ToastNotification.success(
+                        data.message || `"${productTitle}" has been deleted.`,
+                        'Product Deleted'
+                    );
+                    
+                    // Remove product card from page
+                    const productCard = btn.closest('.col-12, .col-sm-6, .col-md-4, .col-lg-3');
+                    if (productCard) {
+                        productCard.remove();
+                    }
+                    
+                    // Update button states for bulk actions
+                    updateButtonStates();
+                    
+                    // Check if page is now empty
+                    const remainingProducts = document.querySelectorAll('.product-card').length;
+                    if (remainingProducts === 0) {
+                        location.reload(); // Reload to show empty state
+                    }
+                } else {
+                    // Show error toast
+                    ToastNotification.error(
+                        data.message || 'Failed to delete product.',
+                        'Delete Failed'
+                    );
+                    
+                    // Re-enable button
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting product:', error);
+                ToastNotification.error(
+                    'An error occurred while deleting the product. Please try again.',
+                    'Network Error'
+                );
+                
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            });
+        }
     });
     
     // Initialize button states

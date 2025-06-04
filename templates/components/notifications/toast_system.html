@@ -4,42 +4,38 @@ This component provides a unified, Bootstrap-compatible toast notification syste
 It enhances the existing custom implementation with better consistency and accessibility.
 -->
 
-<!-- Toast Container is now positioned inline in the layout -->
+<!-- Toast Container positioned between header and content -->
+<div class="toast-container position-fixed" id="toastContainer" style="top: 70px; right: 20px; z-index: 1055; max-width: 450px;"></div>
 
 <!-- Enhanced Toast CSS -->
 <style>
 /* Enhanced Toast Notification System */
-.toast-notification-area {
+.toast-container {
     width: 100%;
-    max-width: none;
-    min-height: 0;
-}
-
-.toast-notification-area:empty {
-    margin-bottom: 0 !important;
+    max-width: 450px;
 }
 
 .toast-notification {
     background: white;
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     padding: 0;
     border: 1px solid rgba(0, 0, 0, 0.05);
-    transform: translateY(-20px);
+    transform: translateX(100%);
     transition: all 0.3s ease-out;
     opacity: 0;
-    width: 100%;
+    min-width: 350px;
     max-width: 100%;
 }
 
 .toast-notification.show {
-    transform: translateY(0);
+    transform: translateX(0);
     opacity: 1;
 }
 
 .toast-notification.hide {
-    transform: translateY(-20px);
+    transform: translateX(100%);
     opacity: 0;
 }
 
@@ -47,10 +43,10 @@ It enhances the existing custom implementation with better consistency and acces
 .toast-notification .toast-header {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
     background: rgba(var(--bs-body-bg-rgb), 0.95);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem 0.5rem 0 0;
+    border-radius: 0.375rem 0.375rem 0 0;
 }
 
 .toast-notification .toast-icon {
@@ -62,7 +58,7 @@ It enhances the existing custom implementation with better consistency and acces
 
 .toast-notification .toast-title {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     flex-grow: 1;
     margin: 0;
 }
@@ -95,9 +91,9 @@ It enhances the existing custom implementation with better consistency and acces
 
 /* Toast Body */
 .toast-notification .toast-body {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    line-height: 1.4;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.3;
     color: var(--bs-body-color);
 }
 
@@ -162,16 +158,17 @@ It enhances the existing custom implementation with better consistency and acces
 }
 
 /* Responsive Design */
-@media (max-width: 576px) {
-    .toast-notification-area {
-        margin-left: -0.5rem;
-        margin-right: -0.5rem;
+@media (max-width: 768px) {
+    .toast-container {
+        top: 70px !important;
+        right: 10px !important;
+        left: 10px !important;
+        max-width: none !important;
     }
     
     .toast-notification {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-        width: calc(100% - 1rem);
+        min-width: auto;
+        width: 100%;
     }
 }
 

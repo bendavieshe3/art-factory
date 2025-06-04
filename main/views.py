@@ -79,9 +79,35 @@ def product_delete(request, product_id):
     """Delete a product."""
     if request.method == 'POST':
         product = get_object_or_404(Product, id=product_id)
-        product.delete()
-        messages.success(request, f'Product "{product.title or product.id}" has been deleted.')
-        return redirect('main:inventory')
+        product_title = product.title or f"Product {product.id}"
+        
+        # Check if this is an AJAX request
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        try:
+            product.delete()
+            message = f'"{product_title}" has been deleted.'
+            
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': message
+                })
+            else:
+                messages.success(request, message)
+                
+        except Exception as e:
+            error_message = f'Failed to delete "{product_title}". Please try again.'
+            
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': error_message,
+                    'error': str(e)
+                })
+            else:
+                messages.error(request, error_message)
+    
     return redirect('main:inventory')
 
 
@@ -112,21 +138,63 @@ def bulk_delete_products(request):
     if request.method == 'POST':
         product_ids = request.POST.getlist('product_ids')
         
+        # Check if this is an AJAX request
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if product_ids:
-            # Count products before deletion to get accurate count
-            products_to_delete = Product.objects.filter(id__in=product_ids)
-            product_count = products_to_delete.count()
-            
-            # Delete products (this will cascade delete related OrderItems)
-            products_to_delete.delete()
-            
-            if product_count > 0:
-                messages.success(request, f'Successfully deleted {product_count} product(s).')
-            else:
-                messages.warning(request, 'No products were deleted.')
+            try:
+                # Count products before deletion to get accurate count
+                products_to_delete = Product.objects.filter(id__in=product_ids)
+                product_count = products_to_delete.count()
+                
+                if product_count > 0:
+                    # Delete products (this will cascade delete related OrderItems)
+                    products_to_delete.delete()
+                    
+                    message = f'Successfully deleted {product_count} product(s).'
+                    
+                    if is_ajax:
+                        return JsonResponse({
+                            'success': True,
+                            'message': message,
+                            'deleted_count': product_count
+                        })
+                    else:
+                        messages.success(request, message)
+                else:
+                    message = 'No products were found to delete.'
+                    
+                    if is_ajax:
+                        return JsonResponse({
+                            'success': False,
+                            'message': message
+                        })
+                    else:
+                        messages.warning(request, message)
+                        
+            except Exception as e:
+                error_message = 'An error occurred while deleting products. Please try again.'
+                
+                if is_ajax:
+                    return JsonResponse({
+                        'success': False,
+                        'message': error_message,
+                        'error': str(e)
+                    })
+                else:
+                    messages.error(request, error_message)
         else:
-            messages.error(request, 'No products selected for deletion.')
+            message = 'No products selected for deletion.'
+            
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': message
+                })
+            else:
+                messages.error(request, message)
     
+    # For non-AJAX requests, redirect back to inventory
     return redirect('main:inventory')
 
 
