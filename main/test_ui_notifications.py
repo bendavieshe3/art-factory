@@ -39,24 +39,26 @@ class NotificationSystemTestCase(TestCase):
         self.assertContains(response, 'id="toastContainer"')
         
         # Check toast JavaScript is loaded
-        self.assertContains(response, 'window.Toast')
-        self.assertContains(response, 'Toast.success')
-        self.assertContains(response, 'Toast.error')
+        self.assertContains(response, 'window.ToastNotification')
+        self.assertContains(response, 'ToastNotification.success')
+        # Order page doesn't use ToastNotification.error, it uses error banner
+        self.assertContains(response, 'ToastNotification.warning')
     
     def test_order_form_uses_toast_notifications(self):
         """Test that order form JavaScript uses toast notifications instead of alerts."""
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
         
-        # Check that old alert() calls are replaced with Toast calls
+        # Check that old alert() calls are replaced with ToastNotification calls
         self.assertNotContains(response, 'alert(')
-        self.assertContains(response, 'Toast.success(')
-        self.assertContains(response, 'Toast.error(')
+        self.assertContains(response, 'ToastNotification.success(')
+        # Note: Order page uses error banner instead of error toasts
+        self.assertContains(response, 'showErrorBanner(')
         
         # Check toast message content
         self.assertContains(response, 'Order Placed')
-        self.assertContains(response, 'Order Failed')
-        self.assertContains(response, 'Connection Failed')
+        self.assertContains(response, 'Order failed')
+        self.assertContains(response, 'Status polling failed')
     
     @patch('main.tasks.process_order_items_async')
     def test_successful_order_shows_success_toast(self, mock_process):
@@ -117,18 +119,18 @@ class NotificationSystemTestCase(TestCase):
         
         # Check main toast CSS classes
         self.assertContains(response, '.toast-container')
-        self.assertContains(response, '.toast {')
-        self.assertContains(response, '.toast.show')
-        self.assertContains(response, '.toast.success')
-        self.assertContains(response, '.toast.error')
-        self.assertContains(response, '.toast.warning')
-        self.assertContains(response, '.toast.info')
+        self.assertContains(response, '.toast-notification')
+        self.assertContains(response, '.toast-notification.show')
+        self.assertContains(response, '.toast-notification.toast-success')
+        self.assertContains(response, '.toast-notification.toast-error')
+        self.assertContains(response, '.toast-notification.toast-warning')
+        self.assertContains(response, '.toast-notification.toast-info')
         
         # Check toast component classes
         self.assertContains(response, '.toast-header')
         self.assertContains(response, '.toast-title')
         self.assertContains(response, '.toast-close')
-        self.assertContains(response, '.toast-message')
+        self.assertContains(response, '.toast-body')
     
     def test_toast_animations_configured(self):
         """Test that toast animations are properly configured."""

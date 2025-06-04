@@ -754,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 const totalProducts = formData.generation_count * formData.batch_size;
-                Toast.success(
+                ToastNotification.success(
                     `Order #${data.order_id} placed successfully! ${formData.generation_count} generations will create ${totalProducts} images.`,
                     'Order Placed'
                 );
@@ -875,7 +875,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         clearInterval(pollInterval);
                         
                         // Show success notification
-                        Toast.success(
+                        ToastNotification.success(
                             `Order #${orderId} completed! Generated ${data.total_items} image(s).`,
                             'Generation Complete'
                         );
@@ -911,7 +911,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Show warning notification
                         const completed = data.status_counts?.completed || 0;
                         const failed = data.status_counts?.failed || 0;
-                        Toast.warning(
+                        ToastNotification.warning(
                             `Order #${orderId} partially completed: ${completed} succeeded, ${failed} failed.`,
                             'Partial Success'
                         );
@@ -1010,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            Toast.info(`Loaded ${type} template`, 'Template Applied');
+            ToastNotification.info(`Loaded ${type} template`, 'Template Applied');
         }
     };
 });

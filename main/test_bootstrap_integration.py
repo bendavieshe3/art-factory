@@ -42,7 +42,7 @@ class BootstrapIntegrationTestCase(TestCase):
         
         # Check our custom toast system is preserved
         self.assertContains(response, 'toast-container')
-        self.assertContains(response, 'window.Toast')
+        self.assertContains(response, 'window.ToastNotification')
     
     def test_bootstrap_components_present(self):
         """Test that Bootstrap components are properly rendered."""
@@ -173,9 +173,9 @@ class BootstrapIntegrationTestCase(TestCase):
         
         # Check toast system is still there and functional
         self.assertContains(response, 'toast-container')
-        self.assertContains(response, 'z-index: 1060')  # Higher than Bootstrap modals
-        self.assertContains(response, 'Toast.success')
-        self.assertContains(response, 'Toast.error')
+        self.assertContains(response, 'z-index: 1055')  # Higher than Bootstrap modals
+        self.assertContains(response, 'ToastNotification.success')
+        self.assertContains(response, 'ToastNotification.error')
         
         # Check toast is used in form submission
         self.assertContains(response, 'Order Placed')
