@@ -54,5 +54,6 @@ The application follows a factory abstraction pattern:
 ## Memory Notes
 
 - Always read ./.claude/kb/MOC.md at the start of each session to understand local knowledge
+- The github remote repository is https://github.com/bendavieshe3/art-factory
 
 ## (Rest of the file remains unchanged)

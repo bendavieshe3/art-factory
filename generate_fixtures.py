@@ -86,7 +86,7 @@ factory_machines = [
     {
         "pk": 4,
         "name": "stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
-        "display_name": "Stable Diffusion XL (Replicate)",
+        "display_name": "SDXL 1.0 (Replicate)",
         "description": "High-resolution text-to-image generation with excellent detail and composition. Industry standard model.",
         "provider": "replicate",
         "model_family": "stable-diffusion",
@@ -114,7 +114,7 @@ factory_machines = [
     {
         "pk": 5,
         "name": "fal-ai/fast-sdxl",
-        "display_name": "Fast SDXL (fal.ai)",
+        "display_name": "SDXL 1.0 Fast (fal.ai)",
         "description": "Optimized SDXL for lightning-fast generation. Excellent balance of speed and quality.",
         "provider": "fal.ai",
         "model_family": "stable-diffusion",
@@ -141,7 +141,7 @@ factory_machines = [
     {
         "pk": 6,
         "name": "fal-ai/fast-lightning-sdxl",
-        "display_name": "SDXL Lightning (fal.ai)",
+        "display_name": "SDXL Lightning 4-step (fal.ai)",
         "description": "Ultra-fast SDXL Lightning variant. Generates high-quality images in just 4 steps.",
         "provider": "fal.ai",
         "model_family": "stable-diffusion",
@@ -249,7 +249,7 @@ factory_machines = [
     {
         "pk": 10,
         "name": "fal-ai/dreamshaper",
-        "display_name": "Dreamshaper XL (fal.ai)",
+        "display_name": "Dreamshaper XL v2.1 Turbo (fal.ai)",
         "description": "Popular SDXL fine-tune model optimized for artistic and creative outputs. Excels at photos, art, anime, and manga styles.",
         "provider": "fal.ai",
         "model_family": "stable-diffusion",
@@ -277,7 +277,7 @@ factory_machines = [
     {
         "pk": 11,
         "name": "lucataco/dreamshaper-xl-turbo:0a1710e0187b01a255302738ca0158ff02a22f4638679533e111082f9dd1b615",
-        "display_name": "Dreamshaper XL Turbo (Replicate)",
+        "display_name": "Dreamshaper XL v2.1 Turbo (Replicate)",
         "description": "Fast Dreamshaper variant for rapid artistic generation. Great for anime, manga, and stylized art. Runs in just 5 seconds.",
         "provider": "replicate",
         "model_family": "stable-diffusion",
