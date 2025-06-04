@@ -43,11 +43,12 @@ class Command(BaseCommand):
                                 "height": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                                 "guidance_scale": {"type": "number", "default": 3.5, "minimum": 1.0, "maximum": 20.0},
-                                "num_inference_steps": {"type": "integer", "default": 28, "minimum": 1, "maximum": 50}
+                                "num_inference_steps": {"type": "integer", "default": 28, "minimum": 1, "maximum": 50},
+                                "enable_safety_checker": {"type": "boolean", "default": False, "description": "Enable the safety checker (disabled by default)"}
                             },
                             "required": ["prompt"]
                         },
-                        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 3.5, "num_inference_steps": 28},
+                        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 3.5, "num_inference_steps": 28, "enable_safety_checker": False},
                         "max_concurrent_jobs": 3,
                         "estimated_duration": timedelta(seconds=30),
                         "cost_per_operation": "0.05"
@@ -66,11 +67,12 @@ class Command(BaseCommand):
                                 "width": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                                 "height": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
-                                "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8}
+                                "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8},
+                                "enable_safety_checker": {"type": "boolean", "default": False, "description": "Enable the safety checker (disabled by default)"}
                             },
                             "required": ["prompt"]
                         },
-                        "default_parameters": {"width": 1024, "height": 1024, "num_inference_steps": 4},
+                        "default_parameters": {"width": 1024, "height": 1024, "num_inference_steps": 4, "enable_safety_checker": False},
                         "max_concurrent_jobs": 5,
                         "estimated_duration": timedelta(seconds=15),
                         "cost_per_operation": "0.03"
@@ -90,11 +92,12 @@ class Command(BaseCommand):
                                 "height": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                                 "num_outputs": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4},
-                                "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8}
+                                "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8},
+                                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker (disabled by default)"}
                             },
                             "required": ["prompt"]
                         },
-                        "default_parameters": {"width": 1024, "height": 1024, "num_outputs": 1, "num_inference_steps": 4},
+                        "default_parameters": {"width": 1024, "height": 1024, "num_outputs": 1, "num_inference_steps": 4, "disable_safety_checker": True},
                         "max_concurrent_jobs": 3,
                         "estimated_duration": timedelta(seconds=20),
                         "cost_per_operation": "0.04"

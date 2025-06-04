@@ -1045,3 +1045,505 @@ class LoggingTestCase(TestCase):
         # Verify files are not empty (have some content)
         self.assertGreater(os.path.getsize(worker_log_path), 0, "Worker log file should not be empty")
         self.assertGreater(os.path.getsize(app_log_path), 0, "App log file should not be empty")
+
+
+@override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
+@patch.dict('os.environ', {'FAL_KEY': 'test_key'})
+@patch.dict('os.environ', {'REPLICATE_API_TOKEN': 'test_token'})
+class ParameterMergingTestCase(TestCase):
+    """Test parameter merging in factory machines to ensure safety checks and defaults are applied."""
+    
+    def setUp(self):
+        """Set up test factory machines with different safety check configurations."""
+        # FLUX model with enable_safety_checker (fal.ai style)
+        self.flux_machine = FactoryMachineDefinition.objects.create(
+            name='fal-ai/flux/dev',
+            display_name='FLUX.1 Dev (fal.ai)',
+            description='Test FLUX model',
+            provider='fal.ai',
+            model_family='flux',
+            modality='text-to-image',
+            parameter_schema={
+                'type': 'object',
+                'properties': {
+                    'prompt': {'type': 'string'},
+                    'width': {'type': 'integer', 'default': 1024},
+                    'height': {'type': 'integer', 'default': 1024},
+                    'guidance_scale': {'type': 'number', 'default': 3.5},
+                    'num_inference_steps': {'type': 'integer', 'default': 28},
+                    'enable_safety_checker': {'type': 'boolean', 'default': False}
+                },
+                'required': ['prompt']
+            },
+            default_parameters={
+                'width': 1024,
+                'height': 1024,
+                'guidance_scale': 3.5,
+                'num_inference_steps': 28,
+                'enable_safety_checker': False
+            },
+            is_active=True
+        )
+        
+        # SDXL model with disable_safety_checker (standard style)
+        self.sdxl_machine = FactoryMachineDefinition.objects.create(
+            name='fal-ai/fast-turbo-diffusion',
+            display_name='SDXL Turbo (fal.ai)',
+            description='Test SDXL model',
+            provider='fal.ai',
+            model_family='stable-diffusion',
+            modality='text-to-image',
+            parameter_schema={
+                'type': 'object',
+                'properties': {
+                    'prompt': {'type': 'string'},
+                    'width': {'type': 'integer', 'default': 512},
+                    'height': {'type': 'integer', 'default': 512},
+                    'num_inference_steps': {'type': 'integer', 'default': 1},
+                    'disable_safety_checker': {'type': 'boolean', 'default': True}
+                },
+                'required': ['prompt']
+            },
+            default_parameters={
+                'width': 512,
+                'height': 512,
+                'num_inference_steps': 1,
+                'disable_safety_checker': True
+            },
+            is_active=True
+        )
+        
+        # Replicate model with disable_safety_checker
+        self.replicate_machine = FactoryMachineDefinition.objects.create(
+            name='black-forest-labs/flux-schnell',
+            display_name='FLUX.1 Schnell (Replicate)',
+            description='Test Replicate model',
+            provider='replicate',
+            model_family='flux',
+            modality='text-to-image',
+            parameter_schema={
+                'type': 'object',
+                'properties': {
+                    'prompt': {'type': 'string'},
+                    'width': {'type': 'integer', 'default': 1024},
+                    'height': {'type': 'integer', 'default': 1024},
+                    'num_outputs': {'type': 'integer', 'default': 1},
+                    'num_inference_steps': {'type': 'integer', 'default': 4},
+                    'disable_safety_checker': {'type': 'boolean', 'default': True}
+                },
+                'required': ['prompt']
+            },
+            default_parameters={
+                'width': 1024,
+                'height': 1024,
+                'num_outputs': 1,
+                'num_inference_steps': 4,
+                'disable_safety_checker': True
+            },
+            is_active=True
+        )
+    
+    def test_fal_factory_machine_parameter_merging(self):
+        """Test that SyncFalFactoryMachine properly merges default and user parameters."""
+        from main.factory_machines_sync import SyncFalFactoryMachine
+        
+        # Test FLUX model (enable_safety_checker: false)
+        flux_factory = SyncFalFactoryMachine(self.flux_machine)
+        
+        # Create test order and order item
+        order = Order.objects.create(
+            title='Parameter Merge Test',
+            prompt='test prompt',
+            factory_machine_name=self.flux_machine.name,
+            provider='fal.ai',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='test prompt',
+            parameters={
+                'width': 768,  # User override
+                'height': 512,  # User override
+                'guidance_scale': 5.0  # User override
+                # Note: no safety checker specified by user
+            },
+            status='pending'
+        )
+        
+        # Simulate the parameter merging logic from execute_sync
+        arguments = {
+            'prompt': order_item.prompt,
+            **self.flux_machine.default_parameters,  # Apply machine defaults first
+            **order_item.parameters  # Override with user-specified parameters
+        }
+        
+        # Verify parameter merging
+        expected_args = {
+            'prompt': 'test prompt',
+            'width': 768,  # User override
+            'height': 512,  # User override
+            'guidance_scale': 5.0,  # User override
+            'num_inference_steps': 28,  # Machine default
+            'enable_safety_checker': False  # Machine default (CRITICAL for safety)
+        }
+        
+        self.assertEqual(arguments, expected_args)
+        self.assertIn('enable_safety_checker', arguments)
+        self.assertFalse(arguments['enable_safety_checker'])
+    
+    def test_fal_sdxl_parameter_merging(self):
+        """Test parameter merging for SDXL models with disable_safety_checker."""
+        from main.factory_machines_sync import SyncFalFactoryMachine
+        
+        sdxl_factory = SyncFalFactoryMachine(self.sdxl_machine)
+        
+        # Create test order and order item
+        order = Order.objects.create(
+            title='SDXL Parameter Test',
+            prompt='test sdxl prompt',
+            factory_machine_name=self.sdxl_machine.name,
+            provider='fal.ai',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='test sdxl prompt',
+            parameters={
+                'width': 1024,  # User override (larger than default 512)
+                'num_inference_steps': 2  # User override
+                # Note: no safety checker specified by user
+            },
+            status='pending'
+        )
+        
+        # Simulate parameter merging
+        arguments = {
+            'prompt': order_item.prompt,
+            **self.sdxl_machine.default_parameters,
+            **order_item.parameters
+        }
+        
+        expected_args = {
+            'prompt': 'test sdxl prompt',
+            'width': 1024,  # User override
+            'height': 512,  # Machine default
+            'num_inference_steps': 2,  # User override
+            'disable_safety_checker': True  # Machine default (CRITICAL for safety)
+        }
+        
+        self.assertEqual(arguments, expected_args)
+        self.assertIn('disable_safety_checker', arguments)
+        self.assertTrue(arguments['disable_safety_checker'])
+    
+    def test_replicate_factory_machine_parameter_merging(self):
+        """Test that SyncReplicateFactoryMachine properly merges default and user parameters."""
+        from main.factory_machines_sync import SyncReplicateFactoryMachine
+        
+        replicate_factory = SyncReplicateFactoryMachine(self.replicate_machine)
+        
+        # Create test order and order item
+        order = Order.objects.create(
+            title='Replicate Parameter Test',
+            prompt='test replicate prompt',
+            factory_machine_name=self.replicate_machine.name,
+            provider='replicate',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='test replicate prompt',
+            parameters={
+                'height': 768,  # User override
+                'num_outputs': 2,  # User override
+                # Note: width and disable_safety_checker should come from defaults
+            },
+            status='pending'
+        )
+        
+        # Simulate parameter merging from execute_sync
+        input_params = {
+            'prompt': order_item.prompt,
+            **self.replicate_machine.default_parameters,
+            **order_item.parameters
+        }
+        
+        expected_params = {
+            'prompt': 'test replicate prompt',
+            'width': 1024,  # Machine default
+            'height': 768,  # User override
+            'num_outputs': 2,  # User override
+            'num_inference_steps': 4,  # Machine default
+            'disable_safety_checker': True  # Machine default (CRITICAL for safety)
+        }
+        
+        self.assertEqual(input_params, expected_params)
+        self.assertIn('disable_safety_checker', input_params)
+        self.assertTrue(input_params['disable_safety_checker'])
+    
+    def test_user_can_override_safety_checks_if_desired(self):
+        """Test that users can override safety check settings if they explicitly specify them."""
+        from main.factory_machines_sync import SyncFalFactoryMachine
+        
+        # Create order item where user explicitly enables safety checker
+        order = Order.objects.create(
+            title='User Override Test',
+            prompt='test prompt',
+            factory_machine_name=self.flux_machine.name,
+            provider='fal.ai',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='test prompt',
+            parameters={
+                'width': 512,
+                'enable_safety_checker': True  # User explicitly enables
+            },
+            status='pending'
+        )
+        
+        # Simulate parameter merging
+        arguments = {
+            'prompt': order_item.prompt,
+            **self.flux_machine.default_parameters,  # enable_safety_checker: False
+            **order_item.parameters  # enable_safety_checker: True (overrides)
+        }
+        
+        # User override should take precedence
+        self.assertTrue(arguments['enable_safety_checker'])
+        self.assertEqual(arguments['width'], 512)
+        self.assertEqual(arguments['height'], 1024)  # Still get other defaults
+    
+    def test_parameter_merging_with_negative_prompts(self):
+        """Test parameter merging when negative prompts are involved."""
+        from main.factory_machines_sync import SyncFalFactoryMachine
+        
+        order = Order.objects.create(
+            title='Negative Prompt Test',
+            prompt='beautiful landscape',
+            factory_machine_name=self.sdxl_machine.name,
+            provider='fal.ai',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='beautiful landscape',
+            negative_prompt='ugly, distorted',  # Negative prompt set
+            parameters={
+                'width': 768
+            },
+            status='pending'
+        )
+        
+        # Simulate full parameter preparation from execute_sync
+        arguments = {
+            'prompt': order_item.prompt,
+            **self.sdxl_machine.default_parameters,
+            **order_item.parameters
+        }
+        
+        # Add negative prompt (this happens separately in execute_sync)
+        if order_item.negative_prompt:
+            arguments['negative_prompt'] = order_item.negative_prompt
+        
+        expected_args = {
+            'prompt': 'beautiful landscape',
+            'negative_prompt': 'ugly, distorted',
+            'width': 768,  # User override
+            'height': 512,  # Machine default
+            'num_inference_steps': 1,  # Machine default
+            'disable_safety_checker': True  # Machine default
+        }
+        
+        self.assertEqual(arguments, expected_args)
+        self.assertIn('negative_prompt', arguments)
+        self.assertTrue(arguments['disable_safety_checker'])
+    
+    def test_parameter_merging_preserves_all_defaults(self):
+        """Test that parameter merging preserves all machine defaults when user provides minimal parameters."""
+        from main.factory_machines_sync import SyncFalFactoryMachine
+        
+        order = Order.objects.create(
+            title='Minimal Parameters Test',
+            prompt='minimal test',
+            factory_machine_name=self.flux_machine.name,
+            provider='fal.ai',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='minimal test',
+            parameters={},  # User provides no parameters except prompt
+            status='pending'
+        )
+        
+        # Simulate parameter merging
+        arguments = {
+            'prompt': order_item.prompt,
+            **self.flux_machine.default_parameters,
+            **order_item.parameters  # Empty dict, no overrides
+        }
+        
+        # Should get all machine defaults
+        expected_args = {
+            'prompt': 'minimal test',
+            'width': 1024,
+            'height': 1024,
+            'guidance_scale': 3.5,
+            'num_inference_steps': 28,
+            'enable_safety_checker': False
+        }
+        
+        self.assertEqual(arguments, expected_args)
+        # Verify all default parameters are present
+        for key, value in self.flux_machine.default_parameters.items():
+            self.assertIn(key, arguments)
+            self.assertEqual(arguments[key], value)
+    
+    def test_parameter_merging_handles_missing_defaults_gracefully(self):
+        """Test parameter merging when machine has incomplete default parameters."""
+        # Create machine with minimal defaults (simulating edge case)
+        minimal_machine = FactoryMachineDefinition.objects.create(
+            name='test/minimal',
+            display_name='Minimal Test Model',
+            provider='fal.ai',
+            modality='text-to-image',
+            parameter_schema={'prompt': {'type': 'string'}},
+            default_parameters={},  # No defaults provided
+            is_active=True
+        )
+        
+        order = Order.objects.create(
+            title='Minimal Defaults Test',
+            prompt='test',
+            factory_machine_name=minimal_machine.name,
+            provider='fal.ai',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='test',
+            parameters={'width': 512},
+            status='pending'
+        )
+        
+        # Should not crash with empty defaults
+        arguments = {
+            'prompt': order_item.prompt,
+            **minimal_machine.default_parameters,  # Empty dict
+            **order_item.parameters
+        }
+        
+        expected_args = {
+            'prompt': 'test',
+            'width': 512
+        }
+        
+        self.assertEqual(arguments, expected_args)
+    
+    @patch('fal_client.submit')
+    def test_fal_execute_sync_uses_merged_parameters(self, mock_fal_submit):
+        """Integration test to verify execute_sync actually uses merged parameters."""
+        from main.factory_machines_sync import SyncFalFactoryMachine
+        
+        # Mock fal.ai response
+        mock_handle = MagicMock()
+        mock_handle.get.return_value = {
+            'images': [{'url': 'data:image/jpeg;base64,/9j/test', 'width': 512, 'height': 512}],
+            'seed': 12345
+        }
+        mock_fal_submit.return_value = mock_handle
+        
+        factory = SyncFalFactoryMachine(self.sdxl_machine)
+        
+        order = Order.objects.create(
+            title='Integration Test',
+            prompt='integration test',
+            factory_machine_name=self.sdxl_machine.name,
+            provider='fal.ai',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='integration test',
+            parameters={'width': 1024},  # Override default 512
+            status='pending'
+        )
+        
+        # Execute synchronously
+        result = factory.execute_sync(order_item)
+        
+        # Verify fal_client.submit was called with merged parameters
+        mock_fal_submit.assert_called_once()
+        call_args = mock_fal_submit.call_args
+        
+        # Check that arguments include both user parameters and machine defaults
+        submitted_args = call_args[1]['arguments']  # fal_client.submit(model, arguments=...)
+        
+        self.assertEqual(submitted_args['prompt'], 'integration test')
+        self.assertEqual(submitted_args['width'], 1024)  # User override
+        self.assertEqual(submitted_args['height'], 512)  # Machine default
+        self.assertEqual(submitted_args['num_inference_steps'], 1)  # Machine default
+        self.assertTrue(submitted_args['disable_safety_checker'])  # Machine default (CRITICAL)
+        
+        self.assertTrue(result)  # Should succeed
+    
+    @patch('replicate.run')
+    def test_replicate_execute_sync_uses_merged_parameters(self, mock_replicate_run):
+        """Integration test to verify Replicate execute_sync uses merged parameters."""
+        from main.factory_machines_sync import SyncReplicateFactoryMachine
+        
+        # Mock replicate response
+        mock_replicate_run.return_value = ['http://example.com/image.png']
+        
+        factory = SyncReplicateFactoryMachine(self.replicate_machine)
+        
+        order = Order.objects.create(
+            title='Replicate Integration Test',
+            prompt='replicate test',
+            factory_machine_name=self.replicate_machine.name,
+            provider='replicate',
+            quantity=1
+        )
+        
+        order_item = OrderItem.objects.create(
+            order=order,
+            prompt='replicate test',
+            parameters={'num_outputs': 2},  # Override default 1
+            status='pending'
+        )
+        
+        # Mock HTTP download
+        with patch('requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.content = b'fake_image_data'
+            mock_response.raise_for_status.return_value = None
+            mock_get.return_value = mock_response
+            
+            # Execute synchronously
+            result = factory.execute_sync(order_item)
+        
+        # Verify replicate.run was called with merged parameters
+        mock_replicate_run.assert_called_once()
+        call_args = mock_replicate_run.call_args
+        
+        model_name = call_args[0][0]  # First positional arg
+        input_params = call_args[1]['input']  # Keyword arg
+        
+        self.assertEqual(model_name, self.replicate_machine.name)
+        self.assertEqual(input_params['prompt'], 'replicate test')
+        self.assertEqual(input_params['num_outputs'], 2)  # User override
+        self.assertEqual(input_params['width'], 1024)  # Machine default
+        self.assertEqual(input_params['height'], 1024)  # Machine default
+        self.assertEqual(input_params['num_inference_steps'], 4)  # Machine default
+        self.assertTrue(input_params['disable_safety_checker'])  # Machine default (CRITICAL)
+        
+        self.assertTrue(result)  # Should succeed

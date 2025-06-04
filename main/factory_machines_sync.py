@@ -63,9 +63,11 @@ class SyncFalFactoryMachine:
             order_item.save()
             
             # Prepare arguments with batch support
+            # Start with machine defaults, then override with order item parameters
             arguments = {
                 'prompt': order_item.prompt,
-                **order_item.parameters
+                **self.machine_definition.default_parameters,  # Apply machine defaults first
+                **order_item.parameters  # Override with user-specified parameters
             }
             
             # Add negative prompt if provided
@@ -253,9 +255,11 @@ class SyncReplicateFactoryMachine:
             order_item.save()
             
             # Prepare input with batch support
+            # Start with machine defaults, then override with order item parameters
             input_params = {
                 'prompt': order_item.prompt,
-                **order_item.parameters
+                **self.machine_definition.default_parameters,  # Apply machine defaults first
+                **order_item.parameters  # Override with user-specified parameters
             }
             
             # Add negative prompt if provided
