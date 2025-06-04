@@ -2,85 +2,7 @@
 {% load django_bootstrap5 %}
 
 {% block extra_css %}
-<style>
-    /* Toast Notifications */
-    .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        max-width: 400px;
-    }
-    
-    .toast {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        margin-bottom: 10px;
-        padding: 16px;
-        border-left: 4px solid #3498db;
-        transform: translateX(100%);
-        transition: all 0.3s ease;
-        opacity: 0;
-    }
-    
-    .toast.show {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    
-    .toast.success {
-        border-left-color: #27ae60;
-    }
-    
-    .toast.error {
-        border-left-color: #e74c3c;
-    }
-    
-    .toast.warning {
-        border-left-color: #f39c12;
-    }
-    
-    .toast.info {
-        border-left-color: #3498db;
-    }
-    
-    .toast-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-    
-    .toast-title {
-        font-weight: 600;
-        font-size: 14px;
-    }
-    
-    .toast-close {
-        background: none;
-        border: none;
-        font-size: 18px;
-        cursor: pointer;
-        padding: 0;
-        color: #999;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .toast-close:hover {
-        color: #666;
-    }
-    
-    .toast-message {
-        font-size: 14px;
-        line-height: 1.4;
-        color: #666;
-    }
-</style>
+<!-- Toast system CSS is now handled by the toast_system.html component -->
 {% endblock %}
 
 {% block body_content %}
@@ -131,8 +53,7 @@
         </div>
     </nav>
 
-    <!-- Toast Notification Container -->
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- Toast container is now handled by the toast_system.html component -->
 
     <!-- Main Content -->
     <main class="container-fluid py-4">

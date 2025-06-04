@@ -1,0 +1,286 @@
+<!-- Enhanced Error Banner Component -->
+<!-- 
+Reusable error banner with consistent styling and expandable details.
+Can be used across all pages for non-toast error displays.
+-->
+
+<!-- Error Banner Container -->
+<div id="{{ banner_id|default:'errorBanner' }}" class="alert alert-danger alert-dismissible mb-3" style="display: none;" role="alert">
+    <div class="d-flex">
+        <div class="flex-shrink-0">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        </div>
+        <div class="flex-grow-1 ms-3">
+            <!-- Main error message -->
+            <div class="fw-semibold" id="{{ banner_id|default:'errorBanner' }}Message">
+                <!-- Error message will be inserted here -->
+            </div>
+            
+            <!-- Optional description -->
+            <div id="{{ banner_id|default:'errorBanner' }}Description" class="mt-1" style="display: none;">
+                <small class="text-muted">
+                    <!-- Error description will be inserted here -->
+                </small>
+            </div>
+            
+            <!-- Expandable details section -->
+            <div id="{{ banner_id|default:'errorBanner' }}Details" class="mt-2" style="display: none;">
+                <details class="small">
+                    <summary class="text-danger fw-semibold cursor-pointer">
+                        <i class="bi bi-chevron-right me-1"></i> Technical Details
+                    </summary>
+                    <div class="mt-2 p-2 bg-light rounded border">
+                        <pre class="mb-0 small text-muted" id="{{ banner_id|default:'errorBanner' }}DetailsText">
+                            <!-- Technical details will be inserted here -->
+                        </pre>
+                    </div>
+                </details>
+            </div>
+            
+            <!-- Action buttons -->
+            <div class="mt-3" id="{{ banner_id|default:'errorBanner' }}Actions" style="display: none;">
+                <div class="btn-group btn-group-sm" role="group">
+                    <!-- Action buttons will be inserted here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Close button -->
+        <div class="flex-shrink-0 ms-2">
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Error Banner CSS -->
+<style>
+/* Enhanced Error Banner Styling */
+.alert-danger {
+    border-left: 4px solid var(--bs-danger);
+    background: rgba(var(--bs-danger-rgb), 0.05);
+    border-color: rgba(var(--bs-danger-rgb), 0.2);
+}
+
+.alert-danger .bi-exclamation-triangle-fill {
+    color: var(--bs-danger);
+}
+
+.alert details summary {
+    list-style: none;
+    outline: none;
+    user-select: none;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.alert details summary::-webkit-details-marker {
+    display: none;
+}
+
+.alert details summary:hover {
+    color: var(--bs-danger-text-emphasis) !important;
+}
+
+.alert details[open] summary .bi-chevron-right {
+    transform: rotate(90deg);
+    transition: transform 0.15s ease-in-out;
+}
+
+.alert details pre {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Warning variant */
+.alert-warning {
+    border-left: 4px solid var(--bs-warning);
+    background: rgba(var(--bs-warning-rgb), 0.05);
+    border-color: rgba(var(--bs-warning-rgb), 0.2);
+}
+
+.alert-warning .bi-exclamation-triangle-fill {
+    color: var(--bs-warning);
+}
+
+/* Info variant */
+.alert-info {
+    border-left: 4px solid var(--bs-info);
+    background: rgba(var(--bs-info-rgb), 0.05);
+    border-color: rgba(var(--bs-info-rgb), 0.2);
+}
+
+.alert-info .bi-info-circle-fill {
+    color: var(--bs-info);
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .alert .d-flex {
+        flex-direction: column;
+    }
+    
+    .alert .flex-shrink-0:first-child {
+        margin-bottom: 0.5rem;
+        align-self: flex-start;
+    }
+    
+    .alert .flex-shrink-0:last-child {
+        align-self: flex-end;
+        margin-top: 0.5rem;
+        margin-left: 0;
+    }
+}
+</style>
+
+<!-- Enhanced Error Banner JavaScript -->
+<script>
+(function() {
+    'use strict';
+    
+    // Enhanced Error Banner System
+    window.ErrorBanner = {
+        // Show error banner with optional details and actions
+        show: function(bannerId, message, options = {}) {
+            const banner = document.getElementById(bannerId);
+            const messageEl = document.getElementById(bannerId + 'Message');
+            const descriptionEl = document.getElementById(bannerId + 'Description');
+            const detailsEl = document.getElementById(bannerId + 'Details');
+            const detailsTextEl = document.getElementById(bannerId + 'DetailsText');
+            const actionsEl = document.getElementById(bannerId + 'Actions');
+            
+            if (!banner || !messageEl) {
+                console.error('Error banner elements not found:', bannerId);
+                return;
+            }
+            
+            // Set main message
+            messageEl.textContent = message;
+            
+            // Set optional description
+            if (options.description) {
+                descriptionEl.querySelector('small').textContent = options.description;
+                descriptionEl.style.display = 'block';
+            } else {
+                descriptionEl.style.display = 'none';
+            }
+            
+            // Set technical details if provided
+            if (options.details) {
+                detailsTextEl.textContent = options.details;
+                detailsEl.style.display = 'block';
+            } else {
+                detailsEl.style.display = 'none';
+            }
+            
+            // Add action buttons if provided
+            if (options.actions && options.actions.length > 0) {
+                const buttonGroup = actionsEl.querySelector('.btn-group');
+                buttonGroup.innerHTML = '';
+                
+                options.actions.forEach(action => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = `btn btn-sm ${action.class || 'btn-outline-danger'}`;
+                    button.innerHTML = `${action.icon ? `<i class="bi ${action.icon}"></i> ` : ''}${action.text}`;
+                    button.onclick = action.handler;
+                    buttonGroup.appendChild(button);
+                });
+                
+                actionsEl.style.display = 'block';
+            } else {
+                actionsEl.style.display = 'none';
+            }
+            
+            // Update alert type if specified
+            if (options.type && options.type !== 'danger') {
+                banner.className = banner.className.replace('alert-danger', `alert-${options.type}`);
+                
+                // Update icon
+                const icon = banner.querySelector('.bi');
+                if (icon) {
+                    icon.className = `bi ${this._getIconForType(options.type)} fs-5`;
+                }
+            }
+            
+            // Show banner with animation
+            banner.style.display = 'block';
+            
+            // Announce to screen readers
+            this._announceToScreenReader(message, options.type || 'danger');
+            
+            // Auto-hide after duration if specified
+            if (options.duration && options.duration > 0) {
+                setTimeout(() => {
+                    this.hide(bannerId);
+                }, options.duration);
+            }
+        },
+        
+        // Hide error banner
+        hide: function(bannerId) {
+            const banner = document.getElementById(bannerId);
+            if (banner) {
+                banner.style.display = 'none';
+            }
+        },
+        
+        // Convenience methods for different types
+        showError: function(bannerId, message, options = {}) {
+            return this.show(bannerId, message, { ...options, type: 'danger' });
+        },
+        
+        showWarning: function(bannerId, message, options = {}) {
+            return this.show(bannerId, message, { ...options, type: 'warning' });
+        },
+        
+        showInfo: function(bannerId, message, options = {}) {
+            return this.show(bannerId, message, { ...options, type: 'info' });
+        },
+        
+        // Get appropriate icon for alert type
+        _getIconForType: function(type) {
+            const icons = {
+                danger: 'bi-exclamation-triangle-fill',
+                warning: 'bi-exclamation-triangle-fill',
+                info: 'bi-info-circle-fill',
+                success: 'bi-check-circle-fill'
+            };
+            return icons[type] || icons.danger;
+        },
+        
+        // Screen reader announcement
+        _announceToScreenReader: function(message, type) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('aria-live', 'assertive');
+            announcement.setAttribute('aria-atomic', 'true');
+            announcement.className = 'visually-hidden';
+            
+            const typeLabel = type === 'danger' ? 'Error' : 
+                            type === 'warning' ? 'Warning' : 
+                            type === 'info' ? 'Information' : 'Alert';
+            
+            announcement.textContent = `${typeLabel}: ${message}`;
+            
+            document.body.appendChild(announcement);
+            
+            setTimeout(() => {
+                document.body.removeChild(announcement);
+            }, 1000);
+        }
+    };
+    
+    // Backward compatibility function
+    window.showErrorBanner = function(message, details = null, description = null) {
+        const options = {};
+        if (details) options.details = details;
+        if (description) options.description = description;
+        return ErrorBanner.showError('errorBanner', message, options);
+    };
+    
+})();
+</script>
