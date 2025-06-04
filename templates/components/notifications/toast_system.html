@@ -4,37 +4,42 @@ This component provides a unified, Bootstrap-compatible toast notification syste
 It enhances the existing custom implementation with better consistency and accessibility.
 -->
 
-<!-- Toast Container with enhanced positioning and z-index -->
-<div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index: 1055;"></div>
+<!-- Toast Container is now positioned inline in the layout -->
 
 <!-- Enhanced Toast CSS -->
 <style>
 /* Enhanced Toast Notification System */
-.toast-container {
-    max-width: 420px;
+.toast-notification-area {
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+}
+
+.toast-notification-area:empty {
+    margin-bottom: 0 !important;
 }
 
 .toast-notification {
     background: white;
     border-radius: 0.5rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
     margin-bottom: 0.75rem;
     padding: 0;
     border: 1px solid rgba(0, 0, 0, 0.05);
-    transform: translateX(100%);
+    transform: translateY(-20px);
     transition: all 0.3s ease-out;
     opacity: 0;
-    min-width: 300px;
+    width: 100%;
     max-width: 100%;
 }
 
 .toast-notification.show {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
 }
 
 .toast-notification.hide {
-    transform: translateX(100%);
+    transform: translateY(-20px);
     opacity: 0;
 }
 
@@ -158,26 +163,15 @@ It enhances the existing custom implementation with better consistency and acces
 
 /* Responsive Design */
 @media (max-width: 576px) {
-    .toast-container {
-        position: fixed !important;
-        top: auto !important;
-        bottom: 1rem !important;
-        left: 1rem !important;
-        right: 1rem !important;
-        max-width: none;
+    .toast-notification-area {
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
     }
     
     .toast-notification {
-        transform: translateY(100%);
-        min-width: auto;
-    }
-    
-    .toast-notification.show {
-        transform: translateY(0);
-    }
-    
-    .toast-notification.hide {
-        transform: translateY(100%);
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        width: calc(100% - 1rem);
     }
 }
 

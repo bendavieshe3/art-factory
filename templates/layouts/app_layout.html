@@ -7,7 +7,7 @@
 
 {% block body_content %}
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'main:home' %}">
                 <i class="bi bi-palette"></i> AI Art Factory
@@ -57,15 +57,23 @@
 
     <!-- Main Content -->
     <main class="container-fluid py-4">
-        <!-- Django Messages -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
+        <!-- Notification Area -->
+        <div class="row">
+            <div class="col-12">
+                <!-- Django Messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <!-- Toast Notification Area -->
+                <div id="toastContainer" class="toast-notification-area mb-3" style="min-height: 0;"></div>
+            </div>
+        </div>
 
         <!-- Page Header -->
         {% block page_header %}
