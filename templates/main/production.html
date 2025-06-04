@@ -1,120 +1,130 @@
-{% extends 'base.html' %}
+{% extends 'layouts/app_layout.html' %}
+
+{% block page_title %}Production{% endblock %}
 
 {% block page_description %}
-<p>Monitor production status and system activity.</p>
+<p class="text-muted mb-0">Monitor production status and system activity</p>
 {% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+<div class="row g-4 mb-4">
     <!-- Recent Orders -->
-    <div class="card">
-        <h2>Recent Orders</h2>
-        {% if recent_orders %}
-            <div style="margin-top: 1rem;">
-                {% for order in recent_orders %}
-                    <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
-                        <div style="display: flex; justify-content: between; align-items: center;">
-                            <div style="flex: 1;">
-                                <h4>Order {{ order.id }}{% if order.title %}: {{ order.title }}{% endif %}</h4>
-                                <p style="color: #666; margin: 0.25rem 0;">{{ order.prompt|truncatechars:60 }}</p>
-                                {% if order.negative_prompt %}
-                                    <p style="color: #c62828; margin: 0.25rem 0; font-size: 0.9rem;">
-                                        <strong>Negative:</strong> {{ order.negative_prompt|truncatechars:50 }}
-                                    </p>
-                                {% endif %}
-                                <small style="color: #888;">
-                                    {{ order.provider }} - {{ order.quantity }} item{{ order.quantity|pluralize }} - {{ order.created_at|date:"M d, H:i" }}
-                                </small>
-                            </div>
-                            <div style="margin-left: 1rem;">
-                                <span style="padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; 
-                                           {% if order.status == 'completed' %}background: #d4edda; color: #155724;
-                                           {% elif order.status == 'partially_completed' %}background: #fff3cd; color: #856404;
-                                           {% elif order.status == 'processing' %}background: #cff4fc; color: #055160;
-                                           {% elif order.status == 'failed' %}background: #f8d7da; color: #721c24;
-                                           {% else %}background: #f8f9fa; color: #6c757d;{% endif %}">
-                                    {{ order.status|title }}
-                                </span>
-                            </div>
-                        </div>
-                        {% if order.completion_percentage > 0 %}
-                            <div style="margin-top: 0.5rem;">
-                                <div style="background: #f8f9fa; border-radius: 4px; height: 6px; overflow: hidden;">
-                                    <div style="background: #28a745; height: 100%; width: {{ order.completion_percentage }}%; transition: width 0.3s;"></div>
-                                </div>
-                                <small style="color: #666;">{{ order.completion_percentage }}% complete</small>
-                            </div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ul"></i> Recent Orders
+                </h5>
             </div>
-        {% else %}
-            <p style="color: #666; text-align: center; padding: 1rem;">No orders yet.</p>
-        {% endif %}
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="list-group list-group-flush">
+                        {% for order in recent_orders %}
+                            {% include 'components/lists/order_list_item.html' %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% include 'components/navigation/empty_state.html' with icon="inbox" title="No orders yet" message="Orders will appear here as they are created" %}
+                {% endif %}
+            </div>
+        </div>
     </div>
     
     <!-- Machine Status -->
-    <div class="card">
-        <h2>Factory Machines</h2>
-        {% if machine_instances %}
-            <div style="margin-top: 1rem;">
-                {% for instance in machine_instances %}
-                    <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
-                        <div style="display: flex; justify-content: between; align-items: center;">
-                            <div style="flex: 1;">
-                                <h4>{{ instance.machine_definition.display_name }}</h4>
-                                <p style="color: #666; margin: 0.25rem 0;">{{ instance.machine_definition.provider }} - {{ instance.machine_definition.modality }}</p>
-                                <small style="color: #888;">
-                                    Operations: {{ instance.total_operations }} 
-                                    ({{ instance.success_rate|floatformat:1 }}% success)
-                                </small>
-                            </div>
-                            <div style="margin-left: 1rem;">
-                                <span style="padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;
-                                           {% if instance.status == 'idle' %}background: #d4edda; color: #155724;
-                                           {% elif instance.status == 'busy' %}background: #fff3cd; color: #856404;
-                                           {% elif instance.status == 'error' %}background: #f8d7da; color: #721c24;
-                                           {% else %}background: #f8f9fa; color: #6c757d;{% endif %}">
-                                    {{ instance.status|title }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear"></i> Factory Machines
+                </h5>
             </div>
-        {% else %}
-            <p style="color: #666; text-align: center; padding: 1rem;">
-                No machine instances configured. 
-                <a href="{% url 'admin:main_factorymachineinstance_add' %}" target="_blank">Add one</a>
-            </p>
-        {% endif %}
+            <div class="card-body">
+                {% if machine_instances %}
+                    <div class="list-group list-group-flush">
+                        {% for instance in machine_instances %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ instance.machine_definition.display_name }}</h6>
+                                        <p class="mb-1 text-muted small">
+                                            <i class="bi bi-cloud"></i> {{ instance.machine_definition.provider }} • 
+                                            <i class="bi bi-tag"></i> {{ instance.machine_definition.modality }}
+                                        </p>
+                                        <small class="text-muted">
+                                            <i class="bi bi-graph-up"></i> Operations: {{ instance.total_operations }} 
+                                            ({{ instance.success_rate|floatformat:1 }}% success)
+                                        </small>
+                                    </div>
+                                    <div class="ms-3">
+                                        {% if instance.status == 'idle' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Idle
+                                            </span>
+                                        {% elif instance.status == 'busy' %}
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-hourglass-split"></i> Busy
+                                            </span>
+                                        {% elif instance.status == 'error' %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-exclamation-triangle"></i> Error
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ instance.status|title }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% include 'components/navigation/empty_state.html' with icon="gear" title="No machine instances configured" action_url="admin:main_factorymachineinstance_add" action_text="Add Machine Instance" action_icon="plus-circle" %}
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- System Logs -->
 <div class="card">
-    <h2>Recent Activity</h2>
-    {% if recent_logs %}
-        <div style="margin-top: 1rem; max-height: 400px; overflow-y: auto;">
-            {% for log in recent_logs %}
-                <div style="border-bottom: 1px solid #f0f0f0; padding: 0.75rem 0; font-family: monospace; font-size: 0.9rem;">
-                    <div style="display: flex; gap: 1rem; align-items: flex-start;">
-                        <span style="color: #666; white-space: nowrap;">{{ log.timestamp|date:"H:i:s" }}</span>
-                        <span style="padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: bold; white-space: nowrap;
-                                   {% if log.level == 'ERROR' or log.level == 'CRITICAL' %}background: #f8d7da; color: #721c24;
-                                   {% elif log.level == 'WARNING' %}background: #fff3cd; color: #856404;
-                                   {% elif log.level == 'INFO' %}background: #d1ecf1; color: #0c5460;
-                                   {% else %}background: #f8f9fa; color: #6c757d;{% endif %}">
-                            {{ log.level }}
-                        </span>
-                        <span style="flex: 1;">{{ log.message }}</span>
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-journal-text"></i> Recent Activity
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_logs %}
+            <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                {% for log in recent_logs %}
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-start gap-3">
+                            <small class="text-muted text-nowrap font-monospace">
+                                {{ log.timestamp|date:"H:i:s" }}
+                            </small>
+                            
+                            {% if log.level == 'ERROR' or log.level == 'CRITICAL' %}
+                                <span class="badge bg-danger fs-7">
+                                    <i class="bi bi-exclamation-triangle"></i> {{ log.level }}
+                                </span>
+                            {% elif log.level == 'WARNING' %}
+                                <span class="badge bg-warning fs-7">
+                                    <i class="bi bi-exclamation-circle"></i> {{ log.level }}
+                                </span>
+                            {% elif log.level == 'INFO' %}
+                                <span class="badge bg-info fs-7">
+                                    <i class="bi bi-info-circle"></i> {{ log.level }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-7">{{ log.level }}</span>
+                            {% endif %}
+                            
+                            <span class="flex-grow-1 font-monospace small">{{ log.message }}</span>
+                        </div>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p style="color: #666; text-align: center; padding: 1rem;">No log entries yet.</p>
-    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            {% include 'components/navigation/empty_state.html' with icon="journal-text" title="No log entries yet" message="System activity will appear here" %}
+        {% endif %}
+    </div>
 </div>
-
 {% endblock %}

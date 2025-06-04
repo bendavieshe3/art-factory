@@ -1,0 +1,71 @@
+<!-- Reusable Product Card Component -->
+<div class="col-12 col-sm-6 col-md-4 col-lg-3">
+    <div class="card h-100 shadow-sm product-card" data-product-id="{{ product.id }}">
+        {% if show_checkbox %}
+            <div class="position-absolute top-0 start-0 p-2" style="z-index: 10;">
+                <input type="checkbox" class="form-check-input product-checkbox" 
+                       value="{{ product.id }}" 
+                       id="product-{{ product.id }}">
+            </div>
+        {% endif %}
+        
+        <div class="ratio ratio-16x9 bg-light">
+            {% if product.file_url %}
+                <img src="{{ product.file_url }}" 
+                     alt="{{ product.title|default:'Generated product' }}" 
+                     class="card-img-top object-fit-cover">
+            {% else %}
+                <div class="d-flex align-items-center justify-content-center text-muted">
+                    <span>{{ product.product_type|title }} Preview</span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="card-body">
+            <h5 class="card-title">
+                {% if product.title %}
+                    {{ product.title }}
+                {% else %}
+                    Product {{ product.id }}
+                {% endif %}
+            </h5>
+            
+            <p class="card-text text-muted small">
+                {{ product.prompt|truncatechars:80 }}
+            </p>
+            
+            <div class="text-muted small mb-3">
+                <div>{{ product.provider }} - {{ product.model_name }}</div>
+                <div>{{ product.created_at|date:"M d, Y H:i" }}</div>
+                {% if product.width and product.height %}
+                    <div>{{ product.width }}×{{ product.height }}</div>
+                {% endif %}
+            </div>
+            
+            {% if show_actions %}
+                <div class="d-grid gap-2">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'main:product_detail' product.id %}" 
+                           class="btn btn-sm btn-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                        <a href="{% url 'main:product_download' product.id %}" 
+                           class="btn btn-sm btn-success">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                    </div>
+                    
+                    {% if show_delete %}
+                        <form method="post" action="{% url 'main:product_delete' product.id %}" 
+                              onsubmit="return confirm('Are you sure you want to delete this product?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger w-100">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

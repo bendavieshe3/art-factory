@@ -1,0 +1,25 @@
+{% extends 'layouts/app_layout.html' %}
+
+{% block content %}
+<div class="card{% if card_class %} {{ card_class }}{% endif %}">
+    {% block card_header %}
+        {% if card_title or card_icon or card_actions %}
+            <div class="card-header{% if header_class %} {{ header_class }}{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        {% if card_icon %}<i class="bi bi-{{ card_icon }}"></i> {% endif %}
+                        {% block card_title %}{{ card_title }}{% endblock %}
+                    </h5>
+                    {% block card_actions %}{{ card_actions }}{% endblock %}
+                </div>
+            </div>
+        {% endif %}
+    {% endblock %}
+    
+    <div class="card-body{% if body_class %} {{ body_class }}{% endif %}">
+        {% block card_content %}{% endblock %}
+    </div>
+    
+    {% block card_footer %}{% endblock %}
+</div>
+{% endblock %}

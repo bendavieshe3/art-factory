@@ -1,0 +1,16 @@
+<!-- Empty State Component -->
+<div class="text-center py-5">
+    {% if icon %}
+        <i class="bi bi-{{ icon }}" style="font-size: 3rem; color: #dee2e6;"></i>
+    {% endif %}
+    <h3 class="text-muted mt-3">{{ title|default:"No Items" }}</h3>
+    {% if message %}
+        <p class="text-muted">{{ message }}</p>
+    {% endif %}
+    {% if action_url and action_text %}
+        <a href="{% url action_url %}" class="btn btn-primary mt-2">
+            {% if action_icon %}<i class="bi bi-{{ action_icon }}"></i> {% endif %}
+            {{ action_text }}
+        </a>
+    {% endif %}
+</div>

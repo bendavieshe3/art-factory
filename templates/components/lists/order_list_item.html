@@ -1,0 +1,45 @@
+<!-- Reusable Order List Item Component -->
+<div class="list-group-item{% if item_class %} {{ item_class }}{% endif %}">
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+            <h6 class="mb-1">
+                Order #{{ order.id }}{% if order.title %}: {{ order.title }}{% endif %}
+            </h6>
+            <p class="mb-1 text-muted small">{{ order.prompt|truncatechars:60 }}</p>
+            {% if order.negative_prompt %}
+                <p class="mb-1 text-danger small">
+                    <strong>Negative:</strong> {{ order.negative_prompt|truncatechars:50 }}
+                </p>
+            {% endif %}
+            <small class="text-muted">
+                <i class="bi bi-cloud"></i> {{ order.provider }} • 
+                <i class="bi bi-images"></i> {{ order.quantity }} item{{ order.quantity|pluralize }} • 
+                <i class="bi bi-clock"></i> {{ order.created_at|date:"M d, H:i" }}
+            </small>
+        </div>
+        <div class="ms-3">
+            {% if order.status == 'completed' %}
+                <span class="badge bg-success">Completed</span>
+            {% elif order.status == 'partially_completed' %}
+                <span class="badge bg-warning">Partially Completed</span>
+            {% elif order.status == 'processing' %}
+                <span class="badge bg-primary">Processing</span>
+            {% elif order.status == 'failed' %}
+                <span class="badge bg-danger">Failed</span>
+            {% else %}
+                <span class="badge bg-secondary">{{ order.status|title }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% if order.completion_percentage > 0 %}
+        <div class="mt-2">
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ order.completion_percentage }}%"
+                     aria-valuenow="{{ order.completion_percentage }}" 
+                     aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <small class="text-muted">{{ order.completion_percentage }}% complete</small>
+        </div>
+    {% endif %}
+</div>

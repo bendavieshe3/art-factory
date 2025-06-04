@@ -1,0 +1,20 @@
+<!-- Reusable Info Card Component -->
+<div class="card{% if card_class %} {{ card_class }}{% endif %}">
+    {% if card_title or card_icon %}
+        <div class="card-header{% if header_class %} {{ header_class }}{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    {% if card_icon %}<i class="bi bi-{{ card_icon }}"></i> {% endif %}
+                    {{ card_title }}
+                </h5>
+                {% if card_actions %}
+                    <div>{{ card_actions|safe }}</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <div class="card-body{% if body_class %} {{ body_class }}{% endif %}">
+        {{ card_content|safe }}
+    </div>
+</div>

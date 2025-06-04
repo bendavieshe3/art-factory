@@ -1,0 +1,15 @@
+{% extends 'layouts/app_layout.html' %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        {% block main_content %}{% endblock %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        {% block sidebar_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
