@@ -61,6 +61,14 @@
                                     <div class="form-text">Describe what you want to generate in detail</div>
                                 </div>
                                 
+                                <!-- Negative Prompt -->
+                                <div class="col-12">
+                                    <label for="negative_prompt" class="form-label">Negative Prompt</label>
+                                    <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2" 
+                                              placeholder="blurry, out of focus, low quality, distorted, ugly"></textarea>
+                                    <div class="form-text">What to avoid in the generated image (optional)</div>
+                                </div>
+                                
                                 <!-- Optional Title -->
                                 <div class="col-12">
                                     <label for="title" class="form-label">Optional Order Title</label>
@@ -388,6 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = {
             machine: document.getElementById('machine').value,
             prompt: document.getElementById('prompt').value,
+            negative_prompt: document.getElementById('negative_prompt').value,
             title: document.getElementById('title').value,
             generationCount: document.getElementById('generationCount').value,
             batchSize: document.getElementById('batchSize').value
@@ -419,6 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('machine').dispatchEvent(new Event('change'));
                 }
                 if (formData.prompt) document.getElementById('prompt').value = formData.prompt;
+                if (formData.negative_prompt) document.getElementById('negative_prompt').value = formData.negative_prompt;
                 if (formData.title) document.getElementById('title').value = formData.title;
                 if (formData.generationCount) document.getElementById('generationCount').value = formData.generationCount;
                 if (formData.batchSize) document.getElementById('batchSize').value = formData.batchSize;
@@ -542,6 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'pending': '<span class="badge bg-secondary">Pending</span>',
             'processing': '<span class="badge bg-warning">Processing</span>',
             'completed': '<span class="badge bg-success">Completed</span>',
+            'partially_completed': '<span class="badge bg-warning">Partially Completed</span>',
             'failed': '<span class="badge bg-danger">Failed</span>',
             'partial': '<span class="badge bg-warning">Partial</span>'
         };
@@ -552,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFormValues();
     
     // Auto-save form values on change
-    const formFields = ['machine', 'prompt', 'title', 'quantity'];
+    const formFields = ['machine', 'prompt', 'negative_prompt', 'title', 'quantity'];
     formFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -740,13 +751,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = {
             title: document.getElementById('title').value,
             prompt: document.getElementById('prompt').value,
+            negative_prompt: document.getElementById('negative_prompt').value,
             machine_id: document.getElementById('machine').value,
             generation_count: parseInt(document.getElementById('generationCount').value),
             batch_size: parseInt(document.getElementById('batchSize').value),
             parameters: parameters
         };
         
-        fetch('{% url "main:place_order_api" %}', {
+        fetch('{% url "main:place-order" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -977,18 +989,21 @@ document.addEventListener('DOMContentLoaded', function() {
             fantasy: {
                 title: 'Fantasy Art',
                 prompt: 'A magical fantasy landscape with ancient castles, mystical creatures, and ethereal lighting',
+                negative_prompt: 'blurry, low quality, distorted, ugly, cartoon, anime',
                 width: 1024,
                 height: 1024
             },
             portrait: {
                 title: 'Portrait Study',
                 prompt: 'A professional portrait of a person with dramatic lighting and detailed facial features',
+                negative_prompt: 'blurry, distorted, low quality, bad anatomy, extra limbs',
                 width: 768,
                 height: 1024
             },
             landscape: {
                 title: 'Landscape Art',
                 prompt: 'A breathtaking natural landscape with mountains, forests, and golden hour lighting',
+                negative_prompt: 'blurry, oversaturated, low quality, distorted, urban',
                 width: 1344,
                 height: 768
             }
@@ -998,10 +1013,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (template) {
             document.getElementById('title').value = template.title;
             document.getElementById('prompt').value = template.prompt;
+            document.getElementById('negative_prompt').value = template.negative_prompt || '';
             
             // Apply template parameters to dynamic fields if they exist
             for (const [key, value] of Object.entries(template)) {
-                if (key !== 'title' && key !== 'prompt') {
+                if (key !== 'title' && key !== 'prompt' && key !== 'negative_prompt') {
                     const input = document.getElementById(key);
                     if (input) {
                         input.value = value;

@@ -17,6 +17,7 @@ class Order(models.Model):
     
     # Generation request details
     prompt = models.TextField(help_text="Base prompt for generation")
+    negative_prompt = models.TextField(blank=True, default='', help_text="What to avoid in the generated image")
     base_parameters = models.JSONField(default=dict, help_text="Base parameters for all items")
     
     # Factory specification
@@ -28,6 +29,7 @@ class Order(models.Model):
         ('pending', 'Pending'),
         ('processing', 'Processing'),
         ('completed', 'Completed'),
+        ('partially_completed', 'Partially Completed'),
         ('failed', 'Failed'),
         ('cancelled', 'Cancelled'),
     ]
@@ -79,6 +81,7 @@ class OrderItem(models.Model):
     
     # Item-specific parameters
     prompt = models.TextField(help_text="Processed prompt for this specific item")
+    negative_prompt = models.TextField(blank=True, default='', help_text="What to avoid in the generated image")
     parameters = models.JSONField(default=dict, help_text="Final parameters for generation")
     variation_seed = models.BigIntegerField(null=True, blank=True, help_text="Variation seed")
     

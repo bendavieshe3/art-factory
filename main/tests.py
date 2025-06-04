@@ -959,8 +959,8 @@ class RetryMechanismTestCase(TestCase):
         worker.update_order_status(order2)
         order2.refresh_from_db()
         
-        # Should be completed (partial success)
-        self.assertEqual(order2.status, 'completed')
+        # Should be partially completed (partial success)
+        self.assertEqual(order2.status, 'partially_completed')
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)

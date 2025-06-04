@@ -304,6 +304,7 @@ def place_order_api(request):
         order = Order.objects.create(
             title=data.get('title', ''),
             prompt=data.get('prompt', ''),
+            negative_prompt=data.get('negative_prompt', ''),
             base_parameters=data.get('parameters', {}),
             factory_machine_name=machine.name,
             provider=machine.provider,
@@ -333,6 +334,7 @@ def place_order_api(request):
             OrderItem.objects.create(
                 order=order,
                 prompt=order.prompt,
+                negative_prompt=order.negative_prompt,
                 parameters=item_parameters,
                 total_quantity=validated_batch_size,
                 batch_size=validated_batch_size,
@@ -348,5 +350,63 @@ def place_order_api(request):
     except Exception as e:
         return JsonResponse({
             'success': False,
+            'error': str(e)
+        }, status=400)
+
+
+def order_detail_api(request, order_id):
+    """API endpoint to get order details including negative prompt."""
+    try:
+        order = get_object_or_404(Order, id=order_id)
+        order_items = order.orderitem_set.all()
+        
+        order_data = {
+            'id': order.id,
+            'title': order.title,
+            'prompt': order.prompt,
+            'negative_prompt': order.negative_prompt,
+            'status': order.status,
+            'created_at': order.created_at.isoformat(),
+            'items': []
+        }
+        
+        for item in order_items:
+            order_data['items'].append({
+                'id': item.id,
+                'prompt': item.prompt,
+                'negative_prompt': item.negative_prompt,
+                'status': item.status,
+                'parameters': item.parameters
+            })
+        
+        return JsonResponse(order_data)
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=400)
+
+
+def product_detail_api(request, product_id):
+    """API endpoint to get product details including negative prompt."""
+    try:
+        product = get_object_or_404(Product, id=product_id)
+        
+        product_data = {
+            'id': product.id,
+            'title': product.title,
+            'prompt': product.prompt,
+            'negative_prompt': product.negative_prompt,
+            'provider': product.provider,
+            'model_name': product.model_name,
+            'parameters': product.parameters,
+            'file_url': product.file_url,
+            'created_at': product.created_at.isoformat()
+        }
+        
+        return JsonResponse(product_data)
+        
+    except Exception as e:
+        return JsonResponse({
             'error': str(e)
         }, status=400)

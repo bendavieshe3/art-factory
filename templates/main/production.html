@@ -17,6 +17,11 @@
                             <div style="flex: 1;">
                                 <h4>Order {{ order.id }}{% if order.title %}: {{ order.title }}{% endif %}</h4>
                                 <p style="color: #666; margin: 0.25rem 0;">{{ order.prompt|truncatechars:60 }}</p>
+                                {% if order.negative_prompt %}
+                                    <p style="color: #c62828; margin: 0.25rem 0; font-size: 0.9rem;">
+                                        <strong>Negative:</strong> {{ order.negative_prompt|truncatechars:50 }}
+                                    </p>
+                                {% endif %}
                                 <small style="color: #888;">
                                     {{ order.provider }} - {{ order.quantity }} item{{ order.quantity|pluralize }} - {{ order.created_at|date:"M d, H:i" }}
                                 </small>
@@ -24,7 +29,8 @@
                             <div style="margin-left: 1rem;">
                                 <span style="padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; 
                                            {% if order.status == 'completed' %}background: #d4edda; color: #155724;
-                                           {% elif order.status == 'processing' %}background: #fff3cd; color: #856404;
+                                           {% elif order.status == 'partially_completed' %}background: #fff3cd; color: #856404;
+                                           {% elif order.status == 'processing' %}background: #cff4fc; color: #055160;
                                            {% elif order.status == 'failed' %}background: #f8d7da; color: #721c24;
                                            {% else %}background: #f8f9fa; color: #6c757d;{% endif %}">
                                     {{ order.status|title }}

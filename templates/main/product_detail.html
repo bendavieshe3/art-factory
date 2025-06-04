@@ -84,6 +84,16 @@
             </div>
         </div>
         
+        {% if product.negative_prompt %}
+        <!-- Negative Prompt -->
+        <div class="card">
+            <h3>Negative Prompt</h3>
+            <div style="background: #ffebee; padding: 1rem; border-radius: 4px; margin-top: 1rem; font-family: monospace; color: #c62828;">
+                {{ product.negative_prompt }}
+            </div>
+        </div>
+        {% endif %}
+        
         <!-- Parameters -->
         {% if product.parameters %}
             <div class="card">

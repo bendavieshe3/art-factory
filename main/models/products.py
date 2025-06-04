@@ -31,6 +31,7 @@ class Product(models.Model):
     
     # Generation metadata
     prompt = models.TextField(help_text="The prompt used to generate this product")
+    negative_prompt = models.TextField(blank=True, default='', help_text="What to avoid in the generated image")
     parameters = models.JSONField(default=dict, help_text="Full generation parameters as JSON")
     seed = models.BigIntegerField(null=True, blank=True, help_text="Random seed used")
     

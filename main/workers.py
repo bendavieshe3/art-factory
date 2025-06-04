@@ -42,6 +42,13 @@ class SmartWorker:
                 claimed_items = self.claim_work_batch()
                 
                 if not claimed_items:
+                    # Check if there are any retryable failed items before exiting
+                    retryable_count = self.count_retryable_failed_items()
+                    if retryable_count > 0:
+                        logger.info(f"Worker {self.name} found {retryable_count} retryable failed items, waiting...")
+                        time.sleep(30)  # Wait longer before trying again
+                        continue
+                    
                     # No work available - exit gracefully
                     self.graceful_exit("No pending work available")
                     return
@@ -173,6 +180,15 @@ class SmartWorker:
             logger.error(f"Error checking processing constraints: {e}")
             return False
     
+    def count_retryable_failed_items(self):
+        """Count how many failed items can be retried."""
+        failed_items = OrderItem.objects.filter(status='failed')
+        retryable_count = 0
+        for item in failed_items:
+            if item.can_be_retried():
+                retryable_count += 1
+        return retryable_count
+    
     def process_batch(self, order_items):
         """Process a batch of OrderItems."""
         logger.info(f"Worker {self.name} processing batch of {len(order_items)} items")
@@ -284,9 +300,12 @@ class SmartWorker:
             order.status = 'processing'
         elif final_items == total_items:
             # All items are in final state (no retryable failures)
-            if completed_items > 0:
-                # At least some success - partial completion
+            if completed_items == total_items:
+                # All items succeeded - full completion
                 order.status = 'completed'
+            elif completed_items > 0:
+                # Some success, some failure - partial completion
+                order.status = 'partially_completed'
             else:
                 # No successes - total failure
                 order.status = 'failed'
