@@ -9,7 +9,22 @@ Art Factory is a Django-first web application for managing AI-generated art usin
 ## Session Start
 @.claude/MOC.md
 
-
+## Development Flow (Github Issue or Enchancement)
+1. Check local repository for uncommited files - if any STOP
+2. Read Github issue
+3. Review design documents in ./docs
+4. Review related source code
+5. Check if the issue is unclear, or the design needs updating - if so STOP
+6. Create a plan and present to the user for approval
+7. Create tests for the requirement (should fail)
+8. Implement all or a logical part of the change
+9. Run tests for the change (should pass)
+10. Commit changes locally (use issue #)
+11. All issue requirements met? if not, revise and continue plan
+12. Run all tests
+13. Update documentation under ./docs
+14. If all pass, push to remote repository
+15. Suggest remaining work to be made into github issues
 
 ## Documentation Structure
 
@@ -21,6 +36,7 @@ The project documentation is organized into focused files:
 - **ux.md**: User interface requirements and interaction patterns
 - **requirements.md**: Technical requirements and deployment constraints
 - **design.md**: Detailed technical architecture (implementation-specific)
+- **testing.md**: Testing strategy, standards, and implementation roadmap
 
 ## Architecture
 

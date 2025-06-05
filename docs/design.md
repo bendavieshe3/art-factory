@@ -455,20 +455,21 @@ When a user deletes a product:
 
 ## 8. Testing Strategy
 
-Unit tests are implemented for:
-- FactoryMachine classes (test_factory_machines.py)
-- Product model (test_product_model.py)
+The project maintains a comprehensive Django-first testing approach with excellent coverage across models, views, API endpoints, worker systems, and UI integration. The test suite includes 1550+ lines of well-organized tests using Django's built-in testing framework.
 
-Tests cover:
-- Parameter validation
-- Execution logic
-- Error handling
-- Integration with Django models
-- FactoryMachineInstance lifecycle
+**Current Coverage:**
+- Models, views, signals, tasks, and management commands
+- Worker system and batch processing
+- External API integration (mocked)
+- UI components and notifications
+- End-to-end workflows
 
-Additional tests should be implemented for:
-- Real-time communication functionality (once approach is chosen)
-- Frontend enhancement behavior
+**Testing Infrastructure:**
+- Custom test runner (`run_tests.sh`) with categorized test suites
+- Proper external service mocking and test isolation
+- In-memory database for fast execution
+
+For detailed testing guidelines, implementation roadmap, and quality standards, see [docs/testing.md](testing.md).
 
 ## 9. Logging and Monitoring
 
