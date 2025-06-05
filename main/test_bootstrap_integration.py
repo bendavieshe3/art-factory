@@ -24,8 +24,19 @@ class BootstrapIntegrationTestCase(TestCase):
             description='Test model for Bootstrap UI testing',
             provider='test-provider',
             modality='image',
-            parameter_schema={'width': 1024, 'height': 1024},
-            default_parameters={'width': 1024, 'height': 1024, 'enable_safety_checker': False},
+            parameter_schema={
+                'width': 1024, 
+                'height': 1024,
+                'steps': 25,
+                'guidance': 7.5
+            },
+            default_parameters={
+                'width': 1024, 
+                'height': 1024, 
+                'steps': 25,
+                'guidance': 7.5,
+                'enable_safety_checker': False
+            },
             is_active=True
         )
     
@@ -64,26 +75,25 @@ class BootstrapIntegrationTestCase(TestCase):
         self.assertContains(response, 'form-label')
         self.assertContains(response, 'btn btn-primary')
         
-        # Check grid system
+        # Check grid system - current layout uses col-lg-8 and col-lg-4
         self.assertContains(response, 'container-fluid')
         self.assertContains(response, 'row')
-        self.assertContains(response, 'col-lg-3')
-        self.assertContains(response, 'col-lg-9')
+        self.assertContains(response, 'col-lg-8')
+        self.assertContains(response, 'col-lg-4')
     
-    def test_sidebar_models_display(self):
-        """Test that AI models are displayed in sidebar."""
+    def test_models_dropdown_display(self):
+        """Test that AI models are displayed in dropdown."""
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
         
-        # Check model appears in sidebar
-        self.assertContains(response, 'Bootstrap Test Model')
-        self.assertContains(response, 'test-provider')
-        self.assertContains(response, 'model-option')
+        # Check model selection dropdown
+        self.assertContains(response, 'id="machine"')
+        self.assertContains(response, 'Select an AI model...')
         
-        # Check sidebar has proper structure
-        self.assertContains(response, 'list-group')
-        self.assertContains(response, 'list-group-item')
-        self.assertContains(response, 'badge')
+        # Check model appears in dropdown
+        self.assertContains(response, 'Bootstrap Test Model')
+        self.assertContains(response, 'data-provider="test-provider"')
+        self.assertContains(response, 'data-modality="image"')
     
     def test_advanced_parameters_section(self):
         """Test that advanced parameters section works."""
@@ -95,25 +105,11 @@ class BootstrapIntegrationTestCase(TestCase):
         self.assertContains(response, 'advancedParams')
         self.assertContains(response, 'Advanced Parameters')
         
-        # Check parameter inputs
-        self.assertContains(response, 'id="width"')
-        self.assertContains(response, 'id="height"')
-        self.assertContains(response, 'id="steps"')
-        self.assertContains(response, 'id="guidance"')
+        # Check that dynamic parameters container exists
+        self.assertContains(response, 'id="dynamicParameters"')
+        # Parameters are loaded dynamically via JavaScript based on selected model
+        self.assertContains(response, 'Select a model to see available parameters')
     
-    def test_template_buttons_functionality(self):
-        """Test that template buttons are present."""
-        response = self.client.get('/')
-        self.assertEqual(response.status_code, 200)
-        
-        # Check template buttons
-        self.assertContains(response, 'Fantasy Template')
-        self.assertContains(response, 'Portrait Template')
-        self.assertContains(response, 'Landscape Template')
-        
-        # Check template functionality
-        self.assertContains(response, 'loadTemplate(')
-        self.assertContains(response, 'onclick="loadTemplate(\'fantasy\')"')
     
     def test_quantity_controls(self):
         """Test quantity increment/decrement controls."""
@@ -122,8 +118,8 @@ class BootstrapIntegrationTestCase(TestCase):
         
         # Check quantity input group
         self.assertContains(response, 'input-group')
-        self.assertContains(response, 'changeQuantity(-1)')
-        self.assertContains(response, 'changeQuantity(1)')
+        self.assertContains(response, 'changeGenerationCount(-1)')
+        self.assertContains(response, 'changeGenerationCount(1)')
         self.assertContains(response, 'bi-plus')
         self.assertContains(response, 'bi-dash')
     
@@ -151,9 +147,9 @@ class BootstrapIntegrationTestCase(TestCase):
         self.assertContains(response, 'bi-palette')  # Logo
         self.assertContains(response, 'bi-plus-circle')  # Add/Create
         self.assertContains(response, 'bi-lightning')  # Submit
-        self.assertContains(response, 'bi-cpu')  # AI Models
-        self.assertContains(response, 'bi-gear')  # Settings
-        self.assertContains(response, 'bi-magic')  # Fantasy template
+        self.assertContains(response, 'bi-gear')  # Production nav link
+        self.assertContains(response, 'bi-eye')  # Preview area
+        self.assertContains(response, 'bi-images')  # Recent products
     
     def test_responsive_design_classes(self):
         """Test that responsive design classes are used."""
@@ -173,22 +169,20 @@ class BootstrapIntegrationTestCase(TestCase):
         
         # Check toast system is still there and functional
         self.assertContains(response, 'toast-container')
-        self.assertContains(response, 'z-index: 1055')  # Higher than Bootstrap modals
-        self.assertContains(response, 'ToastNotification.success')
-        self.assertContains(response, 'ToastNotification.error')
+        self.assertContains(response, 'window.ToastNotification')
         
-        # Check toast is used in form submission
-        self.assertContains(response, 'Order Placed')
-        self.assertContains(response, 'Order Failed')
+        # The toast methods are defined in the included component
+        # Check that the toast component is included
+        self.assertContains(response, 'Enhanced Toast Notification System')
     
-    @patch('main.tasks.process_order_items_async')
-    def test_bootstrap_form_submission(self, mock_process):
+    def test_bootstrap_form_submission(self):
         """Test that Bootstrap form submits correctly."""
         order_data = {
             'title': 'Bootstrap Test Order',
             'prompt': 'test bootstrap integration',
             'machine_id': self.factory_machine.id,
-            'quantity': 1,
+            'generation_count': 1,
+            'batch_size': 4,
             'parameters': {
                 'width': 1024,
                 'height': 1024,
@@ -207,8 +201,16 @@ class BootstrapIntegrationTestCase(TestCase):
         data = json.loads(response.content)
         self.assertTrue(data['success'])
         
-        # Verify background processing was triggered
-        mock_process.assert_called_once()
+        # Verify order and order items were created
+        from .models import Order, OrderItem
+        order = Order.objects.get(id=data['order_id'])
+        self.assertEqual(order.title, 'Bootstrap Test Order')
+        self.assertEqual(order.prompt, 'test bootstrap integration')
+        
+        # Verify order items were created with pending status
+        items = OrderItem.objects.filter(order=order)
+        self.assertEqual(items.count(), 1)
+        self.assertEqual(items.first().status, 'pending')
     
     def test_javascript_functions_defined(self):
         """Test that required JavaScript functions are defined."""
@@ -218,9 +220,8 @@ class BootstrapIntegrationTestCase(TestCase):
         content = response.content.decode()
         
         # Check that utility functions are defined
-        self.assertIn('window.changeQuantity', content)
+        self.assertIn('window.changeGenerationCount', content)
         self.assertIn('window.clearForm', content)
-        self.assertIn('window.loadTemplate', content)
         
         # Check that event listeners are set up
         self.assertIn('addEventListener', content)

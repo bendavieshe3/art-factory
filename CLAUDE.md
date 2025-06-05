@@ -71,5 +71,6 @@ The application follows a factory abstraction pattern:
 
 - Always read ./.claude/kb/MOC.md at the start of each session to understand local knowledge
 - The github remote repository is https://github.com/bendavieshe3/art-factory
+- We are running in a virtual environment you need to activate first before running python code
 
 ## (Rest of the file remains unchanged)

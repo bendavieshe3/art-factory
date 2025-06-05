@@ -102,15 +102,15 @@ class DynamicParametersTestCase(TestCase):
         self.assertContains(response, 'updateDynamicParameters')
         self.assertContains(response, 'generateParameterFields')
     
-    @patch('main.tasks.process_order_items_async')
-    def test_order_with_dynamic_parameters_flux_model(self, mock_process):
+    def test_order_with_dynamic_parameters_flux_model(self):
         """Test placing an order with FLUX model using appropriate parameters."""
         # Order data with FLUX-appropriate parameters
         order_data = {
             'title': 'FLUX Test Order',
             'prompt': 'test dynamic parameters with FLUX',
             'machine_id': self.flux_machine.id,
-            'quantity': 1,
+            'generation_count': 1,
+            'batch_size': 4,
             'parameters': {
                 'width': 1024,
                 'height': 1024,
@@ -129,18 +129,22 @@ class DynamicParametersTestCase(TestCase):
         data = json.loads(response.content)
         self.assertTrue(data['success'])
         
-        # Verify background processing was triggered
-        mock_process.assert_called_once()
+        # Verify order was created with correct parameters
+        from .models import Order, OrderItem
+        order = Order.objects.get(id=data['order_id'])
+        self.assertEqual(order.title, 'FLUX Test Order')
+        items = OrderItem.objects.filter(order=order)
+        self.assertEqual(items.count(), 1)
     
-    @patch('main.tasks.process_order_items_async')
-    def test_order_with_dynamic_parameters_sdxl_model(self, mock_process):
+    def test_order_with_dynamic_parameters_sdxl_model(self):
         """Test placing an order with SDXL model using appropriate parameters."""
         # Order data with SDXL-appropriate parameters
         order_data = {
             'title': 'SDXL Test Order',
             'prompt': 'test dynamic parameters with SDXL',
             'machine_id': self.sdxl_machine.id,
-            'quantity': 1,
+            'generation_count': 1,
+            'batch_size': 4,
             'parameters': {
                 'image_size': 'square_hd',  # SDXL format
                 'num_inference_steps': 25,  # SDXL optimal
@@ -158,8 +162,12 @@ class DynamicParametersTestCase(TestCase):
         data = json.loads(response.content)
         self.assertTrue(data['success'])
         
-        # Verify background processing was triggered
-        mock_process.assert_called_once()
+        # Verify order was created with correct parameters
+        from .models import Order, OrderItem
+        order = Order.objects.get(id=data['order_id'])
+        self.assertEqual(order.title, 'SDXL Test Order')
+        items = OrderItem.objects.filter(order=order)
+        self.assertEqual(items.count(), 1)
     
     def test_parameter_validation_prevents_invalid_ranges(self):
         """Test that invalid parameter ranges are handled gracefully."""
@@ -171,7 +179,8 @@ class DynamicParametersTestCase(TestCase):
             'title': 'Invalid Range Test',
             'prompt': 'test invalid parameter range',
             'machine_id': self.flux_machine.id,
-            'quantity': 1,
+            'generation_count': 1,
+            'batch_size': 4,
             'parameters': {
                 'width': 1024,
                 'height': 1024,
