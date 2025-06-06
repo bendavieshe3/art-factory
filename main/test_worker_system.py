@@ -9,10 +9,10 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import Order, OrderItem, FactoryMachineDefinition
-from .models.orders import Worker
-from .workers import SmartWorker, spawn_worker_automatically
-from .foreman import Foreman
+from main.models import Order, OrderItem, FactoryMachineDefinition
+from main.models.orders import Worker
+from main.workers import SmartWorker, spawn_worker_automatically
+from main.foreman import Foreman
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)

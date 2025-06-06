@@ -28,15 +28,37 @@ Art Factory maintains a comprehensive Django-first testing approach that balance
 - End-to-end workflow testing
 
 ### Test Organization
+
+Art Factory follows Django's standard test organization with descriptive naming for different test categories:
+
+#### Core Test Files
 ```
 main/
-├── tests.py                          # Core test suite (1550+ lines)
-├── test_worker_system.py            # Worker and Foreman tests
-├── test_dynamic_parameters.py       # UI parameter handling
-├── test_bootstrap_integration.py    # Bootstrap 5 integration
-├── test_ui_notifications.py         # Toast notification system
-├── test_async_processing.py         # Async processing and retries
-└── test_negative_prompts.py         # TDD approach for new features
+├── tests.py                          # Core Django test suite (1550+ lines)
+│                                     # Contains: ModelTestCase, ViewTestCase, SignalTestCase, 
+│                                     #          TaskTestCase, ManagementCommandTestCase,
+│                                     #          IntegrationTestCase, BatchGenerationTestCase
+│
+├── test_worker_system.py            # Worker system integration tests
+├── test_dynamic_parameters.py       # Dynamic parameter handling (unit tests)
+├── test_bootstrap_integration.py    # Bootstrap 5 UI integration tests
+├── test_ui_notifications.py         # Toast notification system tests
+├── test_async_processing.py         # Async processing and retry tests
+├── test_negative_prompts.py         # Negative prompt functionality tests
+├── test_batch_generation.py         # Batch generation integration tests
+└── test_sdxl_fix.py                 # SDXL model fix validation tests
+```
+
+#### Test Categories
+- **Unit Tests**: Fast, isolated tests for business logic (test_dynamic_parameters.py, test_negative_prompts.py)
+- **Integration Tests**: Tests that combine multiple components (test_bootstrap_integration.py, test_worker_system.py, test_async_processing.py)
+- **UI Tests**: Frontend component and interaction tests (test_ui_notifications.py, test_bootstrap_integration.py)
+- **System Tests**: End-to-end workflow validation (test_batch_generation.py, test_sdxl_fix.py)
+
+#### Management Commands
+```
+main/management/commands/
+└── test_fal.py                      # Test utility for fal.ai integration
 ```
 
 ## Target State Vision
@@ -247,6 +269,24 @@ jobs:
 - **Performance**: Test suite completes in <2 minutes
 - **Reliability**: All tests must pass consistently
 - **Security**: Security tests must be included for new features
+
+## Test Organization Best Practices
+
+### Naming Conventions
+- **test_*.py**: Files containing Django test cases
+- **Test case naming**: Descriptive names indicating the component being tested
+- **Test method naming**: `test_<specific_behavior>` pattern
+
+### File Organization Principles
+1. **Keep related tests together**: UI tests, worker tests, etc. in separate files
+2. **Use descriptive file names**: `test_bootstrap_integration.py` vs `test_ui.py`
+3. **Follow Django conventions**: All test files in the main app directory
+4. **Separate test categories**: Unit tests focus on single components, integration tests on component interaction
+
+### Test File Management
+- **Temporary files**: Automatically ignored via .gitignore patterns
+- **Log files**: Test execution logs are temporary and not committed
+- **Import consistency**: All test files use absolute imports (`from main.models import ...`)
 
 ## Test Execution
 

@@ -6,7 +6,7 @@ from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from unittest.mock import patch
 
-from .models import FactoryMachineDefinition
+from main.models import FactoryMachineDefinition
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
@@ -202,7 +202,7 @@ class BootstrapIntegrationTestCase(TestCase):
         self.assertTrue(data['success'])
         
         # Verify order and order items were created
-        from .models import Order, OrderItem
+        from main.models import Order, OrderItem
         order = Order.objects.get(id=data['order_id'])
         self.assertEqual(order.title, 'Bootstrap Test Order')
         self.assertEqual(order.prompt, 'test bootstrap integration')

@@ -9,7 +9,7 @@ from unittest.mock import patch, Mock
 from io import StringIO
 from django.core.management import call_command
 
-from .models import FactoryMachineDefinition, Order, OrderItem, LogEntry
+from main.models import FactoryMachineDefinition, Order, OrderItem, LogEntry
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)

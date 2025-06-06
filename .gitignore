@@ -91,6 +91,12 @@ coverage.xml
 *.py,cover
 .hypothesis/
 
+# Test artifacts and temporary files
+test_output.log
+test_results.log
+full_test_results.log
+*_test_*.log
+
 # Jupyter Notebook
 .ipynb_checkpoints
 

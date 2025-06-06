@@ -5,7 +5,7 @@ import json
 from django.test import TestCase, Client, override_settings
 from unittest.mock import patch
 
-from .models import FactoryMachineDefinition
+from main.models import FactoryMachineDefinition
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
@@ -130,7 +130,7 @@ class DynamicParametersTestCase(TestCase):
         self.assertTrue(data['success'])
         
         # Verify order was created with correct parameters
-        from .models import Order, OrderItem
+        from main.models import Order, OrderItem
         order = Order.objects.get(id=data['order_id'])
         self.assertEqual(order.title, 'FLUX Test Order')
         items = OrderItem.objects.filter(order=order)
@@ -163,7 +163,7 @@ class DynamicParametersTestCase(TestCase):
         self.assertTrue(data['success'])
         
         # Verify order was created with correct parameters
-        from .models import Order, OrderItem
+        from main.models import Order, OrderItem
         order = Order.objects.get(id=data['order_id'])
         self.assertEqual(order.title, 'SDXL Test Order')
         items = OrderItem.objects.filter(order=order)

@@ -8,7 +8,7 @@ from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import (
+from main.models import (
     Product, Order, OrderItem, Worker,
     FactoryMachineDefinition, FactoryMachineInstance
 )
