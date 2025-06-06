@@ -8,7 +8,8 @@ Art Factory maintains a comprehensive Django-first testing approach that balance
 
 ### Testing Infrastructure
 - **Framework**: Django's built-in unittest framework (1550+ lines of tests)
-- **Test Runner**: Custom `run_tests.sh` with categorized test suites
+- **Test Runner**: Custom `run_tests.sh` with categorized test suites and coverage support
+- **Coverage**: Comprehensive coverage reporting with coverage.py (14.71% baseline)
 - **Database**: In-memory SQLite for fast test execution
 - **Configuration**: Dedicated `test_settings.py` with proper isolation
 
@@ -303,7 +304,12 @@ jobs:
 ./run_tests.sh views
 ./run_tests.sh integration
 
-# With coverage
+# Coverage testing (recommended)
+./run_tests.sh coverage           # Run all tests with coverage
+./run_tests.sh models --coverage  # Run specific tests with coverage
+./run_tests.sh all --coverage     # Run all tests with coverage
+
+# Manual coverage commands
 coverage run manage.py test --settings=ai_art_factory.test_settings
 coverage report --show-missing
 coverage html
@@ -319,15 +325,73 @@ coverage html
 - **integration**: End-to-end workflow tests
 - **batch**: Batch generation tests
 
+## Coverage Reporting
+
+### Overview
+Art Factory uses coverage.py for comprehensive test coverage analysis. Coverage reporting helps identify untested code and maintain quality standards.
+
+### Current Coverage Status
+- **Baseline Coverage**: 14.71% (as of coverage implementation)
+- **Target Coverage**: 90% line coverage, 85% branch coverage
+- **Quality Threshold**: 90% required for CI/CD pass
+
+### Coverage Configuration
+Coverage is configured via `.coveragerc` with the following key settings:
+- **Source**: All project files excluding migrations, tests, and vendor code
+- **Reporting**: Shows missing line numbers and generates multiple formats
+- **HTML Output**: Detailed reports in `htmlcov/` directory
+- **XML Output**: CI/CD compatible format in `coverage.xml`
+
+### Running Coverage
+```bash
+# Recommended: Use test runner with coverage
+./run_tests.sh coverage                 # Full suite with coverage
+./run_tests.sh models --coverage        # Specific test with coverage
+
+# Direct coverage commands
+coverage run manage.py test --settings=ai_art_factory.test_settings
+coverage report --show-missing          # Terminal report
+coverage html                          # HTML report (htmlcov/index.html)
+coverage xml                           # XML report (coverage.xml)
+
+# Coverage validation
+coverage report --fail-under=90        # Check if coverage meets threshold
+```
+
+### Coverage Reports
+1. **Terminal Report**: Quick summary with missing line numbers
+2. **HTML Report**: Interactive browsable report at `htmlcov/index.html`
+3. **XML Report**: Machine-readable format for CI/CD integration
+
+### Coverage Analysis Guidelines
+- **Focus Areas**: Prioritize coverage for core business logic and models
+- **Exclude**: Don't worry about 100% coverage for Django admin, migrations, or settings
+- **Critical Paths**: Ensure all API endpoints and worker processes have coverage
+- **Edge Cases**: Use coverage gaps to identify missing test scenarios
+
+### Current Coverage Gaps
+Based on baseline analysis, the following areas need attention:
+- **Views** (11.33%): API endpoints and UI views need comprehensive testing
+- **Workers** (0%): Background worker system needs test coverage
+- **Tasks** (0%): Async task processing needs testing
+- **Management Commands** (0%): CLI commands need validation testing
+- **Factory Machines** (0%): Core production logic needs coverage
+
+### Coverage Improvement Strategy
+1. **Phase 1**: Focus on models and core business logic (target 60%)
+2. **Phase 2**: Add view and API endpoint coverage (target 75%)
+3. **Phase 3**: Comprehensive worker and task coverage (target 90%)
+
 ## Dependencies and Requirements
 
 ### Core Testing Dependencies
 ```txt
-# Current (Django built-in)
+# Current (Django built-in + coverage)
 django>=5.1
-
-# Phase 1 Additions
 coverage==7.6.9
+
+# Phase 1 Complete
+# ✅ Coverage reporting implemented
 
 # Phase 2 Additions
 factory-boy==3.3.1

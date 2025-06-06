@@ -1,0 +1,66 @@
+[run]
+# Specify what to include in coverage analysis
+source = .
+omit = 
+    # Virtual environment
+    venv/*
+    */venv/*
+    
+    # Django and Python system files
+    */migrations/*
+    */site-packages/*
+    */lib/python*/*
+    
+    # Configuration and settings
+    ai_art_factory/wsgi.py
+    ai_art_factory/asgi.py
+    manage.py
+    
+    # Test files themselves
+    */test*.py
+    */tests.py
+    */*test*.py
+    
+    # Generated and temporary files
+    */fixtures/*
+    generate_fixtures.py
+    setup-mcp.sh
+    run_tests.sh
+    
+    # Static files and media
+    static/*
+    media/*
+    templates/*
+
+[report]
+# Reporting options
+precision = 2
+show_missing = True
+sort = -Cover
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+    
+    # Don't complain about missing debug-only code
+    def __repr__
+    def __str__
+    
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+    
+    # Don't complain if non-runnable code isn't run
+    if __name__ == .__main__.:
+    if settings.DEBUG:
+    
+    # Don't complain about abstract methods
+    @abstractmethod
+
+[html]
+# HTML report configuration
+directory = htmlcov
+title = Art Factory Coverage Report
+
+[xml]
+# XML report for CI/CD integration
+output = coverage.xml
