@@ -3,6 +3,8 @@ Tests for negative prompt functionality across the Art Factory system.
 These tests are written to fail initially and guide the implementation.
 """
 import json
+import os
+import random
 from unittest.mock import patch, MagicMock
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
@@ -12,6 +14,11 @@ from main.models import (
     Product, Order, OrderItem, Worker,
     FactoryMachineDefinition, FactoryMachineInstance
 )
+
+
+def get_test_pid():
+    """Generate a unique test PID to avoid conflicts."""
+    return os.getpid() + random.randint(10000, 99999)
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
@@ -411,10 +418,18 @@ class NegativePromptIntegrationTestCase(TestCase):
         )
         
         # Create worker
+        test_pid = get_test_pid()
         self.worker = Worker.objects.create(
             name='test-worker',
-            process_id=12345
+            process_id=test_pid
         )
+    
+    def tearDown(self):
+        """Clean up test resources."""
+        # Clean up any Worker model instances
+        Worker.objects.all().delete()
+        
+        super().tearDown()
     
     def test_full_workflow_with_negative_prompt(self):
         """Test complete workflow from order placement to product creation with negative prompt."""

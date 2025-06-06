@@ -4,6 +4,7 @@ Tests for the autonomous worker system.
 import os
 import time
 import threading
+import random
 from unittest.mock import patch, Mock
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -15,12 +16,18 @@ from main.workers import SmartWorker, spawn_worker_automatically
 from main.foreman import Foreman
 
 
+def get_test_pid():
+    """Generate a unique test PID to avoid conflicts."""
+    return os.getpid() + random.randint(10000, 99999)
+
+
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
 class WorkerSystemTestCase(TestCase):
     """Test the autonomous worker system."""
     
     def setUp(self):
         """Set up test data."""
+        self.workers_to_cleanup = []
         self.flux_machine = FactoryMachineDefinition.objects.create(
             name='fal-ai/flux/schnell',
             display_name='FLUX.1 Schnell',
@@ -45,19 +52,35 @@ class WorkerSystemTestCase(TestCase):
             is_active=True
         )
     
+    def tearDown(self):
+        """Clean up test resources."""
+        # Clean up any SmartWorker instances created during tests
+        for worker in self.workers_to_cleanup:
+            try:
+                if hasattr(worker, 'graceful_exit'):
+                    worker.graceful_exit("Test cleanup")
+            except Exception:
+                pass  # Ignore cleanup errors
+        
+        # Clean up any Worker model instances that might still exist
+        Worker.objects.all().delete()
+        
+        super().tearDown()
+    
     @patch('main.workers.spawn_worker_automatically')
     def test_worker_model_creation(self, mock_spawn):
         """Test Worker model creation and basic functionality."""
+        test_pid = get_test_pid()
         worker = Worker.objects.create(
             name='test-worker',
-            process_id=12345,
+            process_id=test_pid,
             provider='fal.ai',
             max_batch_size=3,
             status='starting'
         )
         
         self.assertEqual(worker.name, 'test-worker')
-        self.assertEqual(worker.process_id, 12345)
+        self.assertEqual(worker.process_id, test_pid)
         self.assertEqual(worker.provider, 'fal.ai')
         self.assertEqual(worker.max_batch_size, 3)
         self.assertEqual(worker.status, 'starting')
@@ -101,6 +124,7 @@ class WorkerSystemTestCase(TestCase):
     def test_smart_worker_initialization(self):
         """Test SmartWorker initialization."""
         worker = SmartWorker(max_batch_size=3)
+        self.workers_to_cleanup.append(worker)
         
         self.assertEqual(worker.max_batch_size, 3)
         self.assertTrue(worker.is_running)
@@ -129,9 +153,11 @@ class WorkerSystemTestCase(TestCase):
             )
             items.append(item)
         
-        # Create and register worker with mock PID to avoid conflicts
-        with patch('os.getpid', return_value=11111):
+        # Create and register worker with unique test PID
+        test_pid = get_test_pid()
+        with patch('os.getpid', return_value=test_pid):
             worker = SmartWorker(max_batch_size=2)
+            self.workers_to_cleanup.append(worker)
             worker.register_worker()
         
         # Test work claiming
@@ -159,6 +185,7 @@ class WorkerSystemTestCase(TestCase):
     def test_worker_no_work_exit(self, mock_spawn):
         """Test that worker exits when no work is available."""
         worker = SmartWorker(max_batch_size=5)
+        self.workers_to_cleanup.append(worker)
         worker.register_worker()
         
         # No OrderItems exist, so worker should find no work
@@ -177,9 +204,10 @@ class WorkerSystemTestCase(TestCase):
         """Test foreman detection of stalled workers."""
         # Create a stalled worker
         old_time = timezone.now() - timedelta(minutes=5)
+        test_pid = get_test_pid()
         stalled_worker = Worker.objects.create(
             name='stalled-worker',
-            process_id=99999,  # Non-existent PID
+            process_id=test_pid,  # Test PID that won't conflict
             provider='fal.ai',
             status='working'
         )
@@ -280,6 +308,7 @@ class WorkerSystemTestCase(TestCase):
         
         # Create worker with 5-item batch limit
         worker = SmartWorker(max_batch_size=5)
+        self.workers_to_cleanup.append(worker)
         worker.register_worker()
         
         # Worker should be able to claim multiple batches
@@ -347,12 +376,16 @@ class WorkerSystemTestCase(TestCase):
                 )
         
         # Create universal workers (no provider specificity)
-        # Mock different process IDs to avoid UNIQUE constraint violation
-        with patch('os.getpid', side_effect=[12345, 12346]):
+        # Use unique test PIDs to avoid UNIQUE constraint violation
+        test_pid1 = get_test_pid()
+        test_pid2 = get_test_pid()
+        with patch('os.getpid', side_effect=[test_pid1, test_pid2]):
             worker1 = SmartWorker(max_batch_size=5)
+            self.workers_to_cleanup.append(worker1)
             worker1.register_worker()
             
             worker2 = SmartWorker(max_batch_size=5)
+            self.workers_to_cleanup.append(worker2)
             worker2.register_worker()
         
         # First worker should claim available work

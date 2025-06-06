@@ -170,16 +170,35 @@ class ModelTestCase(TestCase):
     
     def setUp(self):
         # Minimal, focused test data setup
+        self.workers_to_cleanup = []  # Track resources for cleanup
+        self.created_files = []
         pass
     
     def tearDown(self):
         # Explicit cleanup of files, workers, etc.
-        pass
+        for worker in self.workers_to_cleanup:
+            try:
+                if hasattr(worker, 'graceful_exit'):
+                    worker.graceful_exit("Test cleanup")
+            except Exception:
+                pass
+        
+        # Clean up any Worker model instances
+        Worker.objects.all().delete()
+        
+        super().tearDown()
     
     def test_specific_behavior(self):
         """Test one specific behavior with clear assertions."""
         pass
 ```
+
+#### Resource Management Guidelines
+- **Worker Cleanup**: Always add SmartWorker instances to `self.workers_to_cleanup`
+- **File Cleanup**: Use temporary directories from test_settings.py
+- **Dynamic PIDs**: Use `get_test_pid()` instead of hardcoded values
+- **Database Cleanup**: Use `Worker.objects.all().delete()` in tearDown
+- **Error Handling**: Wrap cleanup in try/except to prevent test failures
 
 ### Mock and Isolation Standards
 

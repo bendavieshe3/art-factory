@@ -1,6 +1,8 @@
 import json
 import tempfile
 import unittest.mock as mock
+import os
+import random
 from unittest.mock import patch, MagicMock
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
@@ -13,6 +15,11 @@ from .models import (
     Product, Order, OrderItem, Worker,
     FactoryMachineDefinition, FactoryMachineInstance, LogEntry
 )
+
+
+def get_test_pid():
+    """Generate a unique test PID to avoid conflicts."""
+    return os.getpid() + random.randint(10000, 99999)
 
 # Use test settings for all test cases
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
@@ -391,6 +398,21 @@ class IntegrationTestCase(TestCase):
         call_command('load_seed_data')
         
         self.client = Client()
+        self.created_files = []
+    
+    def tearDown(self):
+        """Clean up test resources."""
+        # Clean up any created files
+        import os
+        for file_path in self.created_files:
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception:
+                pass  # Ignore cleanup errors
+        
+        # Note: Log files are now in temporary directory via test_settings.py
+        super().tearDown()
     
     @patch('fal_client.submit')
     @patch('httpx.Client.get')
@@ -655,6 +677,7 @@ class RetryMechanismTestCase(TestCase):
     
     def setUp(self):
         """Set up test data."""
+        self.workers_to_cleanup = []
         self.factory_machine = FactoryMachineDefinition.objects.create(
             name="test_machine",
             display_name="Test Machine",
@@ -669,6 +692,21 @@ class RetryMechanismTestCase(TestCase):
             factory_machine_name="test_machine",
             provider="test"
         )
+    
+    def tearDown(self):
+        """Clean up test resources."""
+        # Clean up any workers created during tests
+        for worker in self.workers_to_cleanup:
+            try:
+                if hasattr(worker, 'graceful_exit'):
+                    worker.graceful_exit("Test cleanup")
+            except Exception:
+                pass  # Ignore cleanup errors
+        
+        # Clean up any Worker model instances
+        Worker.objects.all().delete()
+        
+        super().tearDown()
     
     def test_transient_failure_detection(self):
         """Test that transient failures are properly detected."""
@@ -812,10 +850,12 @@ class RetryMechanismTestCase(TestCase):
         # Create worker
         from main.workers import SmartWorker
         worker = SmartWorker()
+        self.workers_to_cleanup.append(worker)
         worker.name = "test-worker"
+        test_pid = get_test_pid()
         worker.worker_record = Worker.objects.create(
             name=worker.name,
-            process_id=12345,
+            process_id=test_pid,
             provider='universal',
             max_batch_size=5,
             status='working'
