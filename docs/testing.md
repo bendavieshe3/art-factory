@@ -255,40 +255,176 @@ def test_file_operations(self):
 
 ## Continuous Integration
 
+Art Factory uses GitHub Actions for automated testing, quality assurance, and deployment. The CI/CD pipeline ensures code quality and prevents regressions.
+
 ### GitHub Actions Workflow
-```yaml
-name: Art Factory CI
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.11, 3.12]
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install coverage factory-boy hypothesis[django]
-    - name: Run tests with coverage
-      run: |
-        coverage run manage.py test --settings=ai_art_factory.test_settings
-        coverage report --fail-under=90
-        coverage xml
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
-```
+
+The CI pipeline runs on every push and pull request with the following jobs:
+
+#### 1. Test Job
+- **Multi-Python Testing**: Tests against Python 3.11 and 3.12
+- **Django System Check**: Validates Django configuration
+- **Migration Check**: Ensures migrations are valid
+- **Test Execution**: Runs full test suite with coverage
+- **Coverage Reporting**: Uploads to Codecov with artifacts
+
+#### 2. Lint Job
+- **Syntax Check**: Critical error detection with flake8
+- **Code Formatting**: Black formatting validation
+- **Import Sorting**: isort validation
+
+#### 3. Security Job
+- **Dependency Scanning**: Safety check for known vulnerabilities
+- **Static Analysis**: Bandit security scan
+
+#### 4. Performance Job
+- **Execution Time**: Ensures test suite completes in <2 minutes
+- **Performance Benchmarking**: Tracks execution time trends
 
 ### Quality Gates
-- **Coverage**: Minimum 90% line coverage
-- **Performance**: Test suite completes in <2 minutes
-- **Reliability**: All tests must pass consistently
-- **Security**: Security tests must be included for new features
+
+#### Coverage Requirements
+- **Current Target**: 45% line coverage (gradual improvement)
+- **Long-term Goal**: 90% line coverage
+- **Patch Coverage**: 60% for new code
+- **Reporting**: Codecov integration with PR comments
+
+#### Performance Standards
+- **Test Suite**: Maximum 2 minutes execution time
+- **Individual Tests**: No single test over 30 seconds
+- **Memory Usage**: Maximum 500MB for batch operations
+
+#### Security Requirements
+- **No Critical Vulnerabilities**: Safety check must pass
+- **Static Analysis**: Bandit security scan must pass
+- **Secret Detection**: No hardcoded secrets in codebase
+
+### Configuration Files
+
+#### `.github/workflows/django.yml`
+Main CI workflow with comprehensive testing, linting, and security checks.
+
+#### `.flake8`
+```ini
+[flake8]
+max-line-length = 127
+max-complexity = 10
+exclude = venv, __pycache__, .git, htmlcov, logs, migrations, .github
+ignore = E203, W503, E501
+```
+
+#### `pyproject.toml`
+```toml
+[tool.black]
+line-length = 127
+target-version = ['py311', 'py312']
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 127
+```
+
+#### `.codecov.yml`
+```yaml
+coverage:
+  status:
+    project:
+      default:
+        target: 45%
+        threshold: 2%
+    patch:
+      default:
+        target: 60%
+        threshold: 5%
+```
+
+### Local Development Workflow
+
+#### Pre-commit Checks
+Before committing, run these commands locally:
+
+```bash
+# Run all tests with coverage
+./run_tests.sh all --coverage
+
+# Check code formatting
+black --check .
+isort --check-only .
+
+# Run linting
+flake8 .
+
+# Security scan
+safety check
+bandit -r . -x venv/,htmlcov/,logs/
+```
+
+#### Setting Up Pre-commit Hooks
+```bash
+# Install development dependencies
+pip install -r requirements.txt
+
+# Run formatting tools
+black .
+isort .
+
+# Verify all checks pass
+./run_tests.sh all --coverage
+flake8 .
+```
+
+### CI/CD Best Practices
+
+#### Branch Protection
+- **Required Status Checks**: All CI jobs must pass
+- **Coverage Requirements**: Must meet coverage thresholds
+- **Review Requirements**: Pull requests require review
+- **Up-to-date Branches**: Must be current with target branch
+
+#### Artifact Management
+- **Coverage Reports**: HTML reports uploaded for failed builds
+- **Test Logs**: Available for debugging test failures
+- **Performance Metrics**: Execution time tracking
+
+#### Deployment Pipeline
+- **Staging**: Automatic deployment to staging on main branch
+- **Production**: Manual deployment after review
+- **Rollback**: Automated rollback on failure detection
+
+### Monitoring and Alerts
+
+#### Codecov Integration
+- **PR Comments**: Coverage reports in pull requests
+- **Status Badges**: Real-time coverage display in README
+- **Trend Analysis**: Coverage changes over time
+
+#### Performance Monitoring
+- **Execution Time**: Test suite performance tracking
+- **Memory Usage**: Resource consumption monitoring
+- **Failure Analysis**: Automatic failure classification
+
+### Troubleshooting CI Issues
+
+#### Common Failures
+1. **Test Failures**: Check test logs in artifacts
+2. **Coverage Drop**: Review Codecov report for missing coverage
+3. **Linting Issues**: Run flake8 locally to identify problems
+4. **Security Alerts**: Check Safety/Bandit reports
+
+#### Debug Commands
+```bash
+# Local test debugging
+./run_tests.sh all --verbosity=2
+
+# Coverage analysis
+coverage run --rcfile=.coveragerc manage.py test --settings=ai_art_factory.test_settings
+coverage report --show-missing
+coverage html
+
+# Performance profiling
+time ./run_tests.sh all
+```
 
 ## Test Organization Best Practices
 

@@ -1,0 +1,28 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 45%
+        threshold: 2%
+        if_no_uploads: error
+    patch:
+      default:
+        target: 60%
+        threshold: 5%
+        if_no_uploads: error
+
+comment:
+  layout: "reach,diff,flags,tree,reach"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "venv/*"
+  - "htmlcov/*"
+  - "logs/*"
+  - "*/migrations/*"
+  - "*/test_*.py"
+  - "manage.py"
+  - "*/settings.py"
+  - "*/test_settings.py"
+  - "*/__init__.py"

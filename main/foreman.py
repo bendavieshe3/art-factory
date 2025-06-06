@@ -282,5 +282,4 @@ def stop_foreman():
 
 def is_foreman_running():
     """Check if foreman is currently running."""
-    global _foreman_thread
-    return _foreman_thread and _foreman_thread.is_alive()
+    return _foreman_thread is not None and _foreman_thread.is_alive()

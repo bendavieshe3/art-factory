@@ -1,0 +1,36 @@
+[tool.black]
+line-length = 127
+target-version = ['py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | htmlcov
+  | logs
+  | migrations
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 127
+known_django = "django"
+known_first_party = ["main", "ai_art_factory"]
+sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip_glob = ["*/migrations/*", "venv/*", "htmlcov/*", "logs/*"]
+
+[tool.bandit]
+exclude_dirs = ["venv", "htmlcov", "logs", "migrations"]
+skips = ["B101"]  # Skip assert_used test

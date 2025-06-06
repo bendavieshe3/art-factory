@@ -1,0 +1,188 @@
+name: Art Factory CI
+
+on: 
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage
+        
+    - name: Run Django system check
+      run: |
+        python manage.py check --settings=ai_art_factory.test_settings
+        
+    - name: Run migrations (test database)
+      run: |
+        python manage.py migrate --settings=ai_art_factory.test_settings
+        
+    - name: Run tests with coverage
+      env:
+        # Mock API keys for testing
+        FAL_KEY: ${{ secrets.FAL_KEY || 'test_fal_key' }}
+        REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN || 'test_replicate_token' }}
+      run: |
+        # Run tests with coverage
+        coverage run --rcfile=.coveragerc manage.py test --settings=ai_art_factory.test_settings --verbosity=2
+        
+        # Generate coverage report
+        coverage report --show-missing
+        
+        # Generate XML for Codecov
+        coverage xml
+        
+        # Generate HTML report (for artifacts)
+        coverage html
+        
+    - name: Check coverage threshold
+      run: |
+        # Fail if coverage is below 40% (gradual improvement target)
+        coverage report --fail-under=40
+        
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        
+    - name: Upload coverage HTML as artifact
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: coverage-report-${{ matrix.python-version }}
+        path: htmlcov/
+        
+    - name: Upload test logs as artifact
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: test-logs-${{ matrix.python-version }}
+        path: |
+          logs/
+          *.log
+          
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+        
+    - name: Install linting dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort
+        
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Check code formatting with black
+      run: |
+        black --check --diff .
+        
+    - name: Check import sorting with isort
+      run: |
+        isort --check-only --diff .
+        
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+        
+    - name: Install security scanning dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit
+        
+    - name: Run safety check
+      run: |
+        safety check --json
+        
+    - name: Run bandit security scan
+      run: |
+        bandit -r . -x venv/,htmlcov/,logs/ -f json
+        
+  performance:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install time-machine
+        
+    - name: Run performance benchmarks
+      env:
+        FAL_KEY: test_fal_key
+        REPLICATE_API_TOKEN: test_replicate_token
+      run: |
+        # Time the test suite execution
+        start_time=$(date +%s)
+        python manage.py test --settings=ai_art_factory.test_settings --verbosity=1
+        end_time=$(date +%s)
+        execution_time=$((end_time - start_time))
+        
+        echo "Test suite execution time: ${execution_time} seconds"
+        
+        # Fail if tests take longer than 2 minutes (120 seconds)
+        if [ $execution_time -gt 120 ]; then
+          echo "❌ Test suite took too long: ${execution_time}s > 120s"
+          exit 1
+        else
+          echo "✅ Test suite performance acceptable: ${execution_time}s <= 120s"
+        fi

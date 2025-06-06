@@ -1,0 +1,19 @@
+[flake8]
+max-line-length = 127
+max-complexity = 10
+exclude = 
+    venv,
+    __pycache__,
+    .git,
+    htmlcov,
+    logs,
+    migrations,
+    .github
+ignore = 
+    E203,
+    W503,
+    E501
+per-file-ignores =
+    __init__.py:F401
+    settings.py:E501
+    test_*.py:E501
