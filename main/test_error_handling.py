@@ -258,7 +258,7 @@ class ErrorHandlerIntegrationTestCase(TestCase):
         self.assertEqual(log_entry.order_item, self.order_item)
         self.assertEqual(log_entry.level, "INFO")  # INFO because it's retryable
         self.assertIn("error_category", log_entry.extra_data)
-        self.assertEqual(log_entry.extra_data["error_category"], ErrorCategory.NETWORK)
+        self.assertEqual(log_entry.extra_data["error_category"], ErrorCategory.TRANSIENT)
 
     def test_context_information_logging(self):
         """Test that context information is properly logged."""

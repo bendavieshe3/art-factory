@@ -33,10 +33,11 @@ class ErrorAnalyzer:
     # Provider-specific error patterns
     FAL_AI_PATTERNS = {
         ErrorCategory.RATE_LIMITED: [
-            r"rate.?limit.?exceeded",
+            r"rate.*limit.*exceeded",
             r"quota.?exceeded",
             r"too.?many.?requests",
             r"429",
+            r"rate.*limit",
         ],
         ErrorCategory.AUTHENTICATION: [
             r"invalid.?api.?key",
@@ -56,17 +57,29 @@ class ErrorAnalyzer:
         ],
         ErrorCategory.CONTENT_POLICY: [
             r"nsfw.?detected",
-            r"content.?policy.?violation",
+            r"content.*policy.*violation",
+            r"content.*violates.*policies",
             r"inappropriate.?content",
             r"safety.?check.?failed",
+            r"usage.*policies",
+        ],
+        ErrorCategory.TRANSIENT: [
+            r"504.*gateway.*timeout",
+            r"timeout.?occurred",
+            r"request.?timeout",
+            r"temporary.?failure",
+            r"temporary.?network.?failure",
+            r"try.?again",
         ],
         ErrorCategory.PROVIDER_OUTAGE: [
             r"service.?unavailable",
             r"502.?bad.?gateway",
             r"503.?service.?unavailable",
-            r"504.?gateway.?timeout",
             r"internal.?server.?error",
             r"500",
+            r"502",
+            r"503",
+            r"connection.?refused",
         ],
     }
 
@@ -103,19 +116,41 @@ class ErrorAnalyzer:
             r"503",
             r"504",
             r"500",
+            r"connection.?refused",
+        ],
+        ErrorCategory.TRANSIENT: [
+            r"timeout.?occurred",
+            r"request.?timeout",
+            r"temporary.?failure",
+            r"temporary.?network.?failure",
+            r"try.?again",
         ],
     }
 
-    # Common network and system patterns
+    # Common network and system patterns (transient connectivity issues)
     NETWORK_PATTERNS = [
-        r"connection.?timeout",
+        r"connection.*timeout",
+        r"timed.*out",
         r"connection.?reset",
         r"network.?unreachable",
         r"dns.?resolution.?failed",
+        r"failed.?to.?resolve.?hostname",
         r"server.?disconnected",
         r"connection.?aborted",
         r"socket.?error",
-        r"timeout",
+        r"ssl.?certificate.?verification.?failed",
+        r"ssl.?error",
+        r"connection.?error",
+        r"network.?error",
+    ]
+
+    # Transient errors that should be retried quickly
+    TRANSIENT_PATTERNS = [
+        r"temporary.*network.*failure",
+        r"temporary.*failure",
+        r"timeout.*occurred",
+        r"request.*timeout",
+        r"try.*again",
     ]
 
     FILE_SYSTEM_PATTERNS = [
@@ -126,6 +161,16 @@ class ErrorAnalyzer:
         r"directory.?not.?found",
         r"io.?error",
         r"disk.?error",
+        r"invalid.?filename",
+        r"file.?is.?being.?used",
+    ]
+
+    MEMORY_PATTERNS = [
+        r"out.?of.?memory",
+        r"memory.?error",
+        r"insufficient.?memory",
+        r"memory.?exhausted",
+        r"resource.?temporarily.?unavailable",
     ]
 
     @classmethod
@@ -144,6 +189,14 @@ class ErrorAnalyzer:
         # Check file system errors first (universal)
         if cls._matches_patterns(error_lower, cls.FILE_SYSTEM_PATTERNS):
             return ErrorCategory.FILE_SYSTEM, True, 30  # Retry after 30 seconds
+
+        # Check memory errors (universal)
+        if cls._matches_patterns(error_lower, cls.MEMORY_PATTERNS):
+            return ErrorCategory.TRANSIENT, True, 60  # Retry after 1 minute for memory issues
+
+        # Check transient errors (universal)
+        if cls._matches_patterns(error_lower, cls.TRANSIENT_PATTERNS):
+            return ErrorCategory.TRANSIENT, True, 5  # Retry quickly for transient errors
 
         # Check network errors (universal)
         if cls._matches_patterns(error_lower, cls.NETWORK_PATTERNS):
