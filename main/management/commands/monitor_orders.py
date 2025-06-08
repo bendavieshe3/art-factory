@@ -6,7 +6,6 @@ Useful for debugging and monitoring production system health.
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
-import json
 
 from main.models import Order, OrderItem, LogEntry
 
@@ -55,10 +54,10 @@ class Command(BaseCommand):
             count = OrderItem.objects.filter(order__in=orders, status=status).count()
             status_counts[status] = count
 
-        self.stdout.write(f"📊 Summary:")
+        self.stdout.write("📊 Summary:")
         self.stdout.write(f"  Total Orders: {total_orders}")
         self.stdout.write(f"  Total Order Items: {total_items}")
-        self.stdout.write(f"  Status Breakdown:")
+        self.stdout.write("  Status Breakdown:")
         for status, count in status_counts.items():
             if count > 0:
                 emoji = {
@@ -90,7 +89,7 @@ class Command(BaseCommand):
 
         # Show detailed order information if requested
         if show_details:
-            self.stdout.write(f"\n📋 Detailed Order Information:")
+            self.stdout.write("\n📋 Detailed Order Information:")
             for order in orders[:10]:  # Limit to 10 most recent
                 items = OrderItem.objects.filter(order=order)
                 self.stdout.write(f"\nOrder {order.id}: {order.title or '(no title)'}")
@@ -118,7 +117,7 @@ class Command(BaseCommand):
         ).order_by("-timestamp")[:5]
 
         if recent_logs.exists():
-            self.stdout.write(f"\n📝 Recent Processing Activity:")
+            self.stdout.write("\n📝 Recent Processing Activity:")
             for log in recent_logs:
                 event_type = log.extra_data.get("event_type", "unknown")
                 emoji = {"processing_started": "🚀", "item_completed": "✅", "item_failed": "❌"}.get(event_type, "📝")
@@ -126,13 +125,13 @@ class Command(BaseCommand):
                 self.stdout.write(f"  {emoji} {log.timestamp.strftime('%H:%M:%S')}: {log.message}")
 
         # Recommendations
-        self.stdout.write(f"\n💡 Recommendations:")
+        self.stdout.write("\n💡 Recommendations:")
 
         if status_counts.get("pending", 0) > 0:
-            self.stdout.write(f"  - Run 'python manage.py process_pending_orders' to retry stuck orders")
+            self.stdout.write("  - Run 'python manage.py process_pending_orders' to retry stuck orders")
 
         if status_counts.get("failed", 0) > 0:
-            self.stdout.write(f"  - Run 'python manage.py process_pending_orders --retry-failed' to retry failed orders")
+            self.stdout.write("  - Run 'python manage.py process_pending_orders --retry-failed' to retry failed orders")
 
         if status_counts.get("completed", 0) > 0:
             self.stdout.write(f"  - Check /inventory/ to view {status_counts['completed']} generated products")

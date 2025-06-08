@@ -6,10 +6,9 @@ These tests are written to fail initially and guide the implementation.
 import json
 import os
 import random
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
-from django.utils import timezone
 
 from main.models import Product, Order, OrderItem, Worker, FactoryMachineDefinition, FactoryMachineInstance
 

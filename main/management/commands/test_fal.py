@@ -1,7 +1,6 @@
 import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from main.models import OrderItem
 
 
 class Command(BaseCommand):
@@ -40,7 +39,7 @@ class Command(BaseCommand):
                 if final_result and isinstance(final_result, dict) and "images" in final_result:
                     self.stdout.write(f'Generated {len(final_result["images"])} image(s)')
                     for i, img in enumerate(final_result["images"]):
-                        self.stdout.write(f'  Image {i+1}: {img.get("url", "No URL")}')
+                        self.stdout.write(f'  Image {i + 1}: {img.get("url", "No URL")}')
             else:
                 self.stdout.write(f"Result type: {type(result)}, value: {result}")
 

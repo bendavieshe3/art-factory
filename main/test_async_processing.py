@@ -2,11 +2,10 @@
 Tests for asynchronous order processing and retry mechanisms.
 """
 
-import json
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from datetime import timedelta
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 from io import StringIO
 from django.core.management import call_command
 

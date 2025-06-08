@@ -4,7 +4,6 @@ Tests for dynamic parameter handling in the order page.
 
 import json
 from django.test import TestCase, Client, override_settings
-from unittest.mock import patch
 
 from main.models import FactoryMachineDefinition
 

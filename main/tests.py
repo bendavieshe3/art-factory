@@ -1,17 +1,13 @@
 import json
-import tempfile
-import unittest.mock as mock
 import os
 import random
 from unittest.mock import patch, MagicMock
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
-from django.conf import settings
 from django.core.management import call_command
-from django.utils import timezone
 from io import StringIO
 
-from .models import Product, Order, OrderItem, Worker, FactoryMachineDefinition, FactoryMachineInstance, LogEntry
+from .models import Product, Order, OrderItem, Worker, FactoryMachineDefinition
 
 
 def get_test_pid():

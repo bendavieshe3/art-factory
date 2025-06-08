@@ -8,10 +8,8 @@ import time
 import threading
 import logging
 import random
-from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
-from django.conf import settings
 
 from .models import Worker, OrderItem, FactoryMachineDefinition, LogEntry
 
@@ -435,7 +433,7 @@ def spawn_worker_automatically():
         worker_thread.daemon = True
         worker_thread.start()
 
-        logger.info(f"Spawned universal worker thread")
+        logger.info("Spawned universal worker thread")
 
     except Exception as e:
         logger.error(f"Failed to spawn worker: {e}")

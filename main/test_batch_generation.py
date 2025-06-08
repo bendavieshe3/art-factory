@@ -5,16 +5,15 @@ import os
 import sys
 import django
 import json
+from main.models import Order, FactoryMachineDefinition
+from main.views import place_order_api
+from django.test import RequestFactory
+from django.http import JsonResponse
 
 # Setup Django
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ai_art_factory.settings")
 django.setup()
-
-from main.models import Order, OrderItem, FactoryMachineDefinition
-from main.views import place_order_api
-from django.test import RequestFactory
-from django.http import JsonResponse
 
 
 def test_batch_generation():

@@ -3,10 +3,8 @@ Tests for the autonomous worker system.
 """
 
 import os
-import time
-import threading
 import random
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from datetime import timedelta
