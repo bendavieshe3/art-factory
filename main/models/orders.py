@@ -101,7 +101,8 @@ class OrderItem(models.Model):
 
     # Provider tracking
     provider_request_id = models.CharField(max_length=200, blank=True, help_text="Provider's request ID")
-    error_message = models.TextField(blank=True, help_text="Error details if failed")
+    error_message = models.TextField(blank=True, help_text="User-friendly error message")
+    error_category = models.CharField(max_length=50, blank=True, help_text="Error category for retry logic")
 
     # Retry tracking
     retry_count = models.PositiveIntegerField(default=0, help_text="Number of retry attempts")
@@ -146,10 +147,23 @@ class OrderItem(models.Model):
 
     def is_transient_failure(self):
         """Determine if the failure is transient and worth retrying."""
+        # Use error category if available (new error handling system)
+        if self.error_category:
+            from ..error_handling import ErrorCategory
+
+            retryable_categories = [
+                ErrorCategory.TRANSIENT,
+                ErrorCategory.RATE_LIMITED,
+                ErrorCategory.PROVIDER_OUTAGE,
+                ErrorCategory.NETWORK,
+                ErrorCategory.FILE_SYSTEM,
+            ]
+            return self.error_category in retryable_categories
+
+        # Fallback to legacy pattern matching for backward compatibility
         if not self.error_message:
             return False
 
-        # Common transient error patterns
         transient_patterns = [
             "Server disconnected without sending a response",
             "Connection timeout",

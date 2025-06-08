@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from .models import Worker, OrderItem, FactoryMachineDefinition, LogEntry
+from .error_handling import ErrorHandler, ErrorCategory
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class SmartWorker:
         self.name = f"worker-{int(time.time())}-{random.randint(100, 999)}"  # nosec B311
         self.worker_record = None
         self.is_running = True
+        self.error_handler = ErrorHandler(provider="universal")
 
     def run(self):
         """Main worker loop."""
@@ -311,31 +313,48 @@ class SmartWorker:
         order.save()
 
     def handle_item_failure(self, order_item, error_message):
-        """Handle failure of a single OrderItem with retry logic."""
-        order_item.error_message = error_message
+        """Handle failure of a single OrderItem with comprehensive error analysis."""
+        # Get provider from order for better error analysis
+        provider = order_item.order.provider if hasattr(order_item.order, "provider") else "unknown"
+
+        # Use error handler to analyze and categorize the error
+        error_info = self.error_handler.handle_error(
+            error_message,
+            order_item,
+            context={
+                "provider": provider,
+                "operation": "worker_processing",
+                "worker": self.name,
+            },
+        )
+
+        # Update order item based on error analysis
+        order_item.error_message = error_info["friendly_message"]["message"]
+        order_item.error_category = error_info["category"]
         order_item.completed_at = timezone.now()
 
-        # Check if this is a transient failure that can be retried
-        if order_item.retry_count < order_item.max_retries and order_item.is_transient_failure():
-            # Mark as failed for now, but it will be picked up for retry
+        if error_info["should_retry"] and order_item.retry_count < order_item.max_retries:
+            # Mark as failed but retryable
             order_item.status = "failed"
-            order_item.save()
 
             logger.info(
-                f"Worker {self.name} marking item {order_item.id} for retry (attempt {order_item.retry_count + 1}/{order_item.max_retries}): {error_message}"
+                f"Worker {self.name} marking item {order_item.id} for retry (attempt {order_item.retry_count + 1}/{order_item.max_retries}): {error_info['category']}"
             )
 
             # Log as INFO since it will be retried
             LogEntry.objects.create(
                 level="INFO",
-                message=f"Worker {self.name} item {order_item.id} will retry (attempt {order_item.retry_count + 1}/{order_item.max_retries}): {error_message}",
+                message=f"Worker {self.name} item {order_item.id} will retry: {error_info['friendly_message']['title']}",
                 logger_name="worker",
                 order=order_item.order,
                 order_item=order_item,
                 extra_data={
                     "event_type": "item_retry_scheduled",
                     "worker_id": self.worker_record.id,
-                    "error": error_message,
+                    "error_category": error_info["category"],
+                    "retry_delay": error_info["retry_delay"],
+                    "technical_error": error_message,
+                    "user_message": error_info["friendly_message"]["message"],
                     "retry_count": order_item.retry_count,
                     "max_retries": order_item.max_retries,
                 },
@@ -344,28 +363,30 @@ class SmartWorker:
             # Permanent failure or max retries exhausted
             if order_item.retry_count >= order_item.max_retries:
                 order_item.status = "exhausted"
-                logger.error(f"Worker {self.name} item {order_item.id} exhausted retries: {error_message}")
+                logger.error(f"Worker {self.name} item {order_item.id} exhausted retries: {error_info['category']}")
             else:
                 order_item.status = "failed"
-                logger.error(f"Worker {self.name} item {order_item.id} permanent failure: {error_message}")
-
-            order_item.save()
+                logger.error(f"Worker {self.name} item {order_item.id} permanent failure: {error_info['category']}")
 
             # Log as ERROR since it won't be retried
             LogEntry.objects.create(
                 level="ERROR",
-                message=f"Worker {self.name} failed item {order_item.id} (final): {error_message}",
+                message=f"Worker {self.name} failed item {order_item.id} (final): {error_info['friendly_message']['title']}",
                 logger_name="worker",
                 order=order_item.order,
                 order_item=order_item,
                 extra_data={
                     "event_type": "item_failed_final",
                     "worker_id": self.worker_record.id,
-                    "error": error_message,
+                    "error_category": error_info["category"],
+                    "technical_error": error_message,
+                    "user_message": error_info["friendly_message"]["message"],
                     "retry_count": order_item.retry_count,
                     "max_retries": order_item.max_retries,
                 },
             )
+
+        order_item.save()
 
         # Update order status after item failure
         self.update_order_status(order_item.order)

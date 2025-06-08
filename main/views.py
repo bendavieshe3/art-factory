@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 import json
 
 from .models import Product, Order, OrderItem, FactoryMachineDefinition, FactoryMachineInstance, LogEntry
+from .error_handling import ErrorHandler, UserFriendlyMessages, ErrorCategory
 
 
 def order_view(request):
@@ -306,9 +307,15 @@ def order_status_api(request, order_id):
                 "created_at": latest_item.product.created_at.isoformat(),
             }
 
-        # Get any error messages
+        # Get any error messages with user-friendly formatting
         error_items = items.filter(status="failed").exclude(error_message="")
-        error_messages = [item.error_message for item in error_items[:3]]  # Show up to 3 errors
+        error_messages = []
+        for item in error_items[:3]:  # Show up to 3 errors
+            # Try to get a more user-friendly message if available
+            if item.error_message:
+                error_messages.append(item.error_message)
+            else:
+                error_messages.append("An unexpected error occurred during generation.")
 
         return JsonResponse(
             {
@@ -337,25 +344,91 @@ def factory_machines_api(request):
 
 @csrf_exempt
 def place_order_api(request):
-    """API endpoint to place a new order."""
+    """API endpoint to place a new order with comprehensive error handling."""
     if request.method != "POST":
         return JsonResponse({"error": "Only POST method allowed"}, status=405)
 
     try:
-        data = json.loads(request.body)
+        # Parse request data
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Invalid JSON format",
+                    "user_message": "The request data was not formatted correctly. Please try again.",
+                },
+                status=400,
+            )
+
+        # Validate required fields
+        required_fields = ["machine_id", "prompt"]
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": f"Missing required fields: {', '.join(missing_fields)}",
+                    "user_message": "Please fill in all required fields and try again.",
+                },
+                status=400,
+            )
 
         # Get the factory machine
-        machine = get_object_or_404(FactoryMachineDefinition, id=data.get("machine_id"))
+        try:
+            machine = get_object_or_404(FactoryMachineDefinition, id=data.get("machine_id"))
+        except:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Invalid machine_id",
+                    "user_message": "The selected AI model is not available. Please refresh the page and try again.",
+                },
+                status=400,
+            )
 
-        # Get generation parameters
-        generation_count = data.get("generation_count", 1)
-        batch_size = data.get("batch_size", 4)
+        # Validate prompt length
+        prompt = data.get("prompt", "").strip()
+        if len(prompt) < 3:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Prompt too short",
+                    "user_message": "Your prompt must be at least 3 characters long.",
+                },
+                status=400,
+            )
+        elif len(prompt) > 2000:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Prompt too long",
+                    "user_message": "Your prompt must be less than 2000 characters.",
+                },
+                status=400,
+            )
+
+        # Get generation parameters with validation
+        generation_count = max(1, min(data.get("generation_count", 1), 10))  # Limit to 10 generations
+        batch_size = max(1, min(data.get("batch_size", 4), 4))  # Limit to 4 per batch
         total_products = generation_count * batch_size
+
+        # Validate total products limit
+        if total_products > 20:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Too many products requested",
+                    "user_message": "You can generate a maximum of 20 images in a single order. Please reduce your quantities.",
+                },
+                status=400,
+            )
 
         # Create the order
         order = Order.objects.create(
             title=data.get("title", ""),
-            prompt=data.get("prompt", ""),
+            prompt=prompt,
             negative_prompt=data.get("negative_prompt", ""),
             base_parameters=data.get("parameters", {}),
             factory_machine_name=machine.name,
@@ -368,10 +441,7 @@ def place_order_api(request):
         merged_parameters = machine.default_parameters.copy()
         merged_parameters.update(order.base_parameters)
 
-        # Validate batch size
-        max_batch_size = 4  # Both fal.ai and Replicate support up to 4
-        validated_batch_size = min(batch_size, max_batch_size)
-
+        # Set batch parameter based on provider
         if machine.provider == "fal.ai":
             batch_param = "num_images"
         else:  # replicate
@@ -381,15 +451,15 @@ def place_order_api(request):
         for generation in range(generation_count):
             # Set batch parameter in the item's parameters
             item_parameters = merged_parameters.copy()
-            item_parameters[batch_param] = validated_batch_size
+            item_parameters[batch_param] = batch_size
 
             OrderItem.objects.create(
                 order=order,
                 prompt=order.prompt,
                 negative_prompt=order.negative_prompt,
                 parameters=item_parameters,
-                total_quantity=validated_batch_size,
-                batch_size=validated_batch_size,
+                total_quantity=batch_size,
+                batch_size=batch_size,
                 status="pending",
             )
 
@@ -397,12 +467,27 @@ def place_order_api(request):
             {
                 "success": True,
                 "order_id": order.id,
-                "message": f"Order placed successfully! {generation_count} generations will create {total_products} products.",
+                "message": f"Order placed successfully! {generation_count} generations will create {total_products} images.",
+                "total_products": total_products,
+                "generation_count": generation_count,
+                "batch_size": batch_size,
             }
         )
 
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=400)
+        # Use error handler for unexpected errors
+        error_handler = ErrorHandler()
+        friendly_message = UserFriendlyMessages.get_friendly_message(ErrorCategory.UNKNOWN, str(e))
+
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e),
+                "user_message": friendly_message["message"],
+                "action": friendly_message["action"],
+            },
+            status=500,
+        )
 
 
 def order_detail_api(request, order_id):
