@@ -8,19 +8,21 @@ that could occur in production environments.
 
 import json
 import time
-from unittest.mock import patch, MagicMock, mock_open
-from django.test import TestCase, override_settings
-from django.db import transaction, IntegrityError, OperationalError
+from unittest.mock import MagicMock, mock_open, patch
+
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, OperationalError, transaction
+from django.test import TestCase, override_settings
+
 import requests
 
-from main.models import Order, OrderItem, FactoryMachineDefinition, Worker
+from main.error_handling import ErrorCategory, ErrorHandler
 from main.factory_machines_sync import (
     SyncFalFactoryMachine,
     execute_order_item_sync_batch,
 )
+from main.models import FactoryMachineDefinition, Order, OrderItem, Worker
 from main.workers import SmartWorker
-from main.error_handling import ErrorHandler, ErrorCategory
 
 
 class ErrorSimulationUtilities:

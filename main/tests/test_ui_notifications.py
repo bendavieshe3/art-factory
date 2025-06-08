@@ -3,9 +3,10 @@ Tests for UI notification system and order placement workflow.
 """
 
 import json
-from django.test import TestCase, Client, override_settings
-from django.urls import reverse
 from unittest.mock import patch
+
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse
 
 from main.models import FactoryMachineDefinition
 

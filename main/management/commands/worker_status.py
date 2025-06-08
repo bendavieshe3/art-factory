@@ -5,7 +5,7 @@ Management command to show current worker and system status.
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from main.models import Worker, OrderItem
+from main.models import OrderItem, Worker
 
 
 class Command(BaseCommand):

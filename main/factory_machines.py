@@ -3,14 +3,15 @@ Factory Machine implementations for AI providers.
 These classes handle the actual execution of AI generation requests.
 """
 
-import os
 import asyncio
 import logging
+import os
 from abc import ABC, abstractmethod
+
 from django.conf import settings
 from django.utils import timezone
-from .models import Product, OrderItem, LogEntry, FactoryMachineDefinition
 
+from .models import FactoryMachineDefinition, LogEntry, OrderItem, Product
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +116,7 @@ class BaseFactoryMachine(ABC):
 
         # Save the actual file and update file_path
         import os
+
         from django.conf import settings
 
         # Create media directory if it doesn't exist

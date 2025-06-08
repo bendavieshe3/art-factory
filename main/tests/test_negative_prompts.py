@@ -7,10 +7,11 @@ import json
 import os
 import random
 from unittest.mock import patch
-from django.test import TestCase, Client, override_settings
+
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from main.models import Product, Order, OrderItem, Worker, FactoryMachineDefinition, FactoryMachineInstance
+from main.models import FactoryMachineDefinition, FactoryMachineInstance, Order, OrderItem, Product, Worker
 
 
 def get_test_pid():

@@ -1,10 +1,11 @@
-import os
 import logging
-from django.core.management.base import BaseCommand
-from django.conf import settings
-from django.utils import timezone
-from main.models import OrderItem, Product
+import os
 
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from main.models import OrderItem, Product
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +192,7 @@ class Command(BaseCommand):
     def create_product(self, item, file_content, metadata, provider, model_name):
         """Create a Product record from generated content."""
         import os
+
         from django.conf import settings
 
         # Create product

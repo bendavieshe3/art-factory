@@ -3,16 +3,17 @@ Autonomous worker system for processing OrderItems.
 Implements smart workers with automatic spawning and batch processing.
 """
 
-import os
-import time
-import threading
 import logging
+import os
 import random
+import threading
+import time
+
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Worker, OrderItem, FactoryMachineDefinition, LogEntry
-from .error_handling import ErrorHandler, ErrorCategory
+from .error_handling import ErrorCategory, ErrorHandler
+from .models import FactoryMachineDefinition, LogEntry, OrderItem, Worker
 
 logger = logging.getLogger(__name__)
 

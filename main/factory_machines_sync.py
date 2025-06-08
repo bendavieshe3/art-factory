@@ -3,11 +3,14 @@ Synchronous factory machine implementations for batch processing.
 """
 
 import os
-import requests
+
 from django.conf import settings
 from django.utils import timezone
-from .models import Product, LogEntry
+
+import requests
+
 from .error_handling import ErrorHandler
+from .models import LogEntry, Product
 
 
 def safe_seed_value(seed):
@@ -167,6 +170,7 @@ class SyncFalFactoryMachine:
 
             # Save file with error handling
             import os
+
             from django.conf import settings
 
             media_dir = os.path.join(settings.MEDIA_ROOT, "generated", self.provider)
@@ -417,6 +421,7 @@ class SyncReplicateFactoryMachine:
 
             # Save file with error handling
             import os
+
             from django.conf import settings
 
             media_dir = os.path.join(settings.MEDIA_ROOT, "generated", self.provider)
@@ -541,7 +546,7 @@ class SyncReplicateFactoryMachine:
 def execute_order_item_sync_batch(order_item_id):
     """Execute a single order item synchronously with batch support."""
     try:
-        from .models import OrderItem, FactoryMachineDefinition
+        from .models import FactoryMachineDefinition, OrderItem
 
         order_item = OrderItem.objects.get(id=order_item_id)
         machine_definition = FactoryMachineDefinition.objects.get(name=order_item.order.factory_machine_name)
@@ -559,6 +564,7 @@ def execute_order_item_sync_batch(order_item_id):
 
     except Exception as e:
         import logging
+
         from django.utils import timezone
 
         logger = logging.getLogger(__name__)

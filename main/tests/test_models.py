@@ -1,13 +1,14 @@
 import json
 import os
 import random
-from unittest.mock import patch, MagicMock
-from django.test import TestCase, Client, override_settings
-from django.urls import reverse
-from django.core.management import call_command
 from io import StringIO
+from unittest.mock import MagicMock, patch
 
-from main.models import Product, Order, OrderItem, Worker, FactoryMachineDefinition
+from django.core.management import call_command
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse
+
+from main.models import FactoryMachineDefinition, Order, OrderItem, Product, Worker
 
 
 def get_test_pid():
@@ -910,8 +911,9 @@ class LoggingTestCase(TestCase):
 
     def test_logs_directory_exists(self):
         """Test that logs directory is created."""
-        from django.conf import settings
         import os
+
+        from django.conf import settings
 
         logs_dir = settings.BASE_DIR / "logs"
         self.assertTrue(os.path.exists(logs_dir), "Logs directory should exist")
@@ -920,8 +922,8 @@ class LoggingTestCase(TestCase):
     def test_logger_functionality(self):
         """Test that loggers can write messages without errors."""
         import logging
-        import tempfile
         import os
+        import tempfile
 
         # Test worker logger
         worker_logger = logging.getLogger("main.workers")
@@ -941,9 +943,10 @@ class LoggingTestCase(TestCase):
 
     def test_log_file_creation(self):
         """Test that log files can be created and logging works without errors."""
-        from django.conf import settings
         import logging
         import os
+
+        from django.conf import settings
 
         # Check that log files exist (they're created when loggers are first used)
         worker_log_path = settings.BASE_DIR / "logs" / "workers.log"

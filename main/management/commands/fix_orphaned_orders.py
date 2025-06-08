@@ -5,7 +5,7 @@ Management command to fix orphaned orders that have no OrderItems.
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from main.models import Order, OrderItem, FactoryMachineDefinition
+from main.models import FactoryMachineDefinition, Order, OrderItem
 
 
 class Command(BaseCommand):

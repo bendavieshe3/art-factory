@@ -5,10 +5,11 @@ Tests for comprehensive error handling system.
 import os
 import random
 from unittest.mock import patch
+
 from django.test import TestCase, override_settings
 
-from .models import Order, OrderItem, FactoryMachineDefinition, LogEntry
-from .error_handling import ErrorAnalyzer, ErrorCategory, UserFriendlyMessages, RetryCalculator, ErrorHandler
+from .error_handling import ErrorAnalyzer, ErrorCategory, ErrorHandler, RetryCalculator, UserFriendlyMessages
+from .models import FactoryMachineDefinition, LogEntry, Order, OrderItem
 
 
 def get_test_pid():
@@ -380,8 +381,8 @@ class WorkerErrorHandlingTestCase(TestCase):
 
     def test_worker_error_categorization(self):
         """Test that workers properly categorize errors."""
-        from .workers import SmartWorker
         from .models import Worker
+        from .workers import SmartWorker
 
         worker = SmartWorker(max_batch_size=1)
 
@@ -404,8 +405,8 @@ class WorkerErrorHandlingTestCase(TestCase):
 
     def test_worker_permanent_failure_handling(self):
         """Test that workers handle permanent failures correctly."""
-        from .workers import SmartWorker
         from .models import Worker
+        from .workers import SmartWorker
 
         worker = SmartWorker(max_batch_size=1)
 
@@ -428,8 +429,8 @@ class WorkerErrorHandlingTestCase(TestCase):
 
     def test_worker_retry_exhaustion(self):
         """Test worker handling when retries are exhausted."""
-        from .workers import SmartWorker
         from .models import Worker
+        from .workers import SmartWorker
 
         # Set order item to already have max retries
         self.order_item.retry_count = 3

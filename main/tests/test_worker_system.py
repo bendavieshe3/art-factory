@@ -4,15 +4,16 @@ Tests for the autonomous worker system.
 
 import os
 import random
+from datetime import timedelta
 from unittest.mock import patch
+
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from datetime import timedelta
 
-from main.models import Order, OrderItem, FactoryMachineDefinition
+from main.foreman import Foreman
+from main.models import FactoryMachineDefinition, Order, OrderItem
 from main.models.orders import Worker
 from main.workers import SmartWorker, spawn_worker_automatically
-from main.foreman import Foreman
 
 
 def get_test_pid():

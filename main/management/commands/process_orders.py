@@ -1,6 +1,8 @@
 import asyncio
+
 from django.core.management.base import BaseCommand
-from main.factory_machines import process_pending_orders_sync, execute_order_item_sync
+
+from main.factory_machines import execute_order_item_sync, process_pending_orders_sync
 from main.models import OrderItem
 
 

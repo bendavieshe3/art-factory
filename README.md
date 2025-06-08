@@ -10,7 +10,7 @@ A Django-first web application for managing AI-generated art using multiple prov
 
 ## Project Status
 
-🏗️ **Currently in development** - Starting fresh with a Django-first architecture based on comprehensive documentation.
+✅ **v0.1 MVP Released** - Core image generation functionality with comprehensive error handling and batch processing.
 
 ## Documentation
 
@@ -21,28 +21,81 @@ A Django-first web application for managing AI-generated art using multiple prov
 - [Technical Requirements](docs/requirements.md) - Architecture and deployment constraints
 - [Technical Design](docs/design.md) - Detailed implementation architecture
 
+## Features
+
+### Core Functionality
+- **AI Image Generation**: Create images using fal.ai and Replicate models (FLUX, SDXL, and more)
+- **Batch Processing**: Generate multiple images efficiently with provider batch capabilities
+- **Model-Specific Parameters**: Dynamic forms that adapt to each AI model's requirements
+- **Order Management**: Track generation requests with real-time status updates
+- **Inventory Management**: Download, view, and delete generated images with bulk operations
+
+### User Experience
+- **Responsive Design**: Bootstrap 5-based UI that works on desktop and mobile
+- **Real-time Notifications**: Toast notifications and status updates for operations
+- **Preview System**: Live updates of generated images with metadata
+- **Error Handling**: User-friendly error messages with automatic retry capabilities
+
+### Technical Features
+- **Provider Flexibility**: Easy integration with multiple AI providers
+- **Background Processing**: Worker-based system for handling generation tasks
+- **Comprehensive Logging**: Detailed logging for debugging and monitoring
+- **Test Coverage**: 44% test coverage with comprehensive error scenario testing
+
 ## Prerequisites
 
-- Python 3.9+
-- Django 5.1+
+- Python 3.11+
+- Django 5.2+
 - Internet connection for AI provider APIs
+- fal.ai and/or Replicate API keys
 
 ## Quick Start
 
-*Coming soon - Django project setup in progress*
+### Installation
 
+1. **Clone and setup environment**:
 ```bash
+git clone https://github.com/bendavieshe3/art-factory.git
+cd art-factory
+
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+```
 
-# Run Django setup
+2. **Configure environment variables**:
+Create a `.env` file in the project root with your API keys:
+```bash
+# Required for fal.ai provider
+FAL_API_KEY=your_fal_api_key_here
+
+# Required for Replicate provider  
+REPLICATE_API_TOKEN=your_replicate_token_here
+
+# Django settings
+SECRET_KEY=your_secret_key_here
+DEBUG=True
+```
+
+3. **Setup database and run**:
+```bash
+# Run database migrations
 python manage.py migrate
+
+# Load sample factory machine definitions
+python manage.py load_seed_data
+
+# Start the development server
 python manage.py runserver
 ```
+
+4. **Access the application**:
+- Open http://127.0.0.1:8000 in your browser
+- Navigate to "Production" to create your first image generation order
+- Monitor progress in "Orders" and view results in "Inventory"
 
 ## Development
 
@@ -86,11 +139,19 @@ Every push and pull request triggers automated:
 ## Architecture
 
 Art Factory uses a factory abstraction pattern with these core entities:
-- **Products**: Generated media files (images, videos, audio) with metadata
-- **Orders**: User requests containing parameters and production specifications
-- **Factory Machines**: Provider-specific implementations for generating products
-- **Providers**: External AI services (fal.ai, Replicate, civitai)
-- **Projects**: Organization mechanism for related work
+
+### Core Models
+- **Products**: Generated media files with metadata (dimensions, seeds, provider info)
+- **Orders**: User requests containing base parameters and production line specification
+- **Order Items**: Individual product creation tasks derived from orders (supports batch generation)
+- **Factory Machine Definitions**: AI model configurations with parameter schemas and defaults
+- **Workers**: Background processing system for handling generation tasks
+
+### Key Components
+- **Factory Machines**: Provider-specific implementations (SyncFalFactoryMachine, SyncReplicateFactoryMachine)
+- **Error Handling**: Comprehensive error categorization with retry strategies and user-friendly messaging
+- **Smart Workers**: Autonomous worker system with batch processing and graceful failure handling
+- **Parameter Management**: Dynamic form generation based on model-specific schemas
 
 ## License
 

@@ -3,16 +3,17 @@ Comprehensive tests for factory machine implementations.
 Tests both SyncFalFactoryMachine and SyncReplicateFactoryMachine.
 """
 
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
+
 from django.test import TestCase, override_settings
 
-from main.models import Order, OrderItem, Product, FactoryMachineDefinition
 from main.factory_machines_sync import (
     SyncFalFactoryMachine,
     SyncReplicateFactoryMachine,
-    safe_seed_value,
     execute_order_item_sync_batch,
+    safe_seed_value,
 )
+from main.models import FactoryMachineDefinition, Order, OrderItem, Product
 
 
 class SafeSeedValueTestCase(TestCase):

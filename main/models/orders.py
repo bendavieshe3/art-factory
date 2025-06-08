@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+
 from .products import Product
 
 
@@ -253,8 +254,9 @@ class Worker(models.Model):
 
     def is_stalled(self, threshold_minutes=3):
         """Check if worker hasn't updated heartbeat within threshold."""
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         cutoff = timezone.now() - timedelta(minutes=threshold_minutes)
         return self.last_heartbeat < cutoff
@@ -274,8 +276,9 @@ def trigger_worker_spawn_on_order_creation(sender, instance, created, **kwargs):
 
     if created and instance.status == "pending":
         # Import here to avoid circular imports
-        from ..workers import spawn_worker_automatically
         import logging
+
+        from ..workers import spawn_worker_automatically
 
         logger = logging.getLogger(__name__)
         logger.info(f"Auto-spawning worker for OrderItem {instance.id}")

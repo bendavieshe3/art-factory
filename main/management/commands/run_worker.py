@@ -4,6 +4,7 @@ Primarily for debugging and manual testing.
 """
 
 from django.core.management.base import BaseCommand
+
 from main.workers import run_smart_worker
 
 

@@ -1,6 +1,7 @@
-from django.db import models
-from django.core.exceptions import ValidationError
 import json
+
+from django.core.exceptions import ValidationError
+from django.db import models
 
 
 class FactoryMachineDefinition(models.Model):

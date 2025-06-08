@@ -3,15 +3,16 @@ Foreman process for monitoring worker health and system reliability.
 Handles edge cases like stalled workers and orphaned work.
 """
 
+import logging
 import os
-import time
 import signal
 import threading
-import logging
+import time
 from datetime import timedelta
+
 from django.utils import timezone
 
-from .models import Worker, OrderItem, LogEntry
+from .models import LogEntry, OrderItem, Worker
 
 logger = logging.getLogger(__name__)
 

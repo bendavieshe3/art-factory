@@ -1,12 +1,13 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib import messages
-from django.core.paginator import Paginator
 import json
 
-from .models import Product, Order, OrderItem, FactoryMachineDefinition, FactoryMachineInstance, LogEntry
-from .error_handling import ErrorHandler, UserFriendlyMessages, ErrorCategory
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
+
+from .error_handling import ErrorCategory, ErrorHandler, UserFriendlyMessages
+from .models import FactoryMachineDefinition, FactoryMachineInstance, LogEntry, Order, OrderItem, Product
 
 
 def order_view(request):

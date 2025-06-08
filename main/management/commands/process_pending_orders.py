@@ -3,13 +3,14 @@ Management command to process pending orders with retry logic.
 Handles stuck orders that failed initial processing.
 """
 
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from datetime import timedelta
 import logging
 import time
+from datetime import timedelta
 
-from main.models import OrderItem, LogEntry
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from main.models import LogEntry, OrderItem
 from main.tasks import process_order_items_async
 
 logger = logging.getLogger(__name__)

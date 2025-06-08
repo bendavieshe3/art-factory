@@ -19,6 +19,8 @@ sqlparse==0.5.3
 typing-inspection==0.4.1
 typing_extensions==4.13.2
 coverage==7.6.9
+django-bootstrap5==24.3
+requests==2.32.3
 
 # Development and CI/CD dependencies
 flake8==7.1.1

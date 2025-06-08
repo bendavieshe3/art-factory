@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Product, Order, OrderItem, FactoryMachineDefinition, FactoryMachineInstance, LogEntry
+
+from .models import FactoryMachineDefinition, FactoryMachineInstance, LogEntry, Order, OrderItem, Product
 
 
 @admin.register(Product)

@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 """Test the fixed SDXL model."""
 
+import json
 import os
 import sys
+
 import django
-import json
-from main.models import Order, FactoryMachineDefinition
-from main.views import place_order_api
-from django.test import RequestFactory
 from django.http import JsonResponse
+from django.test import RequestFactory
+
+from main.models import FactoryMachineDefinition, Order
+from main.views import place_order_api
 
 # Setup Django
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

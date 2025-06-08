@@ -3,11 +3,12 @@ Management command to monitor order processing and show current status.
 Useful for debugging and monitoring production system health.
 """
 
-from django.core.management.base import BaseCommand
-from django.utils import timezone
 from datetime import timedelta
 
-from main.models import Order, OrderItem, LogEntry
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from main.models import LogEntry, Order, OrderItem
 
 
 class Command(BaseCommand):

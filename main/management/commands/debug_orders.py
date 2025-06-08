@@ -3,7 +3,8 @@ Debug command to investigate order failures and system status.
 """
 
 from django.core.management.base import BaseCommand
-from main.models import Order, Product, LogEntry, FactoryMachineDefinition
+
+from main.models import FactoryMachineDefinition, LogEntry, Order, Product
 
 
 class Command(BaseCommand):
