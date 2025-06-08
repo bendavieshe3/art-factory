@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.core.management import call_command
 from io import StringIO
 
-from .models import Product, Order, OrderItem, Worker, FactoryMachineDefinition
+from main.models import Product, Order, OrderItem, Worker, FactoryMachineDefinition
 
 
 def get_test_pid():
