@@ -222,7 +222,9 @@ class FalFactoryMachine(BaseFactoryMachine):
                         product.save()
 
                         products.append(product)
-                        self.log("INFO", f'Product created: {product.id} (batch {idx + 1}/{len(result["images"])})', order_item)
+                        self.log(
+                            "INFO", f'Product created: {product.id} (batch {idx + 1}/{len(result["images"])})', order_item
+                        )
 
                 # Update order item - for backward compatibility, set first product
                 if products:
@@ -338,7 +340,9 @@ class ReplicateFactoryMachine(BaseFactoryMachine):
                             product.save()
 
                             products.append(product)
-                            self.log("INFO", f"Product created: {product.id} (batch {idx + 1}/{len(outputs_list)})", order_item)
+                            self.log(
+                                "INFO", f"Product created: {product.id} (batch {idx + 1}/{len(outputs_list)})", order_item
+                            )
 
                 # Update order item
                 if products:
