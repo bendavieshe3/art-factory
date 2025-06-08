@@ -12,7 +12,7 @@ from main.models import Product, Order, OrderItem, Worker, FactoryMachineDefinit
 
 def get_test_pid():
     """Generate a unique test PID to avoid conflicts."""
-    return os.getpid() + random.randint(10000, 99999)
+    return os.getpid() + random.randint(10000, 99999)  # nosec B311
 
 
 # Use test settings for all test cases
@@ -373,7 +373,7 @@ class IntegrationTestCase(TestCase):
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception:
-                pass  # Ignore cleanup errors
+                pass  # nosec B110 - Ignore cleanup errors in tests
 
         # Note: Log files are now in temporary directory via test_settings.py
         super().tearDown()
@@ -630,7 +630,7 @@ class RetryMechanismTestCase(TestCase):
                 if hasattr(worker, "graceful_exit"):
                     worker.graceful_exit("Test cleanup")
             except Exception:
-                pass  # Ignore cleanup errors
+                pass  # nosec B110 - Ignore cleanup errors in tests
 
         # Clean up any Worker model instances
         Worker.objects.all().delete()

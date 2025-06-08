@@ -25,8 +25,8 @@ class SmartWorker:
     def __init__(self, max_batch_size=5):
         self.max_batch_size = max_batch_size
         # Generate unique process ID to avoid collisions between threads
-        self.process_id = os.getpid() * 1000 + random.randint(1, 999)
-        self.name = f"worker-{int(time.time())}-{random.randint(100, 999)}"
+        self.process_id = os.getpid() * 1000 + random.randint(1, 999)  # nosec B311
+        self.name = f"worker-{int(time.time())}-{random.randint(100, 999)}"  # nosec B311
         self.worker_record = None
         self.is_running = True
 
@@ -85,8 +85,8 @@ class SmartWorker:
                 else:
                     # If PID collision, generate new unique IDs
                     if "UNIQUE constraint failed" in str(e):
-                        self.process_id = os.getpid() * 1000 + random.randint(1, 999)
-                        self.name = f"worker-{int(time.time())}-{random.randint(100, 999)}"
+                        self.process_id = os.getpid() * 1000 + random.randint(1, 999)  # nosec B311
+                        self.name = f"worker-{int(time.time())}-{random.randint(100, 999)}"  # nosec B311
 
                     # Wait before retry
                     time.sleep(0.1 + (attempt * 0.1))

@@ -17,7 +17,7 @@ from main.foreman import Foreman
 
 def get_test_pid():
     """Generate a unique test PID to avoid conflicts."""
-    return os.getpid() + random.randint(10000, 99999)
+    return os.getpid() + random.randint(10000, 99999)  # nosec B311
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
@@ -54,7 +54,7 @@ class WorkerSystemTestCase(TestCase):
                 if hasattr(worker, "graceful_exit"):
                     worker.graceful_exit("Test cleanup")
             except Exception:
-                pass  # Ignore cleanup errors
+                pass  # nosec B110 - Ignore cleanup errors in tests
 
         # Clean up any Worker model instances that might still exist
         Worker.objects.all().delete()

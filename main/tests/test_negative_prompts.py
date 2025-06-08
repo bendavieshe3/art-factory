@@ -15,7 +15,7 @@ from main.models import Product, Order, OrderItem, Worker, FactoryMachineDefinit
 
 def get_test_pid():
     """Generate a unique test PID to avoid conflicts."""
-    return os.getpid() + random.randint(10000, 99999)
+    return os.getpid() + random.randint(10000, 99999)  # nosec B311
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)

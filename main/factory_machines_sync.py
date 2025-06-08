@@ -95,7 +95,7 @@ class SyncFalFactoryMachine:
                         image_content = base64.b64decode(base64_data)
                     else:
                         # Download image from URL
-                        response = requests.get(image_url)
+                        response = requests.get(image_url, timeout=30)
                         response.raise_for_status()
                         image_content = response.content
 
@@ -276,7 +276,7 @@ class SyncReplicateFactoryMachine:
                         if hasattr(single_output, "read"):
                             image_content = single_output.read()
                         else:
-                            response = requests.get(str(single_output))
+                            response = requests.get(str(single_output), timeout=30)
                             response.raise_for_status()
                             image_content = response.content
 
