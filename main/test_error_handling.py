@@ -4,9 +4,8 @@ Tests for comprehensive error handling system.
 
 import os
 import random
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from django.test import TestCase, override_settings
-from django.utils import timezone
 
 from .models import Order, OrderItem, FactoryMachineDefinition, LogEntry
 from .error_handling import ErrorAnalyzer, ErrorCategory, UserFriendlyMessages, RetryCalculator, ErrorHandler
@@ -248,7 +247,7 @@ class ErrorHandlerIntegrationTestCase(TestCase):
         # Clear existing logs
         LogEntry.objects.all().delete()
 
-        result = error_handler.handle_error(error_message, self.order_item)
+        error_handler.handle_error(error_message, self.order_item)
 
         # Should create a log entry
         log_entries = LogEntry.objects.all()
@@ -273,7 +272,7 @@ class ErrorHandlerIntegrationTestCase(TestCase):
         # Clear existing logs
         LogEntry.objects.all().delete()
 
-        result = error_handler.handle_error(error_message, self.order_item, context)
+        error_handler.handle_error(error_message, self.order_item, context)
 
         log_entry = LogEntry.objects.first()
         self.assertEqual(log_entry.extra_data["provider"], "fal.ai")

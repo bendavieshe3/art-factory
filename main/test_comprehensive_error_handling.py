@@ -7,20 +7,16 @@ that could occur in production environments.
 """
 
 import json
-import os
-import tempfile
 import time
-from unittest.mock import patch, MagicMock, mock_open, PropertyMock
+from unittest.mock import patch, MagicMock, mock_open
 from django.test import TestCase, override_settings
 from django.db import transaction, IntegrityError, OperationalError
 from django.core.exceptions import ValidationError
 import requests
-import httpx
 
-from main.models import Order, OrderItem, Product, FactoryMachineDefinition, Worker
+from main.models import Order, OrderItem, FactoryMachineDefinition, Worker
 from main.factory_machines_sync import (
     SyncFalFactoryMachine,
-    SyncReplicateFactoryMachine,
     execute_order_item_sync_batch,
 )
 from main.workers import SmartWorker
@@ -72,9 +68,7 @@ class ErrorSimulationUtilities:
         response.status_code = status_code
         response.text = message
         response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
-        response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-            f"{status_code} {message}", response=response
-        )
+        response.raise_for_status.side_effect = requests.exceptions.HTTPError(f"{status_code} {message}", response=response)
         return response
 
     @staticmethod
@@ -469,9 +463,7 @@ class FileOperationFailureTestCase(TestCase):
     def test_permission_denied_file_save(self, mock_fal_submit):
         """Test handling when file save is denied due to permissions."""
         mock_handle = MagicMock()
-        mock_handle.get.return_value = {
-            "images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]
-        }
+        mock_handle.get.return_value = {"images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]}
         mock_fal_submit.return_value = mock_handle
 
         with patch("requests.get") as mock_get:
@@ -494,9 +486,7 @@ class FileOperationFailureTestCase(TestCase):
     def test_invalid_filename_characters(self, mock_fal_submit):
         """Test handling of invalid filename characters."""
         mock_handle = MagicMock()
-        mock_handle.get.return_value = {
-            "images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]
-        }
+        mock_handle.get.return_value = {"images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]}
         mock_fal_submit.return_value = mock_handle
 
         with patch("requests.get") as mock_get:
@@ -517,9 +507,7 @@ class FileOperationFailureTestCase(TestCase):
     def test_concurrent_file_access_conflict(self, mock_fal_submit):
         """Test handling of concurrent file access conflicts."""
         mock_handle = MagicMock()
-        mock_handle.get.return_value = {
-            "images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]
-        }
+        mock_handle.get.return_value = {"images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]}
         mock_fal_submit.return_value = mock_handle
 
         with patch("requests.get") as mock_get:
@@ -540,9 +528,7 @@ class FileOperationFailureTestCase(TestCase):
     def test_directory_creation_failure(self, mock_fal_submit):
         """Test handling when directory creation fails."""
         mock_handle = MagicMock()
-        mock_handle.get.return_value = {
-            "images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]
-        }
+        mock_handle.get.return_value = {"images": [{"url": "http://example.com/image.png", "width": 512, "height": 512}]}
         mock_fal_submit.return_value = mock_handle
 
         with patch("requests.get") as mock_get:
@@ -587,7 +573,7 @@ class DatabaseErrorTestCase(TestCase):
         """Test handling of concurrent order item creation conflicts."""
         # This tests potential race conditions in order item creation
         order_items = []
-        
+
         # Simulate rapid creation of multiple order items
         for i in range(5):
             try:
@@ -601,7 +587,7 @@ class DatabaseErrorTestCase(TestCase):
             except IntegrityError:
                 # Should handle gracefully if any constraints are violated
                 pass
-        
+
         # Should have successfully created items
         self.assertGreater(len(order_items), 0)
 
@@ -773,7 +759,7 @@ class WorkerRecoveryTestCase(TestCase):
 
         # Recovery worker should be able to claim orphaned work
         claimed_items = recovery_worker.claim_work_batch()
-        
+
         # Should successfully recover some or all of the orphaned work
         self.assertGreaterEqual(len(claimed_items), 0)
 
@@ -860,15 +846,15 @@ class WorkerRecoveryTestCase(TestCase):
         # Simulate memory exhaustion during processing
         try:
             worker.handle_item_failure(order_item, "Out of memory during image processing")
-            
+
             order_item.refresh_from_db()
-            
+
             # Should be marked as failed
             self.assertEqual(order_item.status, "failed")
-            
+
             # Should have a helpful error message about the issue
             self.assertTrue(len(order_item.error_message) > 10)  # Should have a meaningful message
-            
+
         except MemoryError:
             # Should handle gracefully even if we can't process the error
             pass
@@ -913,12 +899,12 @@ class WorkerRecoveryTestCase(TestCase):
         for i, worker in enumerate(workers):
             start_idx = i * 2
             end_idx = start_idx + 2
-            
+
             for item in order_items[start_idx:end_idx]:
                 item.assigned_worker = worker.worker_record
                 item.status = "assigned"
                 item.save()
-                
+
                 # Simulate error handling
                 worker.handle_item_failure(item, error_messages[i])
 
@@ -941,7 +927,7 @@ class UserFriendlyErrorMessageTestCase(TestCase):
         """Test that technical errors are translated to user-friendly messages."""
         technical_errors = [
             "Connection timed out after 30 seconds",
-            "SSL certificate verification failed", 
+            "SSL certificate verification failed",
             "Rate limit exceeded. Try again in 3600 seconds",
             "Invalid API key provided",
             "Content violates our usage policies",
@@ -957,7 +943,7 @@ class UserFriendlyErrorMessageTestCase(TestCase):
             provider="fal.ai",
             quantity=1,
         )
-        
+
         order_item = OrderItem.objects.create(
             order=order,
             prompt="test technical errors",
@@ -969,23 +955,21 @@ class UserFriendlyErrorMessageTestCase(TestCase):
 
         for error_msg in technical_errors:
             error_info = self.error_handler.handle_error(
-                error_msg,
-                order_item,
-                context={"provider": "fal.ai", "operation": "generation", "model": "flux/dev"}
+                error_msg, order_item, context={"provider": "fal.ai", "operation": "generation", "model": "flux/dev"}
             )
 
             friendly_msg = error_info["friendly_message"]["message"]
-            
+
             # Verify message is user-friendly (no technical jargon)
             self.assertNotIn("SSL", friendly_msg)
-            self.assertNotIn("HTTP", friendly_msg) 
+            self.assertNotIn("HTTP", friendly_msg)
             self.assertNotIn("JSON", friendly_msg)
             self.assertNotIn("certificate", friendly_msg)
             self.assertNotIn("decode", friendly_msg)
-            
+
             # Verify message provides actionable guidance
             self.assertTrue(len(friendly_msg) > 20)  # Not just "Error"
-            
+
             # Should contain helpful words (checking actual message content)
             helpful_words = ["automatically", "service", "issue", "problem", "contact", "check", "image", "generation"]
             self.assertTrue(any(word in friendly_msg.lower() for word in helpful_words))
@@ -1000,7 +984,7 @@ class UserFriendlyErrorMessageTestCase(TestCase):
             provider="fal.ai",
             quantity=1,
         )
-        
+
         order_item = OrderItem.objects.create(
             order=order,
             prompt="test context",
@@ -1013,16 +997,11 @@ class UserFriendlyErrorMessageTestCase(TestCase):
         error_info = self.error_handler.handle_error(
             "Rate limit exceeded",
             order_item,
-            context={
-                "provider": "fal.ai",
-                "operation": "image generation",
-                "model": "flux/dev",
-                "attempt": 2
-            }
+            context={"provider": "fal.ai", "operation": "image generation", "model": "flux/dev", "attempt": 2},
         )
 
         friendly_msg = error_info["friendly_message"]["message"]
-        
+
         # Should provide context about what was happening (generation/image/service)
         self.assertTrue(any(word in friendly_msg.lower() for word in ["generation", "image", "service", "ai"]))
 
@@ -1037,7 +1016,7 @@ class UserFriendlyErrorMessageTestCase(TestCase):
 
         permanent_errors = [
             "Invalid API key",
-            "Content violates policy", 
+            "Content violates policy",
             "Authentication failed",
             "Model not found",
         ]
@@ -1050,7 +1029,7 @@ class UserFriendlyErrorMessageTestCase(TestCase):
             provider="test",
             quantity=1,
         )
-        
+
         order_item = OrderItem.objects.create(
             order=order,
             prompt="test retry guidance",
@@ -1065,24 +1044,24 @@ class UserFriendlyErrorMessageTestCase(TestCase):
             error_info = self.error_handler.handle_error(error_msg, order_item)
             friendly_msg = error_info["friendly_message"]["message"]
             action_msg = error_info["friendly_message"]["action"]
-            
+
             # Check in both message and action for retry-related words
             combined_text = (friendly_msg + " " + action_msg).lower()
-            self.assertTrue(any(phrase in combined_text for phrase in [
-                "automatically", "retry", "image", "request", "connectivity"
-            ]))
+            self.assertTrue(
+                any(phrase in combined_text for phrase in ["automatically", "retry", "image", "request", "connectivity"])
+            )
 
         # Permanent errors should not suggest retrying
         for error_msg in permanent_errors:
             error_info = self.error_handler.handle_error(error_msg, order_item)
             friendly_msg = error_info["friendly_message"]["message"]
             action_msg = error_info["friendly_message"]["action"]
-            
+
             # Should provide resolution guidance instead of retry (check both message and action)
             combined_text = (friendly_msg + " " + action_msg).lower()
-            self.assertTrue(any(phrase in combined_text for phrase in [
-                "contact", "support", "configuration", "modify", "please", "check"
-            ]))
+            self.assertTrue(
+                any(phrase in combined_text for phrase in ["contact", "support", "configuration", "modify", "please", "check"])
+            )
 
     def test_error_severity_appropriate_tone(self):
         """Test that error message tone matches severity."""
@@ -1094,7 +1073,7 @@ class UserFriendlyErrorMessageTestCase(TestCase):
             provider="test",
             quantity=1,
         )
-        
+
         order_item = OrderItem.objects.create(
             order=order,
             prompt="test severity",
@@ -1109,22 +1088,18 @@ class UserFriendlyErrorMessageTestCase(TestCase):
         error_info = self.error_handler.handle_error(critical_error, order_item)
         critical_msg = error_info["friendly_message"]["message"]
         critical_action = error_info["friendly_message"]["action"]
-        
+
         # Should indicate action needed (check both message and action)
         combined_text = (critical_msg + " " + critical_action).lower()
-        self.assertTrue(any(word in combined_text for word in [
-            "please", "contact", "support", "configuration", "issue"
-        ]))
+        self.assertTrue(any(word in combined_text for word in ["please", "contact", "support", "configuration", "issue"]))
 
-        # Low severity errors should be more reassuring  
+        # Low severity errors should be more reassuring
         minor_error = "Request took longer than expected"
         error_info = self.error_handler.handle_error(minor_error, order_item)
         minor_msg = error_info["friendly_message"]["message"]
-        
+
         # Should be more reassuring
-        self.assertTrue(any(word in minor_msg.lower() for word in [
-            "automatically", "retry", "service", "image", "generated"
-        ]))
+        self.assertTrue(any(word in minor_msg.lower() for word in ["automatically", "retry", "service", "image", "generated"]))
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
@@ -1197,11 +1172,11 @@ class ApplicationStabilityTestCase(TestCase):
 
         for exception in exception_types:
             mock_execute.side_effect = exception
-            
+
             # Should not crash, should return False
             result = execute_order_item_sync_batch(order_item.id)
             self.assertFalse(result)
-            
+
             # Order item should be marked as failed
             order_item.refresh_from_db()
             self.assertIn(order_item.status, ["failed", "exhausted"])
@@ -1248,11 +1223,11 @@ class ApplicationStabilityTestCase(TestCase):
         for error_msg in error_scenarios:
             try:
                 worker.handle_item_failure(order_item, error_msg)
-                
+
                 # Should complete without crashing
                 order_item.refresh_from_db()
                 self.assertEqual(order_item.status, "failed")
-                
+
             except Exception as e:
                 # If any exception occurs, it should be logged, not crash
                 self.fail(f"Worker error handling crashed with: {e}")
@@ -1288,7 +1263,7 @@ class ApplicationStabilityTestCase(TestCase):
 
             # Should handle None values gracefully
             self.assertIsNotNone(order_item)
-            
+
         except Exception as e:
             # If any exception occurs, it should be a validation error, not a crash
             self.assertIsInstance(e, (ValidationError, IntegrityError, TypeError))
@@ -1318,7 +1293,7 @@ class ApplicationStabilityTestCase(TestCase):
 
             # System should handle this gracefully
             self.assertEqual(len(order_items), 100)
-            
+
         except MemoryError:
             # If memory error occurs, it should be caught gracefully
             self.assertTrue(len(order_items) > 0)  # Should have created some items

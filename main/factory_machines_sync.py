@@ -7,7 +7,7 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 from .models import Product, LogEntry
-from .error_handling import ErrorHandler, ErrorCategory
+from .error_handling import ErrorHandler
 
 
 def safe_seed_value(seed):
@@ -563,10 +563,11 @@ def execute_order_item_sync_batch(order_item_id):
 
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to execute order item {order_item_id}: {e}")
-        
+
         # Update order item status to failed when exception occurs
         try:
             from .models import OrderItem
+
             order_item = OrderItem.objects.get(id=order_item_id)
             order_item.status = "failed"
             order_item.error_message = f"System error during processing: {str(e)}"
@@ -575,5 +576,5 @@ def execute_order_item_sync_batch(order_item_id):
         except Exception:
             # If we can't update the order item, just log and continue
             pass
-        
+
         return False
