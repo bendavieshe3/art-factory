@@ -67,6 +67,46 @@ The application follows a factory abstraction pattern:
 - Project organization and management
 - Background task processing for production workflows
 
+## Coding Standards and CI Requirements
+
+Based on our CI pipeline configuration (flake8, black, isort), follow these standards to minimize linting issues:
+
+### Import Organization
+- **Order**: stdlib → django → third-party → local imports
+- **No wildcard imports** in application code (exception: `models/__init__.py` for Django models)
+- **Remove unused imports** immediately
+- **Module-level imports** must be at the top of the file (before any code)
+
+### Code Formatting
+- **Line length**: Maximum 127 characters (configured in pyproject.toml)
+- **Use Black** for automatic formatting: `black .`
+- **Arithmetic operators**: Always use spaces around operators (`i + 1`, not `i+1`)
+- **F-strings**: Only use f-strings when actually interpolating variables (`f"Hello {name}"`, not `f"Hello"`)
+
+### Code Quality
+- **Cyclomatic complexity**: Keep functions under 10 (current limit allows up to ~12)
+- **Unused variables**: Remove or prefix with `_` if intentionally unused
+- **Test variables**: Document why variables are created but not used in tests
+
+### Django-Specific
+- **Settings imports**: Use specific imports, not `from django.conf import settings` unless needed
+- **Model imports**: The `models.py` and `models/__init__.py` files use wildcard imports by design
+- **Test settings**: `test_settings.py` imports from main settings with `from .settings import *`
+
+### CI Pipeline Commands
+```bash
+# Before committing, run:
+source venv/bin/activate
+python -m black .                    # Auto-format code
+python -m flake8                     # Check linting
+python manage.py test --settings=ai_art_factory.test_settings  # Run tests
+```
+
+### Current Acceptable Violations
+- **Wildcard imports (F403)**: Allowed in `models/__init__.py` and `test_settings.py`
+- **Cyclomatic complexity**: 9 functions exceed limit but are tracked in Issue #55
+- **Some test variables**: May be kept for test structure even if unused
+
 ## Memory Notes
 
 - Always read ./.claude/kb/MOC.md at the start of each session to understand local knowledge
