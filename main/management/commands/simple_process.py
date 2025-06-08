@@ -195,7 +195,7 @@ class Command(BaseCommand):
 
         # Create product
         product = Product.objects.create(
-            title=f"Generated Image",
+            title="Generated Image",
             prompt=item.prompt,
             parameters=item.parameters,
             provider=provider,

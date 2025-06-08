@@ -49,11 +49,11 @@ def test_batch_generation():
     # Test 3: Document SDXL issue
     sdxl_machine = FactoryMachineDefinition.objects.filter(name="stability-ai/sdxl").first()
     if sdxl_machine:
-        print(f"\n⚠️  SDXL Model Issue:")
+        print("\n⚠️  SDXL Model Issue:")
         print(f"   Model: {sdxl_machine.display_name}")
-        print(f"   Status: Currently returning 404 errors from Replicate API")
-        print(f"   Note: This may be temporary or due to account access restrictions")
-        print(f"   Recommendation: Use fal.ai or Replicate FLUX models for now")
+        print("   Status: Currently returning 404 errors from Replicate API")
+        print("   Note: This may be temporary or due to account access restrictions")
+        print("   Recommendation: Use fal.ai or Replicate FLUX models for now")
 
     print("\n" + "=" * 50)
     print("📊 Batch Generation System Summary:")

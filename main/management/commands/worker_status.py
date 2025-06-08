@@ -53,7 +53,7 @@ class Command(BaseCommand):
             self.stdout.write("\n🔇 No active workers")
 
         # Show work queue status
-        self.stdout.write(f"\n📊 Work Queue Status:")
+        self.stdout.write("\n📊 Work Queue Status:")
 
         status_counts = {}
         for status_choice in OrderItem.STATUS_CHOICES:
@@ -82,7 +82,7 @@ class Command(BaseCommand):
         recent_items = OrderItem.objects.exclude(status="pending").order_by("-updated_at")[:5]
 
         if recent_items.exists():
-            self.stdout.write(f"\n🕒 Recent Activity:")
+            self.stdout.write("\n🕒 Recent Activity:")
             for item in recent_items:
                 age = timezone.now() - item.updated_at
                 status_emoji = {"assigned": "📋", "processing": "⚙️", "completed": "✅", "failed": "❌", "stalled": "🚨"}.get(
@@ -94,7 +94,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"  {status_emoji} Item {item.id}: {item.status}{worker_info} - {age} ago")
 
         # Show recommendations
-        self.stdout.write(f"\n💡 System Health:")
+        self.stdout.write("\n💡 System Health:")
 
         pending_count = status_counts.get("pending", 0)
         active_workers = workers.count()
