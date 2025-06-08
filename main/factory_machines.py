@@ -2,15 +2,14 @@
 Factory Machine implementations for AI providers.
 These classes handle the actual execution of AI generation requests.
 """
+
 import os
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
 from django.conf import settings
-from django.core.files.base import ContentFile
 from django.utils import timezone
-from .models import Product, OrderItem, FactoryMachineInstance, LogEntry, FactoryMachineDefinition
+from .models import Product, OrderItem, LogEntry, FactoryMachineDefinition
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class ExecutionResult:
     """Standardized result object for factory machine operations."""
-    
+
     def __init__(self, success=False, product=None, error=None, metadata=None):
         self.success = success
         self.product = product
@@ -32,17 +31,17 @@ class BaseFactoryMachine(ABC):
     Abstract base class for all factory machines.
     Defines the common interface and functionality.
     """
-    
+
     def __init__(self, machine_definition):
         self.machine_definition = machine_definition
         self.provider = machine_definition.provider
         self.model_name = machine_definition.name
-        
+
     @abstractmethod
     async def execute(self, order_item):
         """Execute the AI generation for an order item."""
         pass
-    
+
     def log(self, level, message, order_item=None, extra_data=None):
         """Log events to the database."""
         try:
@@ -52,22 +51,22 @@ class BaseFactoryMachine(ABC):
                 logger_name=f"{self.__class__.__name__}",
                 module=self.__module__,
                 order_item=order_item,
-                extra_data=extra_data or {}
+                extra_data=extra_data or {},
             )
         except Exception as e:
             # Fallback to regular logging if database fails
             logger.info(f"[{level}] {message} (DB log failed: {e})")
-    
+
     def safe_seed_value(self, seed):
         """Convert seed to safe value for SQLite BigIntegerField."""
         if seed is None:
             return None
-            
+
         try:
             # Convert to int if it's a string
             if isinstance(seed, str):
                 seed = int(seed)
-            
+
             # SQLite's INTEGER max is 2^63-1 (9223372036854775807)
             # If seed is larger, use modulo to fit within range
             max_sqlite_int = 9223372036854775807
@@ -75,25 +74,25 @@ class BaseFactoryMachine(ABC):
                 return seed % max_sqlite_int
             elif seed < -max_sqlite_int:
                 return -((-seed) % max_sqlite_int)
-            
+
             return seed
         except (ValueError, TypeError):
             return 0
-    
+
     def update_order_item_status(self, order_item, status, error_message=None):
         """Update order item status and timestamps."""
         try:
             order_item.status = status
-            if status == 'processing' and not order_item.started_at:
+            if status == "processing" and not order_item.started_at:
                 order_item.started_at = timezone.now()
-            elif status in ['completed', 'failed']:
+            elif status in ["completed", "failed"]:
                 order_item.completed_at = timezone.now()
             if error_message:
                 order_item.error_message = error_message
             order_item.save()
         except Exception as e:
             logger.error(f"Failed to update order item status: {e}")
-    
+
     def create_product(self, order_item, file_content, file_name, metadata):
         """Create a Product record from generated content."""
         # Create product first
@@ -104,219 +103,213 @@ class BaseFactoryMachine(ABC):
             parameters=order_item.parameters,
             provider=self.provider,
             model_name=self.model_name,
-            product_type='image',  # Default for now
-            file_path='',  # Will be set after file save
+            product_type="image",  # Default for now
+            file_path="",  # Will be set after file save
             file_size=len(file_content),
-            file_format=file_name.split('.')[-1] if '.' in file_name else 'jpg',
-            width=metadata.get('width'),
-            height=metadata.get('height'),
-            seed=metadata.get('seed'),
-            provider_id=metadata.get('provider_id', ''),
+            file_format=file_name.split(".")[-1] if "." in file_name else "jpg",
+            width=metadata.get("width"),
+            height=metadata.get("height"),
+            seed=metadata.get("seed"),
+            provider_id=metadata.get("provider_id", ""),
         )
-        
+
         # Save the actual file and update file_path
         import os
         from django.conf import settings
-        
+
         # Create media directory if it doesn't exist
-        media_dir = os.path.join(settings.MEDIA_ROOT, 'generated', self.provider)
+        media_dir = os.path.join(settings.MEDIA_ROOT, "generated", self.provider)
         os.makedirs(media_dir, exist_ok=True)
-        
+
         # Save file
         file_path = f"generated/{self.provider}/{file_name}"
         full_path = os.path.join(settings.MEDIA_ROOT, file_path)
-        
-        with open(full_path, 'wb') as f:
+
+        with open(full_path, "wb") as f:
             f.write(file_content)
-        
+
         # Update product with file path
         product.file_path = file_path
         product.save()
-        
+
         return product
 
 
 class FalFactoryMachine(BaseFactoryMachine):
     """Factory machine for fal.ai provider."""
-    
+
     def __init__(self, machine_definition):
         super().__init__(machine_definition)
         # Configure fal client
         if settings.FAL_API_KEY:
-            os.environ['FAL_KEY'] = settings.FAL_API_KEY
-    
+            os.environ["FAL_KEY"] = settings.FAL_API_KEY
+
     async def execute(self, order_item):
         """Execute fal.ai generation."""
         try:
             import fal_client
-            
-            self.log('INFO', f'Starting generation for order item {order_item.id}', order_item)
-            self.update_order_item_status(order_item, 'processing')
-            
+
+            self.log("INFO", f"Starting generation for order item {order_item.id}", order_item)
+            self.update_order_item_status(order_item, "processing")
+
             # Prepare parameters with batch support
-            arguments = {
-                'prompt': order_item.prompt,
-                **order_item.parameters
-            }
-            
+            arguments = {"prompt": order_item.prompt, **order_item.parameters}
+
             # Add negative prompt if provided
             if order_item.negative_prompt:
-                arguments['negative_prompt'] = order_item.negative_prompt
-            
+                arguments["negative_prompt"] = order_item.negative_prompt
+
             # Add batch size if supported
-            if 'num_images' in order_item.parameters:
-                arguments['num_images'] = order_item.parameters['num_images']
+            if "num_images" in order_item.parameters:
+                arguments["num_images"] = order_item.parameters["num_images"]
             elif order_item.batch_size > 1:
                 # Default to batch_size if num_images not explicitly set
-                arguments['num_images'] = min(order_item.batch_size, 4)  # fal.ai max is 4
-            
-            self.log('INFO', f'Submitting to {self.model_name} with args: {arguments}', order_item)
-            
+                arguments["num_images"] = min(order_item.batch_size, 4)  # fal.ai max is 4
+
+            self.log("INFO", f"Submitting to {self.model_name} with args: {arguments}", order_item)
+
             # Submit to fal.ai (using sync version for now)
             import asyncio
+
             loop = asyncio.get_event_loop()
-            
+
             # Run in executor to avoid blocking
             def submit_sync():
                 handle = fal_client.submit(self.model_name, arguments=arguments)
                 return handle.get()
-            
+
             result = await loop.run_in_executor(None, submit_sync)
-            
-            self.log('INFO', f'Generation completed: {result}', order_item)
-            
+
+            self.log("INFO", f"Generation completed: {result}", order_item)
+
             # Process result - handle batch responses
-            if result and isinstance(result, dict) and 'images' in result and result['images']:
+            if result and isinstance(result, dict) and "images" in result and result["images"]:
                 products = []
                 import httpx
-                
+
                 # Process each image in the batch
                 async with httpx.AsyncClient() as client:
-                    for idx, image_info in enumerate(result['images']):
-                        image_url = image_info['url']
-                        
+                    for idx, image_info in enumerate(result["images"]):
+                        image_url = image_info["url"]
+
                         # Check if it's a base64 data URI
-                        if image_url.startswith('data:'):
+                        if image_url.startswith("data:"):
                             # Extract base64 data from data URI
                             import base64
+
                             # Format: data:image/jpeg;base64,/9j/4AAQ...
-                            header, base64_data = image_url.split(',', 1)
+                            header, base64_data = image_url.split(",", 1)
                             image_content = base64.b64decode(base64_data)
                         else:
                             # Download the image from URL
                             response = await client.get(image_url)
                             response.raise_for_status()
                             image_content = response.content
-                        
+
                         # Create product
                         metadata = {
-                            'width': image_info.get('width'),
-                            'height': image_info.get('height'),
-                            'seed': self.safe_seed_value(result.get('seed', 0) + idx),  # Different seed for each image
-                            'provider_id': f"{result.get('request_id', '')}_{idx}"
+                            "width": image_info.get("width"),
+                            "height": image_info.get("height"),
+                            "seed": self.safe_seed_value(result.get("seed", 0) + idx),  # Different seed for each image
+                            "provider_id": f"{result.get('request_id', '')}_{idx}",
                         }
-                        
+
                         file_name = f"fal_{order_item.id}_{idx}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                         product = self.create_product(order_item, image_content, file_name, metadata)
-                        
+
                         # Associate product with order item
                         product.order_item = order_item
                         product.save()
-                        
+
                         products.append(product)
-                        self.log('INFO', f'Product created: {product.id} (batch {idx+1}/{len(result["images"])})', order_item)
-                
+                        self.log("INFO", f'Product created: {product.id} (batch {idx + 1}/{len(result["images"])})', order_item)
+
                 # Update order item - for backward compatibility, set first product
                 if products:
                     order_item.product = products[0]
                     order_item.batches_completed += 1
-                    
+
                     # Check if all batches are completed
                     expected_batches = (order_item.total_quantity + order_item.batch_size - 1) // order_item.batch_size
                     if order_item.batches_completed >= expected_batches:
-                        self.update_order_item_status(order_item, 'completed')
+                        self.update_order_item_status(order_item, "completed")
                     else:
                         order_item.save()
-                
+
                 return ExecutionResult(
                     success=True,
                     product=products[0] if products else None,
-                    metadata={'products_created': len(products), 'batch_complete': True}
+                    metadata={"products_created": len(products), "batch_complete": True},
                 )
             else:
                 error_msg = "No images returned from fal.ai"
-                self.log('ERROR', error_msg, order_item)
-                self.update_order_item_status(order_item, 'failed', error_msg)
+                self.log("ERROR", error_msg, order_item)
+                self.update_order_item_status(order_item, "failed", error_msg)
                 return ExecutionResult(success=False, error=error_msg)
-                
+
         except Exception as e:
             error_msg = f"fal.ai execution failed: {str(e)}"
-            self.log('ERROR', error_msg, order_item, {'exception': str(e)})
-            self.update_order_item_status(order_item, 'failed', error_msg)
+            self.log("ERROR", error_msg, order_item, {"exception": str(e)})
+            self.update_order_item_status(order_item, "failed", error_msg)
             return ExecutionResult(success=False, error=error_msg)
 
 
 class ReplicateFactoryMachine(BaseFactoryMachine):
     """Factory machine for Replicate provider."""
-    
+
     def __init__(self, machine_definition):
         super().__init__(machine_definition)
         # Configure replicate client
         if settings.REPLICATE_API_TOKEN:
-            os.environ['REPLICATE_API_TOKEN'] = settings.REPLICATE_API_TOKEN
-    
+            os.environ["REPLICATE_API_TOKEN"] = settings.REPLICATE_API_TOKEN
+
     async def execute(self, order_item):
         """Execute Replicate generation."""
         try:
             import replicate
-            
-            self.log('INFO', f'Starting generation for order item {order_item.id}', order_item)
-            self.update_order_item_status(order_item, 'processing')
-            
+
+            self.log("INFO", f"Starting generation for order item {order_item.id}", order_item)
+            self.update_order_item_status(order_item, "processing")
+
             # Prepare input parameters with batch support
-            input_params = {
-                'prompt': order_item.prompt,
-                **order_item.parameters
-            }
-            
+            input_params = {"prompt": order_item.prompt, **order_item.parameters}
+
             # Add negative prompt if provided
             if order_item.negative_prompt:
-                input_params['negative_prompt'] = order_item.negative_prompt
-            
+                input_params["negative_prompt"] = order_item.negative_prompt
+
             # Add batch size if supported
-            if 'num_outputs' in order_item.parameters:
-                input_params['num_outputs'] = order_item.parameters['num_outputs']
+            if "num_outputs" in order_item.parameters:
+                input_params["num_outputs"] = order_item.parameters["num_outputs"]
             elif order_item.batch_size > 1:
                 # Default to batch_size if num_outputs not explicitly set
-                input_params['num_outputs'] = min(order_item.batch_size, 4)  # Replicate max is 4
-            
-            self.log('INFO', f'Submitting to {self.model_name} with input: {input_params}', order_item)
-            
+                input_params["num_outputs"] = min(order_item.batch_size, 4)  # Replicate max is 4
+
+            self.log("INFO", f"Submitting to {self.model_name} with input: {input_params}", order_item)
+
             # Submit to Replicate (using async)
-            output = await replicate.async_run(
-                self.model_name,
-                input=input_params
-            )
-            
-            self.log('INFO', f'Generation completed: {type(output)}', order_item)
-            
+            output = await replicate.async_run(self.model_name, input=input_params)
+
+            self.log("INFO", f"Generation completed: {type(output)}", order_item)
+
             # Process result - handle batch responses from Replicate
             if output:
                 products = []
                 outputs_list = []
-                
+
                 # Convert output to list format
-                if hasattr(output, '__iter__') and not isinstance(output, str):
+                if hasattr(output, "__iter__") and not isinstance(output, str):
                     outputs_list = list(output)
                 else:
                     outputs_list = [output]
-                
+
                 import httpx
+
                 async with httpx.AsyncClient() as client:
                     for idx, single_output in enumerate(outputs_list):
                         if single_output:
                             # Download the file
-                            if hasattr(single_output, 'read'):
+                            if hasattr(single_output, "read"):
                                 # FileOutput object
                                 image_content = single_output.read()
                             else:
@@ -324,60 +317,64 @@ class ReplicateFactoryMachine(BaseFactoryMachine):
                                 response = await client.get(str(single_output))
                                 response.raise_for_status()
                                 image_content = response.content
-                            
+
                             # Create product
                             metadata = {
-                                'width': input_params.get('width', 1024),
-                                'height': input_params.get('height', 1024),
-                                'seed': self.safe_seed_value(input_params.get('seed', 0) + idx) if input_params.get('seed') else None,
-                                'provider_id': f"replicate_{timezone.now().timestamp()}_{idx}"
+                                "width": input_params.get("width", 1024),
+                                "height": input_params.get("height", 1024),
+                                "seed": (
+                                    self.safe_seed_value(input_params.get("seed", 0) + idx)
+                                    if input_params.get("seed")
+                                    else None
+                                ),
+                                "provider_id": f"replicate_{timezone.now().timestamp()}_{idx}",
                             }
-                            
+
                             file_name = f"replicate_{order_item.id}_{idx}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                             product = self.create_product(order_item, image_content, file_name, metadata)
-                            
+
                             # Associate product with order item
                             product.order_item = order_item
                             product.save()
-                            
+
                             products.append(product)
-                            self.log('INFO', f'Product created: {product.id} (batch {idx+1}/{len(outputs_list)})', order_item)
-                
+                            self.log("INFO", f"Product created: {product.id} (batch {idx + 1}/{len(outputs_list)})", order_item)
+
                 # Update order item
                 if products:
                     order_item.product = products[0]  # For backward compatibility
                     order_item.batches_completed += 1
-                    
+
                     # Check if all batches are completed
                     expected_batches = (order_item.total_quantity + order_item.batch_size - 1) // order_item.batch_size
                     if order_item.batches_completed >= expected_batches:
-                        self.update_order_item_status(order_item, 'completed')
+                        self.update_order_item_status(order_item, "completed")
                     else:
                         order_item.save()
-                
+
                 return ExecutionResult(
                     success=True,
                     product=products[0] if products else None,
-                    metadata={'products_created': len(products), 'batch_complete': True}
+                    metadata={"products_created": len(products), "batch_complete": True},
                 )
-            
+
             error_msg = "No output returned from Replicate"
-            self.log('ERROR', error_msg, order_item)
-            self.update_order_item_status(order_item, 'failed', error_msg)
+            self.log("ERROR", error_msg, order_item)
+            self.update_order_item_status(order_item, "failed", error_msg)
             return ExecutionResult(success=False, error=error_msg)
-                
+
         except Exception as e:
             error_msg = f"Replicate execution failed: {str(e)}"
-            self.log('ERROR', error_msg, order_item, {'exception': str(e)})
-            self.update_order_item_status(order_item, 'failed', error_msg)
+            self.log("ERROR", error_msg, order_item, {"exception": str(e)})
+            self.update_order_item_status(order_item, "failed", error_msg)
             return ExecutionResult(success=False, error=error_msg)
 
 
 def get_factory_machine(machine_definition):
     """Factory function to get the appropriate machine implementation."""
-    if machine_definition.provider == 'fal.ai':
+    if machine_definition.provider == "fal.ai":
         return FalFactoryMachine(machine_definition)
-    elif machine_definition.provider == 'replicate':
+    elif machine_definition.provider == "replicate":
         return ReplicateFactoryMachine(machine_definition)
     else:
         raise ValueError(f"Unknown provider: {machine_definition.provider}")
@@ -387,26 +384,25 @@ def execute_order_item_sync(order_item_id):
     """Execute a single order item synchronously."""
     try:
         order_item = OrderItem.objects.get(id=order_item_id)
-        machine_definition = FactoryMachineDefinition.objects.get(
-            name=order_item.order.factory_machine_name
-        )
-        
+        machine_definition = FactoryMachineDefinition.objects.get(name=order_item.order.factory_machine_name)
+
         factory_machine = get_factory_machine(machine_definition)
-        
+
         # Check if we're already in an event loop
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context, create a new thread
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, factory_machine.execute(order_item))
                 result = future.result()
         except RuntimeError:
             # No event loop, we can run directly
             result = asyncio.run(factory_machine.execute(order_item))
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"Failed to execute order item {order_item_id}: {e}")
         return ExecutionResult(success=False, error=str(e))
@@ -414,14 +410,14 @@ def execute_order_item_sync(order_item_id):
 
 def process_pending_orders_sync():
     """Process all pending order items synchronously."""
-    pending_items = OrderItem.objects.filter(status='pending')
-    
+    pending_items = OrderItem.objects.filter(status="pending")
+
     if not pending_items:
         logger.info("No pending order items to process")
         return
-    
+
     logger.info(f"Processing {pending_items.count()} pending order items")
-    
+
     for item in pending_items:
         try:
             result = execute_order_item_sync(item.id)
@@ -437,18 +433,18 @@ def process_pending_orders_sync():
 async def execute_order_item(order_item_id):
     """Execute a single order item."""
     from django.db import sync_to_async
-    
+
     try:
         order_item = await sync_to_async(OrderItem.objects.get)(id=order_item_id)
         machine_definition = await sync_to_async(FactoryMachineDefinition.objects.get)(
             name=order_item.order.factory_machine_name
         )
-        
+
         factory_machine = get_factory_machine(machine_definition)
         result = await factory_machine.execute(order_item)
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"Failed to execute order item {order_item_id}: {e}")
         return ExecutionResult(success=False, error=str(e))
@@ -457,15 +453,15 @@ async def execute_order_item(order_item_id):
 async def process_pending_orders():
     """Process all pending order items."""
     from django.db import sync_to_async
-    
-    pending_items = await sync_to_async(list)(OrderItem.objects.filter(status='pending'))
-    
+
+    pending_items = await sync_to_async(list)(OrderItem.objects.filter(status="pending"))
+
     if not pending_items:
         logger.info("No pending order items to process")
         return
-    
+
     logger.info(f"Processing {len(pending_items)} pending order items")
-    
+
     for item in pending_items:
         try:
             result = await execute_order_item(item.id)

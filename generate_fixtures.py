@@ -3,7 +3,6 @@
 Generate factory machine fixtures with proper timestamps
 """
 import json
-from datetime import datetime
 
 # Base timestamp
 base_time = "2025-05-31T08:00:00Z"
@@ -21,18 +20,42 @@ factory_machines = [
             "type": "object",
             "properties": {
                 "prompt": {"type": "string", "description": "Text description of the image to generate"},
-                "width": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440, "description": "Width of the generated image"},
-                "height": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440, "description": "Height of the generated image"},
+                "width": {
+                    "type": "integer",
+                    "default": 1024,
+                    "minimum": 256,
+                    "maximum": 1440,
+                    "description": "Width of the generated image",
+                },
+                "height": {
+                    "type": "integer",
+                    "default": 1024,
+                    "minimum": 256,
+                    "maximum": 1440,
+                    "description": "Height of the generated image",
+                },
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
-                "guidance_scale": {"type": "number", "default": 3.5, "minimum": 1.0, "maximum": 20.0, "description": "How closely to follow the prompt"},
-                "num_inference_steps": {"type": "integer", "default": 28, "minimum": 1, "maximum": 50, "description": "Number of denoising steps"}
+                "guidance_scale": {
+                    "type": "number",
+                    "default": 3.5,
+                    "minimum": 1.0,
+                    "maximum": 20.0,
+                    "description": "How closely to follow the prompt",
+                },
+                "num_inference_steps": {
+                    "type": "integer",
+                    "default": 28,
+                    "minimum": 1,
+                    "maximum": 50,
+                    "description": "Number of denoising steps",
+                },
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
         "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 3.5, "num_inference_steps": 28},
         "max_concurrent_jobs": 3,
         "estimated_duration": "00:00:30",
-        "cost_per_operation": "0.05"
+        "cost_per_operation": "0.05",
     },
     {
         "pk": 2,
@@ -49,14 +72,20 @@ factory_machines = [
                 "width": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                 "height": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
-                "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8, "description": "Number of denoising steps (fewer for speed)"}
+                "num_inference_steps": {
+                    "type": "integer",
+                    "default": 4,
+                    "minimum": 1,
+                    "maximum": 8,
+                    "description": "Number of denoising steps (fewer for speed)",
+                },
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
         "default_parameters": {"width": 1024, "height": 1024, "num_inference_steps": 4},
         "max_concurrent_jobs": 5,
         "estimated_duration": "00:00:15",
-        "cost_per_operation": "0.03"
+        "cost_per_operation": "0.03",
     },
     {
         "pk": 3,
@@ -73,15 +102,21 @@ factory_machines = [
                 "width": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                 "height": {"type": "integer", "default": 1024, "minimum": 256, "maximum": 1440},
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
-                "num_outputs": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4, "description": "Number of images to generate"},
-                "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8}
+                "num_outputs": {
+                    "type": "integer",
+                    "default": 1,
+                    "minimum": 1,
+                    "maximum": 4,
+                    "description": "Number of images to generate",
+                },
+                "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
         "default_parameters": {"width": 1024, "height": 1024, "num_outputs": 1, "num_inference_steps": 4},
         "max_concurrent_jobs": 3,
         "estimated_duration": "00:00:20",
-        "cost_per_operation": "0.04"
+        "cost_per_operation": "0.04",
     },
     {
         "pk": 4,
@@ -101,15 +136,30 @@ factory_machines = [
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                 "guidance_scale": {"type": "number", "default": 7.5, "minimum": 1.0, "maximum": 20.0},
                 "num_inference_steps": {"type": "integer", "default": 25, "minimum": 10, "maximum": 50},
-                "scheduler": {"type": "string", "default": "DPMSolverMultistep", "enum": ["DDIM", "DPMSolverMultistep", "HeunDiscrete", "K_EULER", "K_EULER_ANCESTRAL", "PNDM"]},
-                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker to prevent false positives"}
+                "scheduler": {
+                    "type": "string",
+                    "default": "DPMSolverMultistep",
+                    "enum": ["DDIM", "DPMSolverMultistep", "HeunDiscrete", "K_EULER", "K_EULER_ANCESTRAL", "PNDM"],
+                },
+                "disable_safety_checker": {
+                    "type": "boolean",
+                    "default": True,
+                    "description": "Disable the safety checker to prevent false positives",
+                },
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
-        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 7.5, "num_inference_steps": 25, "scheduler": "DPMSolverMultistep", "disable_safety_checker": True},
+        "default_parameters": {
+            "width": 1024,
+            "height": 1024,
+            "guidance_scale": 7.5,
+            "num_inference_steps": 25,
+            "scheduler": "DPMSolverMultistep",
+            "disable_safety_checker": True,
+        },
         "max_concurrent_jobs": 2,
         "estimated_duration": "00:01:00",
-        "cost_per_operation": "0.08"
+        "cost_per_operation": "0.08",
     },
     {
         "pk": 5,
@@ -129,14 +179,20 @@ factory_machines = [
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                 "guidance_scale": {"type": "number", "default": 7.5, "minimum": 1.0, "maximum": 20.0},
                 "num_inference_steps": {"type": "integer", "default": 25, "minimum": 10, "maximum": 50},
-                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"}
+                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
-        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 7.5, "num_inference_steps": 25, "disable_safety_checker": True},
+        "default_parameters": {
+            "width": 1024,
+            "height": 1024,
+            "guidance_scale": 7.5,
+            "num_inference_steps": 25,
+            "disable_safety_checker": True,
+        },
         "max_concurrent_jobs": 4,
         "estimated_duration": "00:00:20",
-        "cost_per_operation": "0.04"
+        "cost_per_operation": "0.04",
     },
     {
         "pk": 6,
@@ -155,14 +211,14 @@ factory_machines = [
                 "height": {"type": "integer", "default": 1024, "minimum": 512, "maximum": 1536},
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                 "num_inference_steps": {"type": "integer", "default": 4, "minimum": 1, "maximum": 8},
-                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"}
+                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
         "default_parameters": {"width": 1024, "height": 1024, "num_inference_steps": 4, "disable_safety_checker": True},
         "max_concurrent_jobs": 5,
         "estimated_duration": "00:00:10",
-        "cost_per_operation": "0.025"
+        "cost_per_operation": "0.025",
     },
     {
         "pk": 7,
@@ -180,14 +236,14 @@ factory_machines = [
                 "height": {"type": "integer", "default": 512, "minimum": 512, "maximum": 1024},
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                 "num_inference_steps": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4},
-                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"}
+                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
         "default_parameters": {"width": 512, "height": 512, "num_inference_steps": 1, "disable_safety_checker": True},
         "max_concurrent_jobs": 6,
         "estimated_duration": "00:00:05",
-        "cost_per_operation": "0.02"
+        "cost_per_operation": "0.02",
     },
     {
         "pk": 8,
@@ -206,15 +262,25 @@ factory_machines = [
                 "height": {"type": "integer", "default": 1024, "minimum": 512, "maximum": 1536},
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                 "num_outputs": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4},
-                "scheduler": {"type": "string", "default": "K_EULER", "enum": ["DDIM", "K_EULER", "DPMSolverMultistep", "K_EULER_ANCESTRAL", "PNDM", "KLMS"]},
-                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"}
+                "scheduler": {
+                    "type": "string",
+                    "default": "K_EULER",
+                    "enum": ["DDIM", "K_EULER", "DPMSolverMultistep", "K_EULER_ANCESTRAL", "PNDM", "KLMS"],
+                },
+                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
-        "default_parameters": {"width": 1024, "height": 1024, "num_outputs": 1, "scheduler": "K_EULER", "disable_safety_checker": True},
+        "default_parameters": {
+            "width": 1024,
+            "height": 1024,
+            "num_outputs": 1,
+            "scheduler": "K_EULER",
+            "disable_safety_checker": True,
+        },
         "max_concurrent_jobs": 3,
         "estimated_duration": "00:00:15",
-        "cost_per_operation": "0.03"
+        "cost_per_operation": "0.03",
     },
     {
         "pk": 9,
@@ -234,17 +300,34 @@ factory_machines = [
                 "seed": {"type": "integer", "description": "Random seed for reproducibility"},
                 "guidance_scale": {"type": "number", "default": 7.5, "minimum": 1.0, "maximum": 20.0},
                 "num_inference_steps": {"type": "integer", "default": 30, "minimum": 1, "maximum": 50},
-                "scheduler": {"type": "string", "default": "K_EULER", "enum": ["DDIM", "K_EULER", "DPMSolverMultistep", "K_EULER_ANCESTRAL", "PNDM", "KLMS"]},
-                "refine": {"type": "string", "default": "no_refiner", "enum": ["no_refiner", "expert_ensemble_refiner", "base_image_refiner"]},
+                "scheduler": {
+                    "type": "string",
+                    "default": "K_EULER",
+                    "enum": ["DDIM", "K_EULER", "DPMSolverMultistep", "K_EULER_ANCESTRAL", "PNDM", "KLMS"],
+                },
+                "refine": {
+                    "type": "string",
+                    "default": "no_refiner",
+                    "enum": ["no_refiner", "expert_ensemble_refiner", "base_image_refiner"],
+                },
                 "high_noise_frac": {"type": "number", "default": 0.8, "minimum": 0.0, "maximum": 1.0},
-                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"}
+                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
-        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 7.5, "num_inference_steps": 30, "scheduler": "K_EULER", "refine": "no_refiner", "high_noise_frac": 0.8, "disable_safety_checker": True},
+        "default_parameters": {
+            "width": 1024,
+            "height": 1024,
+            "guidance_scale": 7.5,
+            "num_inference_steps": 30,
+            "scheduler": "K_EULER",
+            "refine": "no_refiner",
+            "high_noise_frac": 0.8,
+            "disable_safety_checker": True,
+        },
         "max_concurrent_jobs": 2,
         "estimated_duration": "00:00:45",
-        "cost_per_operation": "0.06"
+        "cost_per_operation": "0.06",
     },
     {
         "pk": 10,
@@ -265,14 +348,21 @@ factory_machines = [
                 "guidance_scale": {"type": "number", "default": 5.0, "minimum": 1.0, "maximum": 20.0},
                 "num_inference_steps": {"type": "integer", "default": 25, "minimum": 10, "maximum": 50},
                 "num_images": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4},
-                "enable_safety_checker": {"type": "boolean", "default": False, "description": "Enable the safety checker"}
+                "enable_safety_checker": {"type": "boolean", "default": False, "description": "Enable the safety checker"},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
-        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 5.0, "num_inference_steps": 25, "num_images": 1, "enable_safety_checker": False},
+        "default_parameters": {
+            "width": 1024,
+            "height": 1024,
+            "guidance_scale": 5.0,
+            "num_inference_steps": 25,
+            "num_images": 1,
+            "enable_safety_checker": False,
+        },
         "max_concurrent_jobs": 4,
         "estimated_duration": "00:00:25",
-        "cost_per_operation": "0.045"
+        "cost_per_operation": "0.045",
     },
     {
         "pk": 11,
@@ -293,31 +383,37 @@ factory_machines = [
                 "guidance_scale": {"type": "number", "default": 2.0, "minimum": 1.0, "maximum": 10.0},
                 "num_inference_steps": {"type": "integer", "default": 6, "minimum": 4, "maximum": 8},
                 "num_outputs": {"type": "integer", "default": 1, "minimum": 1, "maximum": 4},
-                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"}
+                "disable_safety_checker": {"type": "boolean", "default": True, "description": "Disable the safety checker"},
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         },
-        "default_parameters": {"width": 1024, "height": 1024, "guidance_scale": 2.0, "num_inference_steps": 6, "num_outputs": 1, "disable_safety_checker": True},
+        "default_parameters": {
+            "width": 1024,
+            "height": 1024,
+            "guidance_scale": 2.0,
+            "num_inference_steps": 6,
+            "num_outputs": 1,
+            "disable_safety_checker": True,
+        },
         "max_concurrent_jobs": 5,
         "estimated_duration": "00:00:05",
-        "cost_per_operation": "0.041"
-    }
+        "cost_per_operation": "0.041",
+    },
 ]
 
 # Generate fixture data
 fixture_data = []
 for machine in factory_machines:
-    fixture_data.append({
-        "model": "main.factorymachinedefinition",
-        "pk": machine["pk"],
-        "fields": {
-            **{k: v for k, v in machine.items() if k != "pk"},
-            "is_active": True
+    fixture_data.append(
+        {
+            "model": "main.factorymachinedefinition",
+            "pk": machine["pk"],
+            "fields": {**{k: v for k, v in machine.items() if k != "pk"}, "is_active": True},
         }
-    })
+    )
 
 # Write to file
-with open('main/fixtures/factory_machines.json', 'w') as f:
+with open("main/fixtures/factory_machines.json", "w") as f:
     json.dump(fixture_data, f, indent=2)
 
 print("Generated factory_machines.json with proper timestamps")

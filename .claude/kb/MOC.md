@@ -16,6 +16,7 @@ This file provides an overview of all knowledge base articles maintained by Clau
 ### Tools & Services
 - [Claude Code](./claude-code.md) - CLI features, memory management, security, configuration, MCP server integration
 - [GitHub CLI](./github-cli.md) - Issue management, project workflows, automation, productivity tips
+- [GitHub Actions](./github-actions.md) - CI/CD workflows, Python/Django pipelines, linting, security scanning, troubleshooting
 - [MCP (Model Context Protocol)](./mcp-model-context-protocol.md) - Protocol overview, available servers, Claude integration, development
 
 ### Local System Information
@@ -50,6 +51,9 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - Knowledge is kept current through regular updates prioritizing frequently-changing topics
 
 ## Last Updated
+2025-06-08 - Added GitHub Actions knowledge from CI failure investigation:
+- GitHub Actions: Comprehensive guide covering CI/CD workflows, Python/Django pipelines, linting with flake8/black/isort, security scanning with bandit/safety, performance testing, and troubleshooting common failures. Includes specific solutions for deprecated actions, linting violations, and test environment configuration.
+
 2025-06-04 - Added six key learnings from recent Art Factory development:
 - SQLite Integer Limits: Solution for handling large seed values that exceed SQLite's integer range using safe_seed_value() method
 - Fal.ai Base64 Images: Pattern for detecting and handling base64-encoded image responses from certain fal.ai models
