@@ -210,14 +210,8 @@
                         </a>
                     </div>
                     <div class="card-body">
-                        <div id="recentProducts">
-                            <div id="recentProductsPlaceholder" class="text-center py-3 text-muted">
-                                <small>Your recent products will appear here</small>
-                            </div>
-                            <div id="recentProductsContent" class="row g-2" style="display: none;">
-                                <!-- Recent products will be inserted here -->
-                            </div>
-                        </div>
+                        <!-- Unified Product Collection for Recent Products -->
+                        <div id="recentProductsCollection"></div>
                     </div>
                 </div>
             </div>
@@ -439,41 +433,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Initialize recent products collection
+    let recentProductsCollection = null;
+    
+    function initializeRecentProductsCollection() {
+        if (!recentProductsCollection) {
+            recentProductsCollection = new ProductCollection('#recentProductsCollection', 'strip', {
+                selectable: false,
+                showBulkActions: false,
+                cardVariant: 'compact',
+                cardOptions: {
+                    showCheckbox: false,
+                    showActions: false,
+                    showDelete: false,
+                    clickAction: 'modal' // In recent products strip, clicking opens modal for quick preview
+                }
+            });
+        }
+    }
+    
     function loadRecentProducts() {
         fetch('{% url "main:recent_products_api" %}')
             .then(response => response.json())
             .then(data => {
-                const placeholder = document.getElementById('recentProductsPlaceholder');
-                const content = document.getElementById('recentProductsContent');
+                // Initialize collection if not already done
+                initializeRecentProductsCollection();
                 
                 if (data.products && data.products.length > 0) {
-                    content.innerHTML = '';
-                    data.products.forEach(product => {
-                        const productCard = `
-                            <div class="col-3 col-sm-2 col-md-1">
-                                <div class="card">
-                                    <div class="ratio ratio-1x1">
-                                        <img src="${product.file_url}" alt="${product.title}" 
-                                             class="card-img-top object-fit-cover rounded" 
-                                             style="cursor: pointer;"
-                                             onclick="window.open('/products/${product.id}/', '_blank')">
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        content.insertAdjacentHTML('beforeend', productCard);
-                    });
-                    placeholder.style.display = 'none';
-                    content.style.display = 'flex';
+                    recentProductsCollection.loadProducts(data.products);
                 } else {
-                    placeholder.style.display = 'block';
-                    content.style.display = 'none';
+                    recentProductsCollection.loadProducts([]);
                 }
             })
             .catch(error => {
                 console.error('Error loading recent products:', error);
-                const placeholder = document.getElementById('recentProductsPlaceholder');
-                placeholder.style.display = 'block';
+                // Initialize collection with empty state
+                initializeRecentProductsCollection();
+                recentProductsCollection.loadProducts([]);
             });
     }
     

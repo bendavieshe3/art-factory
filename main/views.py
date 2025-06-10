@@ -31,9 +31,26 @@ def inventory_view(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    # Serialize products for JavaScript
+    products_json = []
+    for product in page_obj:
+        products_json.append({
+            'id': product.id,
+            'title': product.title,
+            'prompt': product.prompt,
+            'file_url': product.file_url,
+            'provider': product.provider,
+            'model_name': product.model_name,
+            'created_at': product.created_at.isoformat(),
+            'width': product.width,
+            'height': product.height,
+            'product_type': getattr(product, 'product_type', 'image'),
+        })
+
     context = {
         "page_obj": page_obj,
         "products": page_obj,
+        "products_json": json.dumps(products_json),
         "page_title": "Inventory",
     }
     return render(request, "main/inventory.html", context)
@@ -110,22 +127,75 @@ def product_download(request, product_id):
     """Download a product file."""
     product = get_object_or_404(Product, id=product_id)
 
-    if not product.file:
+    if not product.file_path:
         messages.error(request, "No file available for download.")
         return redirect("main:inventory")
 
     # Prepare the file response
-    file_path = product.file.path
-    file_name = f"{product.provider}_{product.id}_{product.created_at.strftime('%Y%m%d_%H%M%S')}.png"
+    file_path = product.file_path
+    file_extension = product.file_format or 'png'
+    file_name = f"{product.provider}_{product.id}_{product.created_at.strftime('%Y%m%d_%H%M%S')}.{file_extension}"
 
     try:
-        with open(file_path, "rb") as f:
+        # Use Django's default storage to handle the file
+        from django.core.files.storage import default_storage
+        
+        if not default_storage.exists(file_path):
+            messages.error(request, "File not found.")
+            return redirect("main:inventory")
+            
+        with default_storage.open(file_path, 'rb') as f:
             response = HttpResponse(f.read(), content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{file_name}"'
             return response
-    except FileNotFoundError:
-        messages.error(request, "File not found.")
+    except Exception as e:
+        messages.error(request, f"Error downloading file: {str(e)}")
         return redirect("main:inventory")
+
+
+def bulk_download_products(request):
+    """Download multiple products as a zip file."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method'})
+    
+    import zipfile
+    import tempfile
+    from django.core.files.storage import default_storage
+    
+    try:
+        product_ids = request.POST.getlist('product_ids')
+        if not product_ids:
+            return JsonResponse({'success': False, 'error': 'No products selected'})
+        
+        products = Product.objects.filter(id__in=product_ids)
+        
+        # Create a temporary zip file
+        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        
+        with zipfile.ZipFile(temp_zip.name, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for product in products:
+                if product.file_path and default_storage.exists(product.file_path):
+                    # Create a unique filename for the zip
+                    file_extension = product.file_format or 'png'
+                    filename = f"{product.provider}_{product.id}_{product.created_at.strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+                    
+                    # Add file to zip
+                    with default_storage.open(product.file_path, 'rb') as f:
+                        zip_file.writestr(filename, f.read())
+        
+        # Prepare response with zip file
+        with open(temp_zip.name, 'rb') as zip_data:
+            response = HttpResponse(zip_data.read(), content_type='application/zip')
+            response['Content-Disposition'] = f'attachment; filename="products_{len(products)}_files.zip"'
+            
+        # Clean up temp file
+        import os
+        os.unlink(temp_zip.name)
+        
+        return response
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 def bulk_delete_products(request):

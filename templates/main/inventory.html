@@ -7,308 +7,93 @@
 {% endblock %}
 
 {% block content %}
+<!-- CSRF Token for AJAX requests -->
+{% csrf_token %}
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h2 class="mb-0">Product Gallery</h2>
-        {% if products %}
-            {% include 'components/navigation/bulk_actions.html' %}
-        {% endif %}
     </div>
     <div class="card-body">
-        {% if products %}
-            <div class="row g-3">
-                {% for product in products %}
-                    {% include 'components/cards/product_card.html' with show_checkbox=True show_actions=True show_delete=True %}
-                {% endfor %}
-            </div>
+        <!-- Unified Product Collection Container -->
+        <div id="inventoryCollection"></div>
         
-            <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-                <nav aria-label="Product pagination" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1">First</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">First</span>
-                            </li>
-                            <li class="page-item disabled">
-                                <span class="page-link">Previous</span>
-                            </li>
-                        {% endif %}
-                        
-                        <li class="page-item active">
-                            <span class="page-link">
-                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                            </span>
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Product pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">First</a>
                         </li>
-                        
-                        {% if page_obj.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">Next</span>
-                            </li>
-                            <li class="page-item disabled">
-                                <span class="page-link">Last</span>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
-            
-        {% else %}
-            {% include 'components/navigation/empty_state.html' with title="No Products Yet" message="You haven't generated any products yet." action_url="main:order" action_text="Place your first order" action_icon="plus-circle" icon="inbox" %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">First</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">Previous</span>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">Last</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
         {% endif %}
     </div>
 </div>
 
+<!-- Initialize inventory collection with data -->
+<script>
+window.inventoryProductsData = {{ products_json|safe }};
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    const deselectAllBtn = document.getElementById('deselectAllBtn');
-    const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
-    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-    const checkboxes = document.querySelectorAll('.product-checkbox');
+    // Initialize inventory collection with unified components
+    const inventoryCollection = new ProductCollection('#inventoryCollection', 'grid', {
+        selectable: true,
+        showBulkActions: true,
+        cardVariant: 'standard',
+        cardOptions: {
+            showCheckbox: true,
+            showActions: true,
+            showDelete: true,
+            clickAction: 'select' // In inventory, clicking selects for bulk operations
+        }
+    });
     
-    function updateButtonStates() {
-        const checkedCount = document.querySelectorAll('.product-checkbox:checked').length;
-        const anyChecked = checkedCount > 0;
-        const allChecked = checkedCount === checkboxes.length;
-        
-        bulkDownloadBtn.disabled = !anyChecked;
-        bulkDeleteBtn.disabled = !anyChecked;
-        
-        if (allChecked && checkboxes.length > 0) {
-            selectAllBtn.style.display = 'none';
-            deselectAllBtn.style.display = 'inline-block';
-        } else {
-            selectAllBtn.style.display = 'inline-block';
-            deselectAllBtn.style.display = 'none';
-        }
-        
-        // Update button text with count
-        if (anyChecked) {
-            bulkDownloadBtn.innerHTML = `<i class="bi bi-download"></i> Download (${checkedCount})`;
-            bulkDeleteBtn.innerHTML = `<i class="bi bi-trash"></i> Delete (${checkedCount})`;
-        } else {
-            bulkDownloadBtn.innerHTML = '<i class="bi bi-download"></i> Download Selected';
-            bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
-        }
+    // Load products data
+    if (window.inventoryProductsData && window.inventoryProductsData.length > 0) {
+        inventoryCollection.loadProducts(window.inventoryProductsData);
     }
     
-    // Select all functionality
-    selectAllBtn?.addEventListener('click', function() {
-        checkboxes.forEach(cb => cb.checked = true);
-        updateButtonStates();
+    // Handle product modal open events
+    document.getElementById('inventoryCollection').addEventListener('productModalOpen', function(e) {
+        // Future implementation for product viewer modal
+        console.log('Product modal open requested:', e.detail.product);
     });
-    
-    // Deselect all functionality
-    deselectAllBtn?.addEventListener('click', function() {
-        checkboxes.forEach(cb => cb.checked = false);
-        updateButtonStates();
-    });
-    
-    // Individual checkbox change
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateButtonStates);
-    });
-    
-    // Bulk download functionality
-    bulkDownloadBtn?.addEventListener('click', function() {
-        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
-            .map(cb => cb.value);
-        
-        if (selectedIds.length === 0) return;
-        
-        // Download each selected product
-        selectedIds.forEach(id => {
-            const link = document.createElement('a');
-            link.href = `/products/${id}/download/`;
-            link.download = '';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-        
-        // Show success message using new toast system
-        ToastNotification.success(
-            `Downloading ${selectedIds.length} product(s)...`,
-            'Download Started'
-        );
-    });
-    
-    // Bulk delete functionality
-    bulkDeleteBtn?.addEventListener('click', function() {
-        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
-            .map(cb => cb.value);
-        
-        if (selectedIds.length === 0) return;
-        
-        // Show confirmation toast instead of browser confirm
-        const confirmationText = `Are you sure you want to delete ${selectedIds.length} product(s)? This action cannot be undone.`;
-        
-        // Create a more user-friendly confirmation
-        if (!confirm(confirmationText)) {
-            return;
-        }
-        
-        // Disable button and show loading state
-        bulkDeleteBtn.disabled = true;
-        bulkDeleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
-        
-        // Use AJAX instead of form submission
-        const formData = new FormData();
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}');
-        selectedIds.forEach(id => {
-            formData.append('product_ids', id);
-        });
-        
-        fetch('{% url "main:bulk_delete_products" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Show success toast
-                ToastNotification.success(
-                    data.message || `Successfully deleted ${selectedIds.length} product(s).`,
-                    'Products Deleted'
-                );
-                
-                // Remove deleted products from the page
-                selectedIds.forEach(id => {
-                    const productCard = document.querySelector(`[data-product-id="${id}"]`);
-                    if (productCard) {
-                        productCard.closest('.col-12, .col-sm-6, .col-md-4, .col-lg-3').remove();
-                    }
-                });
-                
-                // Reset checkboxes and button states
-                checkboxes.forEach(cb => cb.checked = false);
-                updateButtonStates();
-                
-                // Check if page is now empty
-                const remainingProducts = document.querySelectorAll('.product-card').length;
-                if (remainingProducts === 0) {
-                    location.reload(); // Reload to show empty state
-                }
-            } else {
-                // Show error toast
-                ToastNotification.error(
-                    data.message || 'Failed to delete products.',
-                    'Delete Failed'
-                );
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting products:', error);
-            ToastNotification.error(
-                'An error occurred while deleting products. Please try again.',
-                'Network Error'
-            );
-        })
-        .finally(() => {
-            // Re-enable button
-            bulkDeleteBtn.disabled = false;
-            bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
-            updateButtonStates();
-        });
-    });
-    
-    // Individual product delete functionality
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.delete-product-btn')) {
-            const btn = e.target.closest('.delete-product-btn');
-            const productId = btn.dataset.productId;
-            const productTitle = btn.dataset.productTitle;
-            
-            // Show confirmation
-            if (!confirm(`Are you sure you want to delete "${productTitle}"? This action cannot be undone.`)) {
-                return;
-            }
-            
-            // Disable button and show loading state
-            const originalContent = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
-            
-            // Use AJAX for individual delete
-            const formData = new FormData();
-            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}');
-            
-            fetch(`/products/${productId}/delete/`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success toast
-                    ToastNotification.success(
-                        data.message || `"${productTitle}" has been deleted.`,
-                        'Product Deleted'
-                    );
-                    
-                    // Remove product card from page
-                    const productCard = btn.closest('.col-12, .col-sm-6, .col-md-4, .col-lg-3');
-                    if (productCard) {
-                        productCard.remove();
-                    }
-                    
-                    // Update button states for bulk actions
-                    updateButtonStates();
-                    
-                    // Check if page is now empty
-                    const remainingProducts = document.querySelectorAll('.product-card').length;
-                    if (remainingProducts === 0) {
-                        location.reload(); // Reload to show empty state
-                    }
-                } else {
-                    // Show error toast
-                    ToastNotification.error(
-                        data.message || 'Failed to delete product.',
-                        'Delete Failed'
-                    );
-                    
-                    // Re-enable button
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting product:', error);
-                ToastNotification.error(
-                    'An error occurred while deleting the product. Please try again.',
-                    'Network Error'
-                );
-                
-                // Re-enable button
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            });
-        }
-    });
-    
-    // Initialize button states
-    updateButtonStates();
 });
 </script>
 {% endblock %}
