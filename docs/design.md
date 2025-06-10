@@ -284,21 +284,91 @@ The frontend will use Django's template system as the foundation, with decisions
 - Options: Tailwind CSS, Bootstrap, or custom CSS
 - Priority: Responsive design optimized for desktop use
 
-### 5.5 UI Component Strategy (Implementation Pending)
+### 5.5 UI Component Strategy
 
-Depending on the chosen frontend approach, consider:
+The application uses a unified JavaScript component system for consistent product display across all pages. This approach provides reusable, configurable components that maintain consistent behavior while adapting to different contexts.
 
-**If Component-Based Approach Selected:**
-- Self-contained, reusable UI elements
-- Progressive enhancement from server-rendered HTML
-- Event-driven communication between components
-- Standard web component patterns
+#### 5.5.1 Unified Product Display System
 
-**Key UI Elements:**
-- **ProductGrid**: Gallery view for generated products
-- **OrderForm**: Dynamic form generation based on selected factory machine
-- **ProductViewer**: Full-size product display modal
-- **StatusMonitor**: Real-time production status updates
+**ProductCard Class**
+- **Purpose**: Renders individual product display cards with consistent styling and behavior
+- **Location**: `/static/js/product-components.js`
+- **Variants**:
+  - `compact`: Minimal display for strips and thumbnails
+  - `standard`: Full-featured display for grids and galleries  
+  - `detailed`: Comprehensive display for search results and details
+- **Configuration Options**:
+  - `showCheckbox`: Enable/disable selection checkboxes
+  - `showActions`: Control action button visibility
+  - `showDelete`: Control delete button availability
+  - `clickAction`: Define click behavior (`select`, `modal`, `navigate`)
+
+**ProductCollection Class**  
+- **Purpose**: Manages collections of ProductCard instances with layout and bulk operation support
+- **Location**: `/static/js/product-components.js`
+- **Layout Types**:
+  - `grid`: Responsive grid layout for inventory and galleries
+  - `strip`: Horizontal scrolling strip for recent products
+  - `list`: Vertical list layout for search results
+  - `masonry`: Masonry grid for varied content sizes
+- **Features**:
+  - Bulk selection and operations (download, delete)
+  - Filtering and sorting capabilities
+  - Empty state and loading state management
+  - Event delegation for efficient DOM handling
+
+#### 5.5.2 Component Integration
+
+**Template Integration**
+- Components initialize from container elements in Django templates
+- Product data is serialized as JSON and injected into page context
+- CSRF tokens are handled automatically for secure AJAX operations
+
+**Event System**
+- Custom events for modal opening (`productModalOpen`)
+- Event delegation for handling dynamic content
+- Consistent event handling across all collection instances
+
+**CSS Architecture**
+- **Location**: `/static/css/product-components.css`
+- BEM (Block Element Modifier) naming convention
+- Layout-specific styling for different collection types
+- Responsive design with Bootstrap integration
+
+#### 5.5.3 Usage Patterns
+
+**Recent Products Strip (Order Page)**
+```javascript
+const recentProductsCollection = new ProductCollection('#recentProductsCollection', 'strip', {
+    selectable: false,
+    showBulkActions: false,
+    cardVariant: 'compact',
+    cardOptions: {
+        clickAction: 'modal' // Opens modal for quick preview
+    }
+});
+```
+
+**Inventory Grid (Inventory Page)**
+```javascript
+const inventoryCollection = new ProductCollection('#inventoryCollection', 'grid', {
+    selectable: true,
+    showBulkActions: true,
+    cardVariant: 'standard',
+    cardOptions: {
+        showCheckbox: true,
+        clickAction: 'select' // Selects for bulk operations
+    }
+});
+```
+
+#### 5.5.4 Benefits
+
+- **Consistency**: Unified appearance and behavior across all product displays
+- **Maintainability**: Single source of truth for product display logic
+- **Flexibility**: Configurable components adapt to different page contexts
+- **Performance**: Event delegation and efficient DOM manipulation
+- **Extensibility**: Easy to add new variants and layout types
 
 
 
