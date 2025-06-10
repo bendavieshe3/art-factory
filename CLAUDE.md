@@ -23,7 +23,7 @@ Art Factory is a Django-first web application for managing AI-generated art usin
 11. All issue requirements met? if not, revise and continue plan
 12. Run all tests
 13. Update documentation under ./docs
-14. If all pass, push to remote repository
+14. If all pass, push to remote repository, close Github issue if relevant
 15. Suggest remaining work to be made into github issues
 
 ## Documentation Structure
