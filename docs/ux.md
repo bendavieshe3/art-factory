@@ -85,9 +85,10 @@ The application uses a header navigation with main sections:
 - A place to show the outputs of the last generation when it is complete
 - If we implement result streaming from the APIs, the product will be progressively rendered or have actual progress shown
 
-**Recent Products**
-- strip of recently created product as cards. 
-- Updated live; when a new product is generated it is added to the left, and products are removed from the right. 
+**Recent Products** (Product Collection - Strip Layout)
+- Horizontal strip of recently created products using compact Product Cards
+- Updated live; when a new product is generated it is added to the left, and products are removed from the right
+- Provides navigation context when opening the product viewer modal 
 
 
 **Recent Orders List** (bottom/right):
@@ -198,11 +199,35 @@ The application uses a header navigation with main sections:
 ## Reusable Components
 
 ### Product Card
+**Definition**: The visual representation of a product (image + optional metadata/actions)
+
+**Variants**:
+- **Compact**: Image only with hover overlay (used in thumbnail strips)
+- **Standard**: Image + title + basic metadata (used in inventory grid)
+- **Detailed**: Full information display (future use in search results)
+
+**Features**:
 - Thumbnail with type indicator
 - Metadata overlay on hover
 - Selection state visualization
 - Quick action menu
-- Consistent across grid and list views
+- Consistent behavior across all contexts
+
+### Product Collection
+**Definition**: A container that manages and displays multiple Product Cards
+
+**Layouts**:
+- **Grid**: Responsive grid layout (inventory page)
+- **Strip**: Horizontal scrolling strip (order page recent products)
+- **List**: Vertical list with details (future search results)
+- **Masonry**: Pinterest-style layout (future gallery view)
+
+**Features**:
+- Manages selection state across products
+- Provides navigation context for viewer modal
+- Handles filtering and sorting
+- Supports bulk operations
+- Real-time updates via WebSocket
 
 ### Parameter Form
 - Dynamic field generation
