@@ -599,6 +599,32 @@ def product_detail_api(request, product_id):
     try:
         product = get_object_or_404(Product, id=product_id)
 
+        # Get file size if possible
+        file_size = None
+        if hasattr(product, 'file_size') and product.file_size:
+            file_size = product.file_size
+        elif product.file_path:
+            try:
+                from django.core.files.storage import default_storage
+                if default_storage.exists(product.file_path):
+                    file_size = default_storage.size(product.file_path)
+            except:
+                pass
+
+        # Get order information if available
+        order_id = None
+        order_item = None
+        factory_machine_definition = None
+        
+        try:
+            # Get the order item associated with this product
+            order_item = product.orderitem_set.first()
+            if order_item:
+                order_id = order_item.order.id
+                factory_machine_definition = order_item.order.factory_machine_name
+        except:
+            pass
+
         product_data = {
             "id": product.id,
             "title": product.title,
@@ -608,7 +634,18 @@ def product_detail_api(request, product_id):
             "model_name": product.model_name,
             "parameters": product.parameters,
             "file_url": product.file_url,
+            "file_path": product.file_path,
+            "file_size": file_size,
+            "file_format": getattr(product, 'file_format', None),
+            "width": product.width,
+            "height": product.height,
             "created_at": product.created_at.isoformat(),
+            "updated_at": product.updated_at.isoformat() if hasattr(product, 'updated_at') else None,
+            "order_id": order_id,
+            "factory_machine_definition": factory_machine_definition,
+            "is_favorite": getattr(product, 'is_favorite', False),
+            "product_type": getattr(product, 'product_type', 'image'),
+            "filename": getattr(product, 'filename', None),
         }
 
         return JsonResponse(product_data)

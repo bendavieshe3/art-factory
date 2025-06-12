@@ -83,7 +83,7 @@ class ProductCard {
     getCompactHTML() {
         const product = this.product;
         return `
-            <div class="card product-card product-card--compact" data-product-id="${product.id}">
+            <div class="card product-card product-card--compact" data-product-id="${product.id}" style="cursor: default;">
                 ${this.options.showCheckbox ? this.getCheckboxHTML() : ''}
                 <div class="ratio ratio-1x1 product-card__image">
                     ${this.getImageHTML()}
@@ -269,7 +269,11 @@ class ProductCard {
                 this.toggleSelection();
                 break;
             case 'modal':
-                this.openModal();
+                // Only open modal if clicking on image or card body, not buttons
+                if (e.target.matches('.product-card__img, .product-card__placeholder') || 
+                    e.target.closest('.product-card__body')) {
+                    this.openModal();
+                }
                 break;
             case 'navigate':
                 this.navigate();
@@ -316,7 +320,7 @@ class ProductCard {
         
         switch (action) {
             case 'view':
-                this.navigate();
+                this.openModal();
                 break;
             case 'download':
                 this.download();
@@ -366,11 +370,17 @@ class ProductCard {
      * Open product in modal
      */
     openModal() {
-        // Future implementation - trigger modal open event
         if (this.collection) {
             this.collection.onProductModalOpen(this);
+        } else {
+            // If no collection, open modal with just this product
+            if (window.productViewerModal) {
+                window.productViewerModal.open(this.product.id, {
+                    context: 'single',
+                    productList: [this.product]
+                });
+            }
         }
-        console.log('Opening modal for product:', this.product.id);
     }
 
     /**
@@ -726,7 +736,16 @@ class ProductCollection {
      * Handle product modal open
      */
     onProductModalOpen(card) {
-        // Future implementation - emit event for modal
+        // Open modal with collection context for navigation
+        if (window.productViewerModal) {
+            const contextName = this.layout === 'strip' ? 'order' : 'inventory';
+            window.productViewerModal.open(card.product.id, {
+                context: contextName,
+                productList: this.products
+            });
+        }
+        
+        // Also emit event for other listeners
         this.container.dispatchEvent(new CustomEvent('productModalOpen', {
             detail: { product: card.product, collection: this }
         }));

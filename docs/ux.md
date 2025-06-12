@@ -148,12 +148,42 @@ The application uses a header navigation with main sections:
   - Input/output parameters (expandable)
   - Action buttons (download, reorder, delete)
 
-**Product Viewer** (modal):
-- Full-screen modal overlay
-- Largest possible product display
-- Navigation controls (next/previous)
-- Close button
-- Keyboard navigation support
+**Product Viewer Modal**:
+A sophisticated full-screen viewing experience for products:
+
+**Core Features**:
+- Full-screen dark modal overlay
+- Maximum viewport utilization for image display
+- Smooth zoom and pan functionality:
+  - Mouse wheel zoom (10% - 500%)
+  - Click and drag to pan when zoomed
+  - Zoom controls with reset button
+- Navigation between products in collection:
+  - Previous/Next buttons with visual indicators
+  - Keyboard arrow key navigation
+  - Maintains collection context from entry point
+- Collapsible information sidebar:
+  - Product metadata and parameters
+  - File information (dimensions, size, creation date)
+  - Order and factory machine details
+  - Action toolbar (download, favorite, regenerate, delete)
+  - External toggle button for accessibility
+
+**User Interactions**:
+- Click on product card "View" button to open
+- Escape key or close button to dismiss
+- Browser back button integration (pending Issue #67)
+- Arrow keys for product navigation
+- Mouse wheel for zoom control
+- Click and drag for panning zoomed images
+- All actions provide immediate feedback
+
+**Technical Implementation**:
+- Overlays content rather than pushing layout
+- Sidebar floats over image area when expanded
+- Smart data fetching ensures all metadata available
+- Responsive design adapts to screen size
+- Accessibility features include ARIA labels and keyboard navigation
 
 #### Product Grid View
 - Responsive grid layout

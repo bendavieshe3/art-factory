@@ -105,6 +105,7 @@
 .product-card--compact {
     border: none;
     background: transparent;
+    cursor: default !important;
 }
 
 .product-card--compact:hover {

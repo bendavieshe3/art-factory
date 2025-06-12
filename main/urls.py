@@ -19,6 +19,7 @@ urlpatterns = [
     path("api/order-status/<int:order_id>/", views.order_status_api, name="order_status_api"),
     path("api/orders/<int:order_id>/", views.order_detail_api, name="order_detail_api"),
     path("api/products/<int:product_id>/", views.product_detail_api, name="product_detail_api"),
+    path("api/products/<int:product_id>/download/", views.product_download, name="api_product_download"),
     # Product management
     path("products/<int:product_id>/", views.product_detail, name="product_detail"),
     path("products/<int:product_id>/delete/", views.product_delete, name="product_delete"),
