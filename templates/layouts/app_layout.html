@@ -18,8 +18,14 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link{% if request.resolver_match.url_name == 'order' or request.resolver_match.url_name == 'home' %} active{% endif %}" 
+                        <a class="nav-link{% if request.resolver_match.url_name == 'projects' or request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'all_projects' or request.resolver_match.url_name == 'project_detail' %} active{% endif %}" 
                            href="{% url 'main:home' %}">
+                            <i class="bi bi-folder"></i> Projects
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{% if request.resolver_match.url_name == 'order' %} active{% endif %}" 
+                           href="{% url 'main:order' %}">
                             <i class="bi bi-plus-circle"></i> Order
                         </a>
                     </li>

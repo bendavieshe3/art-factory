@@ -1,0 +1,172 @@
+{% extends 'layouts/app_layout.html' %}
+
+{% block page_title %}Projects{% endblock %}
+
+{% block page_description %}
+<div class="d-flex justify-content-between align-items-center">
+    <p class="lead mb-0">Organize your orders and products by theme or purpose.</p>
+    <div>
+        <a href="{% url 'main:all_projects' %}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-list"></i> All Projects
+        </a>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+            <i class="bi bi-plus-circle"></i> New Project
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Recent Projects Section -->
+{% if recent_projects %}
+<div class="row">
+    {% for project in recent_projects %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <!-- Project Hero Images -->
+            <div class="card-img-top position-relative" style="height: 200px; overflow: hidden; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                {% with recent_products=project.recent_products_for_display %}
+                    {% if recent_products %}
+                        <div class="d-flex h-100">
+                            {% for product in recent_products %}
+                                <div class="flex-fill">
+                                    <img src="{{ product.file_url }}" 
+                                         alt="{{ product.title }}"
+                                         class="img-fluid h-100 w-100"
+                                         style="object-fit: cover; opacity: 0.9;">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <i class="bi bi-folder-plus text-white" style="font-size: 3rem; opacity: 0.7;"></i>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Project Status Badge -->
+                <div class="position-absolute top-0 end-0 m-2">
+                    <span class="badge {% if project.status == 'active' %}bg-success{% elif project.status == 'completed' %}bg-primary{% else %}bg-secondary{% endif %}">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <h5 class="card-title">
+                    <a href="{% url 'main:project_detail' project.id %}" class="text-decoration-none">
+                        {{ project.name }}
+                    </a>
+                </h5>
+                {% if project.description %}
+                <p class="card-text text-muted">{{ project.description|truncatechars:100 }}</p>
+                {% endif %}
+                
+                <!-- Project Stats -->
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted">Orders</small>
+                        <div class="fw-bold">{{ project.order_count }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Products</small>
+                        <div class="fw-bold">{{ project.product_count }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-transparent">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Updated {{ project.updated_at|timesince }} ago
+                    </small>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'main:order' %}?project={{ project.id }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus"></i> Order
+                        </a>
+                        <a href="{% url 'main:project_detail' project.id %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="text-center py-5">
+    <i class="bi bi-folder-plus text-muted" style="font-size: 4rem;"></i>
+    <h3 class="mt-3">No Projects Yet</h3>
+    <p class="text-muted">Create your first project to organize your AI art generation.</p>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+        <i class="bi bi-plus-circle"></i> Create Your First Project
+    </button>
+</div>
+{% endif %}
+
+<!-- Quick Actions Section -->
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-plus-circle text-primary" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Start Creating</h5>
+                <p class="card-text">Jump straight into generating new AI art with your preferred settings.</p>
+                <a href="{% url 'main:order' %}" class="btn btn-primary">Place Order</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-grid text-success" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Browse Gallery</h5>
+                <p class="card-text">View and manage all your generated products in one place.</p>
+                <a href="{% url 'main:inventory' %}" class="btn btn-success">View Inventory</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-gear text-info" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Monitor Progress</h5>
+                <p class="card-text">Track the status of your orders and generation processes.</p>
+                <a href="{% url 'main:production' %}" class="btn btn-info">View Production</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Project Modal -->
+<div class="modal fade" id="createProjectModal" tabindex="-1" aria-labelledby="createProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'main:project_create' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createProjectModalLabel">Create New Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="projectName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="projectDescription" name="description" rows="3" 
+                                  placeholder="Describe the theme or purpose of this project..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

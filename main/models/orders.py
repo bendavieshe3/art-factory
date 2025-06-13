@@ -41,7 +41,8 @@ class Order(models.Model):
     expand_parameters = models.BooleanField(default=False, help_text="Whether to expand smart tokens")
 
     # Organization
-    project_name = models.CharField(max_length=100, blank=True, help_text="Project organization")
+    project = models.ForeignKey('Project', on_delete=models.SET_NULL, null=True, blank=True, help_text="Associated project")
+    project_name = models.CharField(max_length=100, blank=True, help_text="Legacy project name field")
     tags = models.JSONField(default=list, help_text="List of tags")
 
     # Timestamps
@@ -55,6 +56,7 @@ class Order(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["created_at"]),
             models.Index(fields=["provider"]),
+            models.Index(fields=["project"]),
             models.Index(fields=["project_name"]),
         ]
 

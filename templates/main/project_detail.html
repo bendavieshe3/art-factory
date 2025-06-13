@@ -1,0 +1,316 @@
+{% extends 'layouts/app_layout.html' %}
+
+{% block page_title %}{{ project.name }}{% endblock %}
+
+{% block page_description %}
+<div class="d-flex justify-content-between align-items-start">
+    <div>
+        {% if project.description %}
+            <p class="lead">{{ project.description }}</p>
+        {% endif %}
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge {% if project.status == 'active' %}bg-success{% elif project.status == 'completed' %}bg-primary{% else %}bg-secondary{% endif %} fs-6">
+                {{ project.get_status_display }}
+            </span>
+            <small class="text-muted">
+                Created {{ project.created_at|timesince }} ago • Updated {{ project.updated_at|timesince }} ago
+            </small>
+        </div>
+    </div>
+    <div>
+        <a href="{% url 'main:projects' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Projects
+        </a>
+        <a href="{% url 'main:order' %}?project={{ project.id }}" class="btn btn-primary me-2">
+            <i class="bi bi-plus-circle"></i> New Order
+        </a>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-gear"></i> Manage
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <button type="button" class="dropdown-item" data-bs-toggle="modal" 
+                            data-bs-target="#editProjectModal">
+                        <i class="bi bi-pencil"></i> Edit Project
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" 
+                            data-bs-target="#deleteProjectModal">
+                        <i class="bi bi-trash"></i> Delete Project
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Project Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-primary mb-1">{{ project.order_count }}</h2>
+                <p class="card-text text-muted mb-0">Orders</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-success mb-1">{{ project.product_count }}</h2>
+                <p class="card-text text-muted mb-0">Products</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-info mb-1">{{ orders|length }}</h2>
+                <p class="card-text text-muted mb-0">Active Orders</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-warning mb-1">{{ project.featured_products.count }}</h2>
+                <p class="card-text text-muted mb-0">Featured</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders Section -->
+{% if orders %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Recent Orders</h4>
+        <a href="{% url 'main:production' %}" class="btn btn-sm btn-outline-primary">
+            View All Orders
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <strong>{{ order.title|default:"Order "|add:order.id }}</strong>
+                            <br>
+                            <small class="text-muted">{{ order.prompt|truncatechars:50 }}</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if order.status == 'completed' %}bg-success{% elif order.status == 'processing' %}bg-warning{% elif order.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" style="width: {{ order.completion_percentage }}%">
+                                    {{ order.completion_percentage }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ order.created_at|timesince }} ago</td>
+                        <td>
+                            <a href="{% url 'main:production' %}#order-{{ order.id }}" class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Project Products Gallery -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Project Gallery</h4>
+        <div>
+            <a href="{% url 'main:inventory' %}?project={{ project.id }}" class="btn btn-sm btn-outline-primary">
+                View in Inventory
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if products %}
+            <!-- Unified Product Collection Container -->
+            <div id="projectProductsCollection"></div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Product pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">First</span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link">Last</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <i class="bi bi-images text-muted" style="font-size: 4rem;"></i>
+                <h5 class="mt-3">No Products Yet</h5>
+                <p class="text-muted">Start generating products for this project.</p>
+                <a href="{% url 'main:order' %}?project={{ project.id }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Place First Order
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-labelledby="editProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'main:project_update' project.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProjectModalLabel">Edit Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editProjectName" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="editProjectName" name="name" 
+                               value="{{ project.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProjectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editProjectDescription" name="description" rows="3">{{ project.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProjectStatus" class="form-label">Status</label>
+                        <select class="form-select" id="editProjectStatus" name="status">
+                            {% for value, label in project.STATUS_CHOICES %}
+                                <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Project Modal -->
+<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'main:project_delete' project.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteProjectModalLabel">Delete Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the project "{{ project.name }}"?</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This action cannot be undone. All orders will be unassigned from this project.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Initialize project products collection with data -->
+<script>
+window.projectProductsData = {{ products_json|safe }};
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize project products collection with unified components
+    {% if products %}
+    const projectProductsCollection = new ProductCollection('#projectProductsCollection', 'grid', {
+        selectable: true,
+        showBulkActions: true,
+        cardVariant: 'standard',
+        cardOptions: {
+            showCheckbox: true,
+            showActions: true,
+            showDelete: true,
+            clickAction: 'select'
+        }
+    });
+    
+    // Load products data
+    if (window.projectProductsData && window.projectProductsData.length > 0) {
+        projectProductsCollection.loadProducts(window.projectProductsData);
+    }
+    
+    // Handle product modal open events
+    document.getElementById('projectProductsCollection').addEventListener('productModalOpen', function(e) {
+        console.log('Product modal open requested:', e.detail.product);
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

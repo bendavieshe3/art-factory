@@ -7,16 +7,20 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
 from .error_handling import ErrorCategory, ErrorHandler, UserFriendlyMessages
-from .models import FactoryMachineDefinition, FactoryMachineInstance, LogEntry, Order, OrderItem, Product
+from .models import FactoryMachineDefinition, FactoryMachineInstance, LogEntry, Order, OrderItem, Product, Project
 
 
 def order_view(request):
     """Main order placement page - also serves as home page."""
     # Get available factory machines
     factory_machines = FactoryMachineDefinition.objects.filter(is_active=True).order_by("provider", "display_name")
+    
+    # Get active projects for selection
+    projects = Project.objects.filter(status='active').order_by('-updated_at')
 
     context = {
         "factory_machines": factory_machines,
+        "projects": projects,
         "page_title": "Place Order",
     }
     return render(request, "main/order.html", context)
@@ -25,6 +29,19 @@ def order_view(request):
 def inventory_view(request):
     """Product gallery and inventory management."""
     products = Product.objects.all().order_by("-created_at")
+    
+    # Project filter
+    project_filter = request.GET.get('project')
+    if project_filter:
+        try:
+            project = Project.objects.get(id=project_filter)
+            order_ids = project.order_set.values_list('id', flat=True)
+            products = products.filter(orderitem__order__id__in=order_ids)
+        except Project.DoesNotExist:
+            pass
+    
+    # Get all active projects for filter dropdown
+    projects = Project.objects.filter(status='active').order_by('name')
 
     # Pagination
     paginator = Paginator(products, 20)  # 20 products per page
@@ -47,11 +64,22 @@ def inventory_view(request):
             'product_type': getattr(product, 'product_type', 'image'),
         })
 
+    # Get current project for display
+    current_project = None
+    if project_filter:
+        try:
+            current_project = Project.objects.get(id=project_filter)
+        except Project.DoesNotExist:
+            pass
+
     context = {
         "page_obj": page_obj,
         "products": page_obj,
         "products_json": json.dumps(products_json),
-        "page_title": "Inventory",
+        "projects": projects,
+        "current_project": current_project,
+        "project_filter": project_filter,
+        "page_title": f"Inventory - {current_project.name}" if current_project else "Inventory",
     }
     return render(request, "main/inventory.html", context)
 
@@ -496,6 +524,15 @@ def place_order_api(request):
                 status=400,
             )
 
+        # Get project if specified
+        project = None
+        project_id = data.get("project_id")
+        if project_id:
+            try:
+                project = Project.objects.get(id=project_id, status='active')
+            except Project.DoesNotExist:
+                pass
+
         # Create the order
         order = Order.objects.create(
             title=data.get("title", ""),
@@ -505,7 +542,8 @@ def place_order_api(request):
             factory_machine_name=machine.name,
             provider=machine.provider,
             quantity=total_products,  # Store total products for compatibility
-            project_name=data.get("project_name", ""),
+            project=project,
+            project_name=data.get("project_name", ""),  # Keep for legacy compatibility
         )
 
         # Merge machine defaults with user parameters (user parameters take precedence)
@@ -652,3 +690,249 @@ def product_detail_api(request, product_id):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
+
+
+# Project Management Views
+def projects_view(request):
+    """Projects overview page - serves as the new home page."""
+    # Get active projects ordered by most recent
+    projects = Project.objects.filter(status='active').order_by('-updated_at')
+    
+    # Get recent projects for quick access (last 6)
+    recent_projects = projects[:6]
+    
+    context = {
+        "projects": projects,
+        "recent_projects": recent_projects,
+        "page_title": "Projects",
+    }
+    return render(request, "main/projects.html", context)
+
+
+def all_projects_view(request):
+    """All projects page with search and filtering."""
+    projects = Project.objects.all().order_by('-updated_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        projects = projects.filter(
+            name__icontains=search_query
+        ) | projects.filter(
+            description__icontains=search_query
+        )
+    
+    # Status filter
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+    
+    # Pagination
+    paginator = Paginator(projects, 12)  # 12 projects per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        "page_obj": page_obj,
+        "projects": page_obj,
+        "search_query": search_query,
+        "status_filter": status_filter,
+        "status_choices": Project.STATUS_CHOICES,
+        "page_title": "All Projects",
+    }
+    return render(request, "main/all_projects.html", context)
+
+
+def project_detail_view(request, project_id):
+    """Project detail page showing orders and products."""
+    project = get_object_or_404(Project, id=project_id)
+    
+    # Get project orders
+    orders = project.order_set.all().order_by('-created_at')
+    
+    # Get project products through orders
+    order_ids = orders.values_list('id', flat=True)
+    products = Product.objects.filter(
+        orderitem__order__id__in=order_ids
+    ).order_by('-created_at')
+    
+    # Pagination for products
+    paginator = Paginator(products, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Serialize products for JavaScript
+    products_json = []
+    for product in page_obj:
+        products_json.append({
+            'id': product.id,
+            'title': product.title,
+            'prompt': product.prompt,
+            'file_url': product.file_url,
+            'provider': product.provider,
+            'model_name': product.model_name,
+            'created_at': product.created_at.isoformat(),
+            'width': product.width,
+            'height': product.height,
+            'product_type': getattr(product, 'product_type', 'image'),
+        })
+    
+    context = {
+        "project": project,
+        "orders": orders[:10],  # Show first 10 orders
+        "page_obj": page_obj,
+        "products": page_obj,
+        "products_json": json.dumps(products_json),
+        "page_title": f"Project: {project.name}",
+    }
+    return render(request, "main/project_detail.html", context)
+
+
+def project_create_view(request):
+    """Create a new project."""
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        
+        if not name:
+            messages.error(request, 'Project name is required.')
+            return redirect('main:projects')
+        
+        try:
+            project = Project.objects.create(
+                name=name,
+                description=description
+            )
+            messages.success(request, f'Project "{project.name}" created successfully.')
+            return redirect('main:project_detail', project_id=project.id)
+        except Exception as e:
+            messages.error(request, f'Error creating project: {str(e)}')
+            return redirect('main:projects')
+    
+    return redirect('main:projects')
+
+
+def project_update_view(request, project_id):
+    """Update an existing project."""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        status = request.POST.get('status', project.status)
+        
+        if not name:
+            messages.error(request, 'Project name is required.')
+            return redirect('main:project_detail', project_id=project.id)
+        
+        try:
+            project.name = name
+            project.description = description
+            project.status = status
+            project.save()
+            messages.success(request, f'Project "{project.name}" updated successfully.')
+        except Exception as e:
+            messages.error(request, f'Error updating project: {str(e)}')
+        
+        return redirect('main:project_detail', project_id=project.id)
+    
+    return redirect('main:project_detail', project_id=project.id)
+
+
+def project_delete_view(request, project_id):
+    """Delete a project."""
+    if request.method == 'POST':
+        project = get_object_or_404(Project, id=project_id)
+        project_name = project.name
+        
+        try:
+            project.delete()
+            messages.success(request, f'Project "{project_name}" deleted successfully.')
+        except Exception as e:
+            messages.error(request, f'Error deleting project: {str(e)}')
+    
+    return redirect('main:projects')
+
+
+# Project API Views
+def projects_api(request):
+    """API endpoint for projects list."""
+    try:
+        projects = Project.objects.filter(status='active').order_by('-updated_at')[:10]
+        
+        projects_data = []
+        for project in projects:
+            recent_products = project.get_recent_products(4)
+            
+            products_data = []
+            for product in recent_products:
+                products_data.append({
+                    'id': product.id,
+                    'file_url': product.file_url,
+                    'title': product.title,
+                    'created_at': product.created_at.isoformat(),
+                })
+            
+            projects_data.append({
+                'id': project.id,
+                'name': project.name,
+                'description': project.description,
+                'status': project.status,
+                'order_count': project.order_count,
+                'product_count': project.product_count,
+                'created_at': project.created_at.isoformat(),
+                'updated_at': project.updated_at.isoformat(),
+                'recent_products': products_data,
+            })
+        
+        return JsonResponse({'projects': projects_data})
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def project_detail_api(request, project_id):
+    """API endpoint for project details."""
+    try:
+        project = get_object_or_404(Project, id=project_id)
+        
+        # Get recent orders and products
+        orders = project.order_set.all().order_by('-created_at')[:5]
+        recent_products = project.get_recent_products(8)
+        
+        orders_data = []
+        for order in orders:
+            orders_data.append({
+                'id': order.id,
+                'title': order.title or f'Order {order.id}',
+                'status': order.status,
+                'created_at': order.created_at.isoformat(),
+                'completion_percentage': order.completion_percentage,
+            })
+        
+        products_data = []
+        for product in recent_products:
+            products_data.append({
+                'id': product.id,
+                'file_url': product.file_url,
+                'title': product.title,
+                'created_at': product.created_at.isoformat(),
+            })
+        
+        project_data = {
+            'id': project.id,
+            'name': project.name,
+            'description': project.description,
+            'status': project.status,
+            'order_count': project.order_count,
+            'product_count': project.product_count,
+            'created_at': project.created_at.isoformat(),
+            'updated_at': project.updated_at.isoformat(),
+            'recent_orders': orders_data,
+            'recent_products': products_data,
+        }
+        
+        return JsonResponse(project_data)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

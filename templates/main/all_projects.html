@@ -1,0 +1,335 @@
+{% extends 'layouts/app_layout.html' %}
+
+{% block page_title %}All Projects{% endblock %}
+
+{% block page_description %}
+<div class="d-flex justify-content-between align-items-center">
+    <p class="lead mb-0">View and manage all your projects.</p>
+    <div>
+        <a href="{% url 'main:projects' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-house"></i> Back to Overview
+        </a>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+            <i class="bi bi-plus-circle"></i> New Project
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Search and Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Search Projects</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search_query }}" placeholder="Search by name or description...">
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{% url 'main:all_projects' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Projects Grid -->
+{% if projects %}
+<div class="row">
+    {% for project in projects %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">
+                        <a href="{% url 'main:project_detail' project.id %}" class="text-decoration-none">
+                            {{ project.name }}
+                        </a>
+                    </h5>
+                    <span class="badge {% if project.status == 'active' %}bg-success{% elif project.status == 'completed' %}bg-primary{% else %}bg-secondary{% endif %}">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+                
+                {% if project.description %}
+                <p class="card-text text-muted">{{ project.description|truncatechars:120 }}</p>
+                {% endif %}
+                
+                <!-- Project Stats -->
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <small class="text-muted">Orders</small>
+                        <div class="fw-bold">{{ project.order_count }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Products</small>
+                        <div class="fw-bold">{{ project.product_count }}</div>
+                    </div>
+                </div>
+                
+                <!-- Recent Products Preview -->
+                {% with recent_products=project.recent_products_preview %}
+                    {% if recent_products %}
+                    <div class="d-flex gap-1 mb-3">
+                        {% for product in recent_products %}
+                        <div class="flex-fill">
+                            <img src="{{ product.file_url }}" 
+                                 alt="{{ product.title }}"
+                                 class="img-fluid rounded"
+                                 style="height: 60px; width: 100%; object-fit: cover;">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            <div class="card-footer bg-transparent">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Updated {{ project.updated_at|timesince }} ago
+                    </small>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            Actions
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'main:project_detail' project.id %}">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'main:order' %}?project={{ project.id }}">
+                                    <i class="bi bi-plus"></i> New Order
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button type="button" class="dropdown-item" data-bs-toggle="modal" 
+                                        data-bs-target="#editProjectModal" 
+                                        data-project-id="{{ project.id }}"
+                                        data-project-name="{{ project.name }}"
+                                        data-project-description="{{ project.description }}"
+                                        data-project-status="{{ project.status }}">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                            </li>
+                            <li>
+                                <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" 
+                                        data-bs-target="#deleteProjectModal" 
+                                        data-project-id="{{ project.id }}"
+                                        data-project-name="{{ project.name }}">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+    <nav aria-label="Projects pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&search={{ search_query }}&status={{ status_filter }}">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}">Previous</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">First</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Previous</span>
+                </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ status_filter }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&status={{ status_filter }}">Last</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Next</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Last</span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}
+{% else %}
+<!-- Empty State -->
+<div class="text-center py-5">
+    <i class="bi bi-folder-x text-muted" style="font-size: 4rem;"></i>
+    <h3 class="mt-3">No Projects Found</h3>
+    {% if search_query or status_filter %}
+        <p class="text-muted">No projects match your search criteria. Try adjusting your filters.</p>
+        <a href="{% url 'main:all_projects' %}" class="btn btn-outline-primary">Clear Filters</a>
+    {% else %}
+        <p class="text-muted">You haven't created any projects yet.</p>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+            <i class="bi bi-plus-circle"></i> Create Your First Project
+        </button>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Create Project Modal -->
+<div class="modal fade" id="createProjectModal" tabindex="-1" aria-labelledby="createProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'main:project_create' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createProjectModalLabel">Create New Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="projectName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="projectDescription" name="description" rows="3" 
+                                  placeholder="Describe the theme or purpose of this project..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-labelledby="editProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="editProjectForm">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProjectModalLabel">Edit Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editProjectName" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="editProjectName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProjectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editProjectDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProjectStatus" class="form-label">Status</label>
+                        <select class="form-select" id="editProjectStatus" name="status">
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Project Modal -->
+<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="deleteProjectForm">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteProjectModalLabel">Delete Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the project "<span id="deleteProjectName"></span>"?</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This action cannot be undone. All orders will be unassigned from this project.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle edit project modal
+    const editModal = document.getElementById('editProjectModal');
+    editModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const projectId = button.getAttribute('data-project-id');
+        const projectName = button.getAttribute('data-project-name');
+        const projectDescription = button.getAttribute('data-project-description');
+        const projectStatus = button.getAttribute('data-project-status');
+        
+        document.getElementById('editProjectForm').action = '{% url "main:project_update" 0 %}'.replace('0', projectId);
+        document.getElementById('editProjectName').value = projectName;
+        document.getElementById('editProjectDescription').value = projectDescription;
+        document.getElementById('editProjectStatus').value = projectStatus;
+    });
+    
+    // Handle delete project modal
+    const deleteModal = document.getElementById('deleteProjectModal');
+    deleteModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const projectId = button.getAttribute('data-project-id');
+        const projectName = button.getAttribute('data-project-name');
+        
+        document.getElementById('deleteProjectForm').action = '{% url "main:project_delete" 0 %}'.replace('0', projectId);
+        document.getElementById('deleteProjectName').textContent = projectName;
+    });
+});
+</script>
+{% endblock %}

@@ -62,6 +62,18 @@
                                     <div class="form-text">Give this order a memorable name (optional)</div>
                                 </div>
                                 
+                                <!-- Project Selection -->
+                                <div class="col-12">
+                                    <label for="project" class="form-label">Project</label>
+                                    <select class="form-select" id="project" name="project">
+                                        <option value="">Select a project...</option>
+                                        {% for project in projects %}
+                                            <option value="{{ project.id }}">{{ project.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Organize this order within a project (optional)</div>
+                                </div>
+                                
                                 <!-- Generation Control -->
                                 <div class="col-md-4">
                                     <label for="generationCount" class="form-label">Number of Generations</label>
@@ -377,6 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
             prompt: document.getElementById('prompt').value,
             negative_prompt: document.getElementById('negative_prompt').value,
             title: document.getElementById('title').value,
+            project: document.getElementById('project').value,
             generationCount: document.getElementById('generationCount').value,
             batchSize: document.getElementById('batchSize').value
         };
@@ -409,6 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (formData.prompt) document.getElementById('prompt').value = formData.prompt;
                 if (formData.negative_prompt) document.getElementById('negative_prompt').value = formData.negative_prompt;
                 if (formData.title) document.getElementById('title').value = formData.title;
+                if (formData.project) document.getElementById('project').value = formData.project;
                 if (formData.generationCount) document.getElementById('generationCount').value = formData.generationCount;
                 if (formData.batchSize) document.getElementById('batchSize').value = formData.batchSize;
                 
@@ -540,11 +554,19 @@ document.addEventListener('DOMContentLoaded', function() {
         return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
     }
     
+    // Handle URL parameters for project pre-selection
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectParam = urlParams.get('project');
+    if (projectParam) {
+        document.getElementById('project').value = projectParam;
+        saveFormValues();
+    }
+    
     // Load saved form values
     loadFormValues();
     
     // Auto-save form values on change
-    const formFields = ['machine', 'prompt', 'negative_prompt', 'title', 'quantity'];
+    const formFields = ['machine', 'prompt', 'negative_prompt', 'title', 'project', 'quantity'];
     formFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -736,6 +758,7 @@ document.addEventListener('DOMContentLoaded', function() {
             machine_id: document.getElementById('machine').value,
             generation_count: parseInt(document.getElementById('generationCount').value),
             batch_size: parseInt(document.getElementById('batchSize').value),
+            project_id: document.getElementById('project').value || null,
             parameters: parameters
         };
         
