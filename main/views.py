@@ -14,9 +14,9 @@ def order_view(request):
     """Main order placement page - also serves as home page."""
     # Get available factory machines
     factory_machines = FactoryMachineDefinition.objects.filter(is_active=True).order_by("provider", "display_name")
-    
+
     # Get active projects for selection
-    projects = Project.objects.filter(status='active').order_by('-updated_at')
+    projects = Project.objects.filter(status="active").order_by("-updated_at")
 
     context = {
         "factory_machines": factory_machines,
@@ -29,19 +29,18 @@ def order_view(request):
 def inventory_view(request):
     """Product gallery and inventory management."""
     products = Product.objects.all().order_by("-created_at")
-    
+
     # Project filter
-    project_filter = request.GET.get('project')
+    project_filter = request.GET.get("project")
     if project_filter:
         try:
             project = Project.objects.get(id=project_filter)
-            order_ids = project.order_set.values_list('id', flat=True)
-            products = products.filter(orderitem__order__id__in=order_ids)
+            products = project.get_products_queryset().order_by("-created_at")
         except Project.DoesNotExist:
             pass
-    
+
     # Get all active projects for filter dropdown
-    projects = Project.objects.filter(status='active').order_by('name')
+    projects = Project.objects.filter(status="active").order_by("name")
 
     # Pagination
     paginator = Paginator(products, 20)  # 20 products per page
@@ -51,18 +50,20 @@ def inventory_view(request):
     # Serialize products for JavaScript
     products_json = []
     for product in page_obj:
-        products_json.append({
-            'id': product.id,
-            'title': product.title,
-            'prompt': product.prompt,
-            'file_url': product.file_url,
-            'provider': product.provider,
-            'model_name': product.model_name,
-            'created_at': product.created_at.isoformat(),
-            'width': product.width,
-            'height': product.height,
-            'product_type': getattr(product, 'product_type', 'image'),
-        })
+        products_json.append(
+            {
+                "id": product.id,
+                "title": product.title,
+                "prompt": product.prompt,
+                "file_url": product.file_url,
+                "provider": product.provider,
+                "model_name": product.model_name,
+                "created_at": product.created_at.isoformat(),
+                "width": product.width,
+                "height": product.height,
+                "product_type": getattr(product, "product_type", "image"),
+            }
+        )
 
     # Get current project for display
     current_project = None
@@ -161,18 +162,18 @@ def product_download(request, product_id):
 
     # Prepare the file response
     file_path = product.file_path
-    file_extension = product.file_format or 'png'
+    file_extension = product.file_format or "png"
     file_name = f"{product.provider}_{product.id}_{product.created_at.strftime('%Y%m%d_%H%M%S')}.{file_extension}"
 
     try:
         # Use Django's default storage to handle the file
         from django.core.files.storage import default_storage
-        
+
         if not default_storage.exists(file_path):
             messages.error(request, "File not found.")
             return redirect("main:inventory")
-            
-        with default_storage.open(file_path, 'rb') as f:
+
+        with default_storage.open(file_path, "rb") as f:
             response = HttpResponse(f.read(), content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{file_name}"'
             return response
@@ -183,47 +184,50 @@ def product_download(request, product_id):
 
 def bulk_download_products(request):
     """Download multiple products as a zip file."""
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Invalid request method'})
-    
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method"})
+
     import zipfile
     import tempfile
     from django.core.files.storage import default_storage
-    
+
     try:
-        product_ids = request.POST.getlist('product_ids')
+        product_ids = request.POST.getlist("product_ids")
         if not product_ids:
-            return JsonResponse({'success': False, 'error': 'No products selected'})
-        
+            return JsonResponse({"success": False, "error": "No products selected"})
+
         products = Product.objects.filter(id__in=product_ids)
-        
+
         # Create a temporary zip file
-        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
-        
-        with zipfile.ZipFile(temp_zip.name, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+
+        with zipfile.ZipFile(temp_zip.name, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for product in products:
                 if product.file_path and default_storage.exists(product.file_path):
                     # Create a unique filename for the zip
-                    file_extension = product.file_format or 'png'
-                    filename = f"{product.provider}_{product.id}_{product.created_at.strftime('%Y%m%d_%H%M%S')}.{file_extension}"
-                    
+                    file_extension = product.file_format or "png"
+                    filename = (
+                        f"{product.provider}_{product.id}_{product.created_at.strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+                    )
+
                     # Add file to zip
-                    with default_storage.open(product.file_path, 'rb') as f:
+                    with default_storage.open(product.file_path, "rb") as f:
                         zip_file.writestr(filename, f.read())
-        
+
         # Prepare response with zip file
-        with open(temp_zip.name, 'rb') as zip_data:
-            response = HttpResponse(zip_data.read(), content_type='application/zip')
-            response['Content-Disposition'] = f'attachment; filename="products_{len(products)}_files.zip"'
-            
+        with open(temp_zip.name, "rb") as zip_data:
+            response = HttpResponse(zip_data.read(), content_type="application/zip")
+            response["Content-Disposition"] = f'attachment; filename="products_{len(products)}_files.zip"'
+
         # Clean up temp file
         import os
+
         os.unlink(temp_zip.name)
-        
+
         return response
-        
+
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        return JsonResponse({"success": False, "error": str(e)})
 
 
 def bulk_delete_products(request):
@@ -529,7 +533,7 @@ def place_order_api(request):
         project_id = data.get("project_id")
         if project_id:
             try:
-                project = Project.objects.get(id=project_id, status='active')
+                project = Project.objects.get(id=project_id, status="active")
             except Project.DoesNotExist:
                 pass
 
@@ -639,11 +643,12 @@ def product_detail_api(request, product_id):
 
         # Get file size if possible
         file_size = None
-        if hasattr(product, 'file_size') and product.file_size:
+        if hasattr(product, "file_size") and product.file_size:
             file_size = product.file_size
         elif product.file_path:
             try:
                 from django.core.files.storage import default_storage
+
                 if default_storage.exists(product.file_path):
                     file_size = default_storage.size(product.file_path)
             except:
@@ -653,7 +658,7 @@ def product_detail_api(request, product_id):
         order_id = None
         order_item = None
         factory_machine_definition = None
-        
+
         try:
             # Get the order item associated with this product
             order_item = product.orderitem_set.first()
@@ -674,16 +679,16 @@ def product_detail_api(request, product_id):
             "file_url": product.file_url,
             "file_path": product.file_path,
             "file_size": file_size,
-            "file_format": getattr(product, 'file_format', None),
+            "file_format": getattr(product, "file_format", None),
             "width": product.width,
             "height": product.height,
             "created_at": product.created_at.isoformat(),
-            "updated_at": product.updated_at.isoformat() if hasattr(product, 'updated_at') else None,
+            "updated_at": product.updated_at.isoformat() if hasattr(product, "updated_at") else None,
             "order_id": order_id,
             "factory_machine_definition": factory_machine_definition,
-            "is_favorite": getattr(product, 'is_favorite', False),
-            "product_type": getattr(product, 'product_type', 'image'),
-            "filename": getattr(product, 'filename', None),
+            "is_favorite": getattr(product, "is_favorite", False),
+            "product_type": getattr(product, "product_type", "image"),
+            "filename": getattr(product, "filename", None),
         }
 
         return JsonResponse(product_data)
@@ -696,11 +701,11 @@ def product_detail_api(request, product_id):
 def projects_view(request):
     """Projects overview page - serves as the new home page."""
     # Get active projects ordered by most recent
-    projects = Project.objects.filter(status='active').order_by('-updated_at')
-    
+    projects = Project.objects.filter(status="active").order_by("-updated_at")
+
     # Get recent projects for quick access (last 6)
     recent_projects = projects[:6]
-    
+
     context = {
         "projects": projects,
         "recent_projects": recent_projects,
@@ -711,27 +716,23 @@ def projects_view(request):
 
 def all_projects_view(request):
     """All projects page with search and filtering."""
-    projects = Project.objects.all().order_by('-updated_at')
-    
+    projects = Project.objects.all().order_by("-updated_at")
+
     # Search functionality
-    search_query = request.GET.get('search', '')
+    search_query = request.GET.get("search", "")
     if search_query:
-        projects = projects.filter(
-            name__icontains=search_query
-        ) | projects.filter(
-            description__icontains=search_query
-        )
-    
+        projects = projects.filter(name__icontains=search_query) | projects.filter(description__icontains=search_query)
+
     # Status filter
-    status_filter = request.GET.get('status', '')
+    status_filter = request.GET.get("status", "")
     if status_filter:
         projects = projects.filter(status=status_filter)
-    
+
     # Pagination
     paginator = Paginator(projects, 12)  # 12 projects per page
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         "page_obj": page_obj,
         "projects": page_obj,
@@ -746,37 +747,36 @@ def all_projects_view(request):
 def project_detail_view(request, project_id):
     """Project detail page showing orders and products."""
     project = get_object_or_404(Project, id=project_id)
-    
+
     # Get project orders
-    orders = project.order_set.all().order_by('-created_at')
-    
-    # Get project products through orders
-    order_ids = orders.values_list('id', flat=True)
-    products = Product.objects.filter(
-        orderitem__order__id__in=order_ids
-    ).order_by('-created_at')
-    
+    orders = project.order_set.all().order_by("-created_at")
+
+    # Get project products
+    products = project.get_products_queryset().order_by("-created_at")
+
     # Pagination for products
     paginator = Paginator(products, 20)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    
+
     # Serialize products for JavaScript
     products_json = []
     for product in page_obj:
-        products_json.append({
-            'id': product.id,
-            'title': product.title,
-            'prompt': product.prompt,
-            'file_url': product.file_url,
-            'provider': product.provider,
-            'model_name': product.model_name,
-            'created_at': product.created_at.isoformat(),
-            'width': product.width,
-            'height': product.height,
-            'product_type': getattr(product, 'product_type', 'image'),
-        })
-    
+        products_json.append(
+            {
+                "id": product.id,
+                "title": product.title,
+                "prompt": product.prompt,
+                "file_url": product.file_url,
+                "provider": product.provider,
+                "model_name": product.model_name,
+                "created_at": product.created_at.isoformat(),
+                "width": product.width,
+                "height": product.height,
+                "product_type": getattr(product, "product_type", "image"),
+            }
+        )
+
     context = {
         "project": project,
         "orders": orders[:10],  # Show first 10 orders
@@ -790,41 +790,38 @@ def project_detail_view(request, project_id):
 
 def project_create_view(request):
     """Create a new project."""
-    if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
-        description = request.POST.get('description', '').strip()
-        
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip()
+
         if not name:
-            messages.error(request, 'Project name is required.')
-            return redirect('main:projects')
-        
+            messages.error(request, "Project name is required.")
+            return redirect("main:projects")
+
         try:
-            project = Project.objects.create(
-                name=name,
-                description=description
-            )
+            project = Project.objects.create(name=name, description=description)
             messages.success(request, f'Project "{project.name}" created successfully.')
-            return redirect('main:project_detail', project_id=project.id)
+            return redirect("main:project_detail", project_id=project.id)
         except Exception as e:
-            messages.error(request, f'Error creating project: {str(e)}')
-            return redirect('main:projects')
-    
-    return redirect('main:projects')
+            messages.error(request, f"Error creating project: {str(e)}")
+            return redirect("main:projects")
+
+    return redirect("main:projects")
 
 
 def project_update_view(request, project_id):
     """Update an existing project."""
     project = get_object_or_404(Project, id=project_id)
-    
-    if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
-        description = request.POST.get('description', '').strip()
-        status = request.POST.get('status', project.status)
-        
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip()
+        status = request.POST.get("status", project.status)
+
         if not name:
-            messages.error(request, 'Project name is required.')
-            return redirect('main:project_detail', project_id=project.id)
-        
+            messages.error(request, "Project name is required.")
+            return redirect("main:project_detail", project_id=project.id)
+
         try:
             project.name = name
             project.description = description
@@ -832,107 +829,115 @@ def project_update_view(request, project_id):
             project.save()
             messages.success(request, f'Project "{project.name}" updated successfully.')
         except Exception as e:
-            messages.error(request, f'Error updating project: {str(e)}')
-        
-        return redirect('main:project_detail', project_id=project.id)
-    
-    return redirect('main:project_detail', project_id=project.id)
+            messages.error(request, f"Error updating project: {str(e)}")
+
+        return redirect("main:project_detail", project_id=project.id)
+
+    return redirect("main:project_detail", project_id=project.id)
 
 
 def project_delete_view(request, project_id):
     """Delete a project."""
-    if request.method == 'POST':
+    if request.method == "POST":
         project = get_object_or_404(Project, id=project_id)
         project_name = project.name
-        
+
         try:
             project.delete()
             messages.success(request, f'Project "{project_name}" deleted successfully.')
         except Exception as e:
-            messages.error(request, f'Error deleting project: {str(e)}')
-    
-    return redirect('main:projects')
+            messages.error(request, f"Error deleting project: {str(e)}")
+
+    return redirect("main:projects")
 
 
 # Project API Views
 def projects_api(request):
     """API endpoint for projects list."""
     try:
-        projects = Project.objects.filter(status='active').order_by('-updated_at')[:10]
-        
+        projects = Project.objects.filter(status="active").order_by("-updated_at")[:10]
+
         projects_data = []
         for project in projects:
             recent_products = project.get_recent_products(4)
-            
+
             products_data = []
             for product in recent_products:
-                products_data.append({
-                    'id': product.id,
-                    'file_url': product.file_url,
-                    'title': product.title,
-                    'created_at': product.created_at.isoformat(),
-                })
-            
-            projects_data.append({
-                'id': project.id,
-                'name': project.name,
-                'description': project.description,
-                'status': project.status,
-                'order_count': project.order_count,
-                'product_count': project.product_count,
-                'created_at': project.created_at.isoformat(),
-                'updated_at': project.updated_at.isoformat(),
-                'recent_products': products_data,
-            })
-        
-        return JsonResponse({'projects': projects_data})
-    
+                products_data.append(
+                    {
+                        "id": product.id,
+                        "file_url": product.file_url,
+                        "title": product.title,
+                        "created_at": product.created_at.isoformat(),
+                    }
+                )
+
+            projects_data.append(
+                {
+                    "id": project.id,
+                    "name": project.name,
+                    "description": project.description,
+                    "status": project.status,
+                    "order_count": project.order_count,
+                    "product_count": project.product_count,
+                    "created_at": project.created_at.isoformat(),
+                    "updated_at": project.updated_at.isoformat(),
+                    "recent_products": products_data,
+                }
+            )
+
+        return JsonResponse({"projects": projects_data})
+
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 def project_detail_api(request, project_id):
     """API endpoint for project details."""
     try:
         project = get_object_or_404(Project, id=project_id)
-        
+
         # Get recent orders and products
-        orders = project.order_set.all().order_by('-created_at')[:5]
+        orders = project.order_set.all().order_by("-created_at")[:5]
         recent_products = project.get_recent_products(8)
-        
+
         orders_data = []
         for order in orders:
-            orders_data.append({
-                'id': order.id,
-                'title': order.title or f'Order {order.id}',
-                'status': order.status,
-                'created_at': order.created_at.isoformat(),
-                'completion_percentage': order.completion_percentage,
-            })
-        
+            orders_data.append(
+                {
+                    "id": order.id,
+                    "title": order.title or f"Order {order.id}",
+                    "status": order.status,
+                    "created_at": order.created_at.isoformat(),
+                    "completion_percentage": order.completion_percentage,
+                }
+            )
+
         products_data = []
         for product in recent_products:
-            products_data.append({
-                'id': product.id,
-                'file_url': product.file_url,
-                'title': product.title,
-                'created_at': product.created_at.isoformat(),
-            })
-        
+            products_data.append(
+                {
+                    "id": product.id,
+                    "file_url": product.file_url,
+                    "title": product.title,
+                    "created_at": product.created_at.isoformat(),
+                }
+            )
+
         project_data = {
-            'id': project.id,
-            'name': project.name,
-            'description': project.description,
-            'status': project.status,
-            'order_count': project.order_count,
-            'product_count': project.product_count,
-            'created_at': project.created_at.isoformat(),
-            'updated_at': project.updated_at.isoformat(),
-            'recent_orders': orders_data,
-            'recent_products': products_data,
+            "id": project.id,
+            "name": project.name,
+            "description": project.description,
+            "status": project.status,
+            "order_count": project.order_count,
+            "product_count": project.product_count,
+            "created_at": project.created_at.isoformat(),
+            "updated_at": project.updated_at.isoformat(),
+            "recent_orders": orders_data,
+            "recent_products": products_data,
         }
-        
+
         return JsonResponse(project_data)
-    
+
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)

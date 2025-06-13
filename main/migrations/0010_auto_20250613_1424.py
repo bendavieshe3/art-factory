@@ -29,7 +29,7 @@ def create_default_project_and_migrate_orders(apps, schema_editor):
     order_ids = default_project.order_set.values_list('id', flat=True)
     Product = apps.get_model('main', 'Product')
     default_project.product_count = Product.objects.filter(
-        orderitem__order__id__in=order_ids
+        order_item__order__id__in=order_ids
     ).count()
     default_project.save()
 

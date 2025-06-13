@@ -33,7 +33,7 @@ class Command(BaseCommand):
         # Get orders in time window
         if pending_only:
             orders = (
-                Order.objects.filter(created_at__gte=since_time, orderitem__status__in=["pending", "processing"])
+                Order.objects.filter(created_at__gte=since_time, orderitem_set__status__in=["pending", "processing"])
                 .distinct()
                 .order_by("-created_at")
             )
