@@ -95,7 +95,7 @@ class DynamicParametersTestCase(TestCase):
 
     def test_order_page_contains_dynamic_parameters_container(self):
         """Test that the order page has the dynamic parameters container."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check for dynamic parameters container

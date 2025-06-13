@@ -31,7 +31,7 @@ class NotificationSystemTestCase(TestCase):
 
     def test_order_page_loads_with_toast_system(self):
         """Test that order page loads with toast notification system."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check toast container is present
@@ -46,7 +46,7 @@ class NotificationSystemTestCase(TestCase):
 
     def test_order_form_uses_toast_notifications(self):
         """Test that order form JavaScript uses toast notifications instead of alerts."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check that old alert() calls are replaced with ToastNotification calls
@@ -106,7 +106,7 @@ class NotificationSystemTestCase(TestCase):
 
     def test_toast_css_classes_present(self):
         """Test that all necessary CSS classes for toasts are present."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check main toast CSS classes
@@ -126,7 +126,7 @@ class NotificationSystemTestCase(TestCase):
 
     def test_toast_animations_configured(self):
         """Test that toast animations are properly configured."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check animation CSS properties

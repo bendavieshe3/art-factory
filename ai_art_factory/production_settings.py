@@ -36,9 +36,8 @@ SECURE_HSTS_PRELOAD = True
 DATABASE_URL = config("DATABASE_URL", default=None)
 if DATABASE_URL:
     import dj_database_url
-    DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL)
-    }
+
+    DATABASES = {"default": dj_database_url.parse(DATABASE_URL)}
 else:
     # Fallback to SQLite if no DATABASE_URL provided
     DATABASES = {
@@ -150,10 +149,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # }
 
 # Email Configuration for Production (optional)
-EMAIL_BACKEND = config(
-    "EMAIL_BACKEND", 
-    default="django.core.mail.backends.console.EmailBackend"
-)
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 if EMAIL_BACKEND != "django.core.mail.backends.console.EmailBackend":
     EMAIL_HOST = config("EMAIL_HOST")
     EMAIL_PORT = config("EMAIL_PORT", cast=int)

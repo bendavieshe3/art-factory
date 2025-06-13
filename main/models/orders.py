@@ -41,7 +41,7 @@ class Order(models.Model):
     expand_parameters = models.BooleanField(default=False, help_text="Whether to expand smart tokens")
 
     # Organization
-    project = models.ForeignKey('Project', on_delete=models.SET_NULL, null=True, blank=True, help_text="Associated project")
+    project = models.ForeignKey("Project", on_delete=models.SET_NULL, null=True, blank=True, help_text="Associated project")
     project_name = models.CharField(max_length=100, blank=True, help_text="Legacy project name field")
     tags = models.JSONField(default=list, help_text="List of tags")
 

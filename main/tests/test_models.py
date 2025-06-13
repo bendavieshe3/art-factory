@@ -122,9 +122,9 @@ class ViewTestCase(TestCase):
             is_active=True,
         )
 
-    def test_home_page_loads(self):
-        """Test home page (order view) loads correctly."""
-        response = self.client.get("/")
+    def test_order_page_loads(self):
+        """Test order page loads correctly."""
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Place Order")
         self.assertContains(response, "Test Model")

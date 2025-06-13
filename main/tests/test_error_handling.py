@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 
-from .error_handling import ErrorAnalyzer, ErrorCategory, ErrorHandler, RetryCalculator, UserFriendlyMessages
-from .models import FactoryMachineDefinition, LogEntry, Order, OrderItem
+from main.error_handling import ErrorAnalyzer, ErrorCategory, ErrorHandler, RetryCalculator, UserFriendlyMessages
+from main.models import FactoryMachineDefinition, LogEntry, Order, OrderItem
 
 
 def get_test_pid():
@@ -315,7 +315,7 @@ class FactoryMachineErrorHandlingTestCase(TestCase):
     @patch("fal_client.submit")
     def test_fal_factory_error_handling(self, mock_fal_submit):
         """Test error handling in SyncFalFactoryMachine."""
-        from .factory_machines_sync import SyncFalFactoryMachine
+        from main.factory_machines_sync import SyncFalFactoryMachine
 
         # Mock fal.ai to raise a rate limit error
         mock_fal_submit.side_effect = Exception("Rate limit exceeded")
@@ -333,7 +333,7 @@ class FactoryMachineErrorHandlingTestCase(TestCase):
 
     def test_file_creation_error_handling(self):
         """Test error handling during file creation."""
-        from .factory_machines_sync import SyncFalFactoryMachine
+        from main.factory_machines_sync import SyncFalFactoryMachine
 
         factory = SyncFalFactoryMachine(self.factory_machine)
 
@@ -381,8 +381,8 @@ class WorkerErrorHandlingTestCase(TestCase):
 
     def test_worker_error_categorization(self):
         """Test that workers properly categorize errors."""
-        from .models import Worker
-        from .workers import SmartWorker
+        from main.models import Worker
+        from main.workers import SmartWorker
 
         worker = SmartWorker(max_batch_size=1)
 
@@ -405,8 +405,8 @@ class WorkerErrorHandlingTestCase(TestCase):
 
     def test_worker_permanent_failure_handling(self):
         """Test that workers handle permanent failures correctly."""
-        from .models import Worker
-        from .workers import SmartWorker
+        from main.models import Worker
+        from main.workers import SmartWorker
 
         worker = SmartWorker(max_batch_size=1)
 
@@ -429,8 +429,8 @@ class WorkerErrorHandlingTestCase(TestCase):
 
     def test_worker_retry_exhaustion(self):
         """Test worker handling when retries are exhausted."""
-        from .models import Worker
-        from .workers import SmartWorker
+        from main.models import Worker
+        from main.workers import SmartWorker
 
         # Set order item to already have max retries
         self.order_item.retry_count = 3

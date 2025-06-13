@@ -29,7 +29,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_bootstrap_order_page_loads(self):
         """Test that Bootstrap order page loads correctly."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check Bootstrap CSS is loaded
@@ -44,7 +44,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_bootstrap_components_present(self):
         """Test that Bootstrap components are properly rendered."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check navigation components
@@ -70,7 +70,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_models_dropdown_display(self):
         """Test that AI models are displayed in dropdown."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check model selection dropdown
@@ -84,7 +84,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_advanced_parameters_section(self):
         """Test that advanced parameters section works."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check collapsible advanced section
@@ -99,7 +99,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_quantity_controls(self):
         """Test quantity increment/decrement controls."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check quantity input group
@@ -111,7 +111,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_form_validation_styling(self):
         """Test that form validation styling is in place."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check required field indicators
@@ -126,7 +126,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_icons_integration(self):
         """Test that Bootstrap Icons are properly integrated."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check various icons are used
@@ -139,7 +139,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_responsive_design_classes(self):
         """Test that responsive design classes are used."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check responsive breakpoints
@@ -150,7 +150,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_toast_system_preservation(self):
         """Test that our custom toast system is preserved with Bootstrap."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         # Check toast system is still there and functional
@@ -192,7 +192,7 @@ class BootstrapIntegrationTestCase(TestCase):
 
     def test_javascript_functions_defined(self):
         """Test that required JavaScript functions are defined."""
-        response = self.client.get("/")
+        response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
         content = response.content.decode()
