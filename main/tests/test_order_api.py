@@ -32,38 +32,34 @@ class OrderApiTestCase(TestCase):
         """Test that order form submission actually creates an Order in the database."""
         # Count initial orders
         initial_order_count = Order.objects.count()
-        
+
         # Submit order via API (simulating what JavaScript sends after field mapping)
         order_data = {
             "title": "Test Order Creation",
             "prompt": "A test prompt for order creation",
             "machine_id": str(self.factory_machine.id),  # Mapped from form field 'machine'
             "generation_count": 1,
-            "batch_size": 1
+            "batch_size": 1,
         }
-        
-        response = self.client.post(
-            "/api/place-order/", 
-            data=json.dumps(order_data), 
-            content_type="application/json"
-        )
-        
+
+        response = self.client.post("/api/place-order/", data=json.dumps(order_data), content_type="application/json")
+
         # Should succeed
         if response.status_code != 200:
             error_data = json.loads(response.content)
             self.fail(f"Order submission failed with status {response.status_code}: {error_data}")
-        
+
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(data.get("success", False), f"Order submission failed: {data}")
-        
+
         # Should create a new order in the database
         new_order_count = Order.objects.count()
         self.assertEqual(new_order_count, initial_order_count + 1, "Order was not created in database")
-        
+
         # Should return order_id
         self.assertIn("order_id", data, "API should return order_id")
-        
+
         # Verify the order exists and has correct data
         order = Order.objects.get(id=data["order_id"])
         self.assertEqual(order.title, "Test Order Creation")
@@ -74,14 +70,12 @@ class OrderApiTestCase(TestCase):
         """Test that order submission assigns order to the selected project."""
         # Create test project
         test_project = Project.objects.create(
-            name="Test Project for Order",
-            description="Should receive the new order",
-            status="active"
+            name="Test Project for Order", description="Should receive the new order", status="active"
         )
-        
+
         # Count initial orders
         initial_order_count = Order.objects.count()
-        
+
         # Submit order with project selected (using API field names after JavaScript mapping)
         order_data = {
             "title": "Project Assignment Test",
@@ -89,24 +83,20 @@ class OrderApiTestCase(TestCase):
             "machine_id": str(self.factory_machine.id),
             "project_id": str(test_project.id),  # Mapped from form field 'project'
             "generation_count": 1,
-            "batch_size": 1
+            "batch_size": 1,
         }
-        
-        response = self.client.post(
-            "/api/place-order/", 
-            data=json.dumps(order_data), 
-            content_type="application/json"
-        )
-        
+
+        response = self.client.post("/api/place-order/", data=json.dumps(order_data), content_type="application/json")
+
         # Should succeed
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(data.get("success", False), f"Order submission failed: {data}")
-        
+
         # Should create a new order
         new_order_count = Order.objects.count()
         self.assertEqual(new_order_count, initial_order_count + 1)
-        
+
         # Verify the order is assigned to the correct project
         order = Order.objects.get(id=data["order_id"])
         self.assertEqual(order.project, test_project, "Order should be assigned to selected project")
@@ -121,20 +111,16 @@ class OrderApiTestCase(TestCase):
             "machine_id": str(self.factory_machine.id),
             # No project field
             "generation_count": 1,
-            "batch_size": 1
+            "batch_size": 1,
         }
-        
-        response = self.client.post(
-            "/api/place-order/", 
-            data=json.dumps(order_data), 
-            content_type="application/json"
-        )
-        
+
+        response = self.client.post("/api/place-order/", data=json.dumps(order_data), content_type="application/json")
+
         # Should succeed
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(data.get("success", False))
-        
+
         # Verify the order has no project assigned
         order = Order.objects.get(id=data["order_id"])
         self.assertIsNone(order.project, "Order should not have project when none selected")
@@ -145,38 +131,32 @@ class OrderApiTestCase(TestCase):
         # Test that API works with correctly mapped field names
         order_data = {
             "machine_id": str(self.factory_machine.id),  # Form: machine → API: machine_id
-            "project_id": "",                            # Form: project → API: project_id
-            "generation_count": 1,                       # Form: generationCount → API: generation_count
-            "batch_size": 1,                            # Form: batchSize → API: batch_size
+            "project_id": "",  # Form: project → API: project_id
+            "generation_count": 1,  # Form: generationCount → API: generation_count
+            "batch_size": 1,  # Form: batchSize → API: batch_size
             "prompt": "Test field mapping",
         }
-        
-        response = self.client.post(
-            "/api/place-order/", 
-            data=json.dumps(order_data), 
-            content_type="application/json"
-        )
-        
+
+        response = self.client.post("/api/place-order/", data=json.dumps(order_data), content_type="application/json")
+
         # This should work with correctly mapped field names
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(data.get("success", False))
-        
+
         # Test that API fails with unmapped form field names
         order_data_with_form_fields = {
-            "machine": str(self.factory_machine.id),     # Form field name (unmapped)
-            "project": "",                               # Form field name (unmapped) 
-            "generationCount": 1,                        # Form field name (unmapped)
-            "batchSize": 1,                             # Form field name (unmapped)
+            "machine": str(self.factory_machine.id),  # Form field name (unmapped)
+            "project": "",  # Form field name (unmapped)
+            "generationCount": 1,  # Form field name (unmapped)
+            "batchSize": 1,  # Form field name (unmapped)
             "prompt": "Test field mapping wrong",
         }
-        
+
         response = self.client.post(
-            "/api/place-order/", 
-            data=json.dumps(order_data_with_form_fields), 
-            content_type="application/json"
+            "/api/place-order/", data=json.dumps(order_data_with_form_fields), content_type="application/json"
         )
-        
+
         # This should fail because form field names aren't mapped
         self.assertEqual(response.status_code, 400)
         error_data = json.loads(response.content)

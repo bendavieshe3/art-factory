@@ -8,7 +8,12 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .error_handling import ErrorCategory, ErrorHandler, UserFriendlyMessages
 from .models import FactoryMachineDefinition, FactoryMachineInstance, LogEntry, Order, OrderItem, Product, Project
-from .utils.project_context import clear_project_context, ensure_project_context, get_project_aware_context, set_project_context
+from .utils.project_context import (
+    clear_project_context,
+    ensure_project_context,
+    get_project_aware_context,
+    set_project_context,
+)
 
 
 def order_view(request):
@@ -18,7 +23,7 @@ def order_view(request):
 
     # Get active projects for selection
     projects = Project.objects.filter(status="active").order_by("-updated_at")
-    
+
     # Get current project from session context (with URL parameter override support)
     current_project = ensure_project_context(request)
 
@@ -38,7 +43,7 @@ def inventory_view(request):
     # Project filter - check URL parameter for legacy compatibility, then session
     project_filter = request.GET.get("project")
     current_project = None
-    
+
     if project_filter:
         # Legacy URL-based filtering - still supported for direct links
         try:
@@ -291,12 +296,12 @@ def recent_orders_api(request):
     """API endpoint for recent orders with status and project filtering support."""
     try:
         # Check for explicit project parameter, otherwise use session context
-        project_id = request.GET.get('project')
-        limit = int(request.GET.get('limit', 10))
-        
+        project_id = request.GET.get("project")
+        limit = int(request.GET.get("limit", 10))
+
         # Build base queryset
         orders_queryset = Order.objects.select_related().prefetch_related("orderitem_set")
-        
+
         if project_id:
             # Explicit project parameter provided
             try:
@@ -310,7 +315,7 @@ def recent_orders_api(request):
             current_project = ensure_project_context(request)
             if current_project:
                 orders_queryset = orders_queryset.filter(project=current_project)
-        
+
         # Get the orders with limit
         orders = orders_queryset.order_by("-created_at")[:limit]
 
@@ -371,9 +376,9 @@ def recent_products_api(request):
     """API endpoint for recent products with project filtering support."""
     try:
         # Check for explicit project parameter, otherwise use session context
-        project_id = request.GET.get('project')
-        limit = int(request.GET.get('limit', 8))
-        
+        project_id = request.GET.get("project")
+        limit = int(request.GET.get("limit", 8))
+
         if project_id:
             # Explicit project parameter provided
             try:
@@ -570,7 +575,7 @@ def place_order_api(request):
             generation_count = max(1, min(int(data.get("generation_count", 1)), 10))  # Limit to 10 generations
         except (ValueError, TypeError):
             generation_count = 1
-            
+
         try:
             batch_size = max(1, min(int(data.get("batch_size", 4)), 4))  # Limit to 4 per batch
         except (ValueError, TypeError):
@@ -808,7 +813,7 @@ def all_projects_view(request):
 def project_detail_view(request, project_id):
     """Project detail page showing orders and products."""
     project = get_object_or_404(Project, id=project_id)
-    
+
     # Set this project as the current session context
     set_project_context(request, project)
 
@@ -921,31 +926,31 @@ def set_project_context_view(request, project_id):
     try:
         project = Project.objects.get(id=project_id, status="active")
         set_project_context(request, project)
-        messages.success(request, f'Switched to project: {project.name}')
+        messages.success(request, f"Switched to project: {project.name}")
     except Project.DoesNotExist:
         messages.error(request, "Project not found or inactive.")
-    
+
     # Get redirect target from query parameter, default to order page
-    next_url = request.GET.get('next', 'main:order')
+    next_url = request.GET.get("next", "main:order")
     try:
         return redirect(next_url)
     except:
         # Invalid redirect URL, fall back to order page
-        return redirect('main:order')
+        return redirect("main:order")
 
 
 def clear_project_context_view(request):
     """Clear project context from session and redirect to specified page."""
     clear_project_context(request)
-    messages.info(request, 'Project context cleared.')
-    
+    messages.info(request, "Project context cleared.")
+
     # Get redirect target from query parameter, default to projects page
-    next_url = request.GET.get('next', 'main:projects')
+    next_url = request.GET.get("next", "main:projects")
     try:
         return redirect(next_url)
     except:
         # Invalid redirect URL, fall back to projects page
-        return redirect('main:projects')
+        return redirect("main:projects")
 
 
 # Project API Views
