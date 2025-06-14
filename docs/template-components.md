@@ -43,6 +43,36 @@ templates/components/
 {% include 'components/navigation/pagination.html' with page_obj=projects url_name='main:all_projects' url_params='search='|add:search_query size='sm' justify='center' %}
 ```
 
+#### `components/navigation/empty_state.html`
+
+**Purpose**: Standardized empty state display
+
+**Parameters**:
+- `icon` (required): Bootstrap icon name
+- `title` (required): Empty state title
+- `message` (optional): Descriptive message
+- `action_url` (optional): Action button URL
+- `action_text` (optional): Action button text
+- `action_icon` (optional): Action button icon
+
+**Usage Example**:
+```django
+{% include 'components/navigation/empty_state.html' with icon='inbox' title='No orders yet' message='Orders will appear here as they are created' %}
+```
+
+#### `components/navigation/bulk_actions.html`
+
+**Purpose**: Bulk action controls for list items
+
+**Parameters**:
+- `actions` (optional): Available bulk actions
+- `selection_target` (optional): Target for selection
+
+**Usage Example**:
+```django
+{% include 'components/navigation/bulk_actions.html' with actions=bulk_actions %}
+```
+
 ### Card Components
 
 #### `components/cards/project_card.html`
@@ -77,6 +107,21 @@ templates/components/
 {% include 'components/cards/product_card.html' with product=product card_variant='compact' click_action='link' %}
 ```
 
+#### `components/cards/info_card.html`
+
+**Purpose**: Generic information display card
+
+**Parameters**:
+- `title` (required): Card title
+- `content` (optional): Card content
+- `icon` (optional): Bootstrap icon name
+- `card_class` (optional): Additional CSS classes
+
+**Usage Example**:
+```django
+{% include 'components/cards/info_card.html' with title='Information' content='Card content here' icon='info-circle' %}
+```
+
 ### Modal Components
 
 #### `components/modals/project_create_modal.html`
@@ -105,6 +150,20 @@ templates/components/
 **Usage Example**:
 ```django
 {% include 'components/modals/project_edit_modal.html' with project=project modal_id='editProject{{ project.id }}' %}
+```
+
+#### `components/modals/project_delete_modal.html`
+
+**Purpose**: Modal for confirming project deletion
+
+**Parameters**:
+- `modal_id` (optional): Custom modal ID (default: 'deleteProjectModal')
+- `project` (required): Project instance to delete
+- `form_action` (optional): Form action URL
+
+**Usage Example**:
+```django
+{% include 'components/modals/project_delete_modal.html' with project=project %}
 ```
 
 #### `components/modals/confirmation_modal.html`
@@ -141,6 +200,43 @@ templates/components/
 **Usage Example**:
 ```django
 {% include 'components/lists/order_list_item.html' with order=order compact=True %}
+```
+
+### Notification Components
+
+#### `components/notifications/toast_system.html`
+
+**Purpose**: Global toast notification system
+
+**Parameters**: None (automatically included in layouts)
+
+**JavaScript API**:
+```javascript
+// Success toast
+ToastNotification.success('Operation completed successfully!', 'Success');
+
+// Error toast  
+ToastNotification.error('Something went wrong.', 'Error');
+
+// Info toast
+ToastNotification.info('Information message', 'Info');
+
+// Warning toast
+ToastNotification.warning('Warning message', 'Warning');
+```
+
+#### `components/notifications/error_banner.html`
+
+**Purpose**: Error message banner display
+
+**Parameters**:
+- `banner_id` (required): Unique banner ID
+- `error_message` (optional): Error message to display
+- `dismissible` (optional): Whether banner can be dismissed (default: true)
+
+**Usage Example**:
+```django
+{% include 'components/notifications/error_banner.html' with banner_id='errorBanner' %}
 ```
 
 #### `components/lists/product_list_item.html`
@@ -298,6 +394,72 @@ collection.loadProducts(products);     // Load product data
 collection.selectAll();               // Select all products
 collection.clearSelection();          // Clear selection
 collection.getSelected();             // Get selected products
+```
+
+#### `components/js/project_modals_init.html`
+
+**Purpose**: Project modal functionality initialization
+
+**Parameters**: None
+
+**JavaScript API**:
+```javascript
+// Functions available globally after initialization
+// Handles project creation and editing modal interactions
+// Automatically binds to modal trigger elements
+```
+
+#### `components/js/order_recent_data.html`
+
+**Purpose**: Recent order data management for order form
+
+**Parameters**: None
+
+**JavaScript API**:
+```javascript
+// Functions for managing recent order data
+// Loads and displays recent order information
+// Integrates with order form restoration
+```
+
+#### `components/js/order_progress_management.html`
+
+**Purpose**: Order progress tracking and updates
+
+**Parameters**: None
+
+**JavaScript API**:
+```javascript
+// Progress tracking functions
+// Updates order status and progress indicators
+// Handles real-time progress updates
+```
+
+#### `components/js/order_template_management.html`
+
+**Purpose**: Order template and favorites management
+
+**Parameters**: None
+
+**JavaScript API**:
+```javascript
+// Template management functions
+// Save and load order templates
+// Manage user favorites and presets
+```
+
+#### `components/js/product_data_init.html`
+
+**Purpose**: Initialize product data for JavaScript components
+
+**Parameters**:
+- `data_variable` (required): JavaScript variable name for product data
+- `products_json` (required): JSON serialized product data
+- `comment` (optional): Comment for debugging purposes
+
+**Usage Example**:
+```django
+{% include 'components/js/product_data_init.html' with data_variable='inventoryProductsData' products_json=products_json comment='Initialize inventory collection with data' %}
 ```
 
 ## Component Integration Patterns
