@@ -17,10 +17,21 @@ def order_view(request):
 
     # Get active projects for selection
     projects = Project.objects.filter(status="active").order_by("-updated_at")
+    
+    # Get current project from URL parameter (when coming from project page)
+    current_project = None
+    project_id = request.GET.get('project')
+    if project_id:
+        try:
+            current_project = Project.objects.get(id=project_id, status="active")
+        except (Project.DoesNotExist, ValueError):
+            # Invalid project ID or inactive project
+            pass
 
     context = {
         "factory_machines": factory_machines,
         "projects": projects,
+        "current_project": current_project,
         "page_title": "Place Order",
     }
     return render(request, "main/order.html", context)
@@ -480,7 +491,17 @@ def place_order_api(request):
 
         # Get the factory machine
         try:
-            machine = get_object_or_404(FactoryMachineDefinition, id=data.get("machine_id"))
+            machine_id = int(data.get("machine_id"))
+            machine = get_object_or_404(FactoryMachineDefinition, id=machine_id)
+        except (ValueError, TypeError):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Invalid machine_id format",
+                    "user_message": "The selected AI model ID is invalid. Please refresh the page and try again.",
+                },
+                status=400,
+            )
         except:
             return JsonResponse(
                 {
@@ -513,8 +534,15 @@ def place_order_api(request):
             )
 
         # Get generation parameters with validation
-        generation_count = max(1, min(data.get("generation_count", 1), 10))  # Limit to 10 generations
-        batch_size = max(1, min(data.get("batch_size", 4), 4))  # Limit to 4 per batch
+        try:
+            generation_count = max(1, min(int(data.get("generation_count", 1)), 10))  # Limit to 10 generations
+        except (ValueError, TypeError):
+            generation_count = 1
+            
+        try:
+            batch_size = max(1, min(int(data.get("batch_size", 4)), 4))  # Limit to 4 per batch
+        except (ValueError, TypeError):
+            batch_size = 4
         total_products = generation_count * batch_size
 
         # Validate total products limit
@@ -530,11 +558,12 @@ def place_order_api(request):
 
         # Get project if specified
         project = None
-        project_id = data.get("project_id")
-        if project_id:
+        project_id_str = data.get("project_id")
+        if project_id_str:
             try:
+                project_id = int(project_id_str)
                 project = Project.objects.get(id=project_id, status="active")
-            except Project.DoesNotExist:
+            except (ValueError, TypeError, Project.DoesNotExist):
                 pass
 
         # Create the order
@@ -547,7 +576,7 @@ def place_order_api(request):
             provider=machine.provider,
             quantity=total_products,  # Store total products for compatibility
             project=project,
-            project_name=data.get("project_name", ""),  # Keep for legacy compatibility
+            project_name=project.name if project else "",
         )
 
         # Merge machine defaults with user parameters (user parameters take precedence)

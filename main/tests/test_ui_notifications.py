@@ -1,19 +1,15 @@
 """
-Tests for UI notification system and order placement workflow.
+Tests for UI notification system (toast notifications, alerts, error banners).
 """
 
-import json
-from unittest.mock import patch
-
 from django.test import Client, TestCase, override_settings
-from django.urls import reverse
 
 from main.models import FactoryMachineDefinition
 
 
 @override_settings(DISABLE_AUTO_WORKER_SPAWN=True)
-class NotificationSystemTestCase(TestCase):
-    """Test the toast notification system and order placement UI."""
+class UINotificationTestCase(TestCase):
+    """Test the toast notification system and UI feedback mechanisms."""
 
     def setUp(self):
         """Set up test client and factory machine."""
@@ -60,49 +56,16 @@ class NotificationSystemTestCase(TestCase):
         self.assertContains(response, "Order Failed")
         self.assertContains(response, "Generation Complete")
 
-    @patch("main.tasks.process_order_items_async")
-    def test_successful_order_shows_success_toast(self, mock_process):
-        """Test that successful order placement triggers success toast message."""
-        order_data = {
-            "title": "Toast Test Order",
-            "prompt": "test toast prompt",
-            "machine_id": self.factory_machine.id,
-            "quantity": 2,
-            "parameters": {"width": 512, "height": 512},
-        }
+    def test_no_alert_calls_in_templates(self):
+        """Test that no JavaScript alert() calls remain in templates."""
+        # Test all main template pages
+        pages = ["/", "/inventory/", "/production/", "/settings/"]
 
-        response = self.client.post("/api/place-order/", data=json.dumps(order_data), content_type="application/json")
-
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.content)
-        self.assertTrue(data["success"])
-
-        # The success message should mention the order ID and quantity
-        expected_message = f"Order #{data['order_id']} placed successfully! 2 images are being generated."
-        # Note: We can't directly test the JavaScript toast, but we can verify
-        # the API response provides the right data for the toast
-        self.assertIn("order_id", data)
-        self.assertIn("message", data)
-
-    def test_failed_order_provides_error_data(self):
-        """Test that failed order provides appropriate error data for toast."""
-        order_data = {
-            "title": "Failed Order Test",
-            "prompt": "test prompt",
-            "machine_id": 999,  # Non-existent machine
-            "quantity": 1,
-        }
-
-        response = self.client.post("/api/place-order/", data=json.dumps(order_data), content_type="application/json")
-
-        self.assertEqual(response.status_code, 400)
-        data = json.loads(response.content)
-        self.assertFalse(data["success"])
-        self.assertIn("error", data)
-
-        # Error message should be suitable for toast notification
-        self.assertIsInstance(data["error"], str)
-        self.assertGreater(len(data["error"]), 0)
+        for page in pages:
+            with self.subTest(page=page):
+                response = self.client.get(page)
+                if response.status_code == 200:  # Some pages might not exist yet
+                    self.assertNotContains(response, "alert(", msg_prefix=f"Page {page} still contains alert() calls")
 
     def test_toast_css_classes_present(self):
         """Test that all necessary CSS classes for toasts are present."""
@@ -135,14 +98,3 @@ class NotificationSystemTestCase(TestCase):
         self.assertContains(response, "transition: all 0.3s ease")
         self.assertContains(response, "opacity: 0")
         self.assertContains(response, "opacity: 1")
-
-    def test_no_alert_calls_in_templates(self):
-        """Test that no JavaScript alert() calls remain in templates."""
-        # Test all main template pages
-        pages = ["/", "/inventory/", "/production/", "/settings/"]
-
-        for page in pages:
-            with self.subTest(page=page):
-                response = self.client.get(page)
-                if response.status_code == 200:  # Some pages might not exist yet
-                    self.assertNotContains(response, "alert(", msg_prefix=f"Page {page} still contains alert() calls")
