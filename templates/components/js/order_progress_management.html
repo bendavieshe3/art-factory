@@ -229,8 +229,8 @@ function handleOrderSubmission(formData, submitBtn) {
                 startOrderPolling(data.order_id);
             }, 2000);
             
-            // Clear saved form data on successful submission
-            localStorage.removeItem('orderFormData');
+            // DO NOT clear saved form data - users may want to create similar orders
+            console.log('Order submitted successfully - keeping form data for future orders');
             
             // Show success notification
             if (typeof ToastNotification !== 'undefined') {

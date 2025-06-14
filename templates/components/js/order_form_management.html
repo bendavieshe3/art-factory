@@ -123,8 +123,8 @@ function loadFormValues() {
             console.log('Form values loaded successfully');
         } catch (e) {
             console.error('Error loading saved form data:', e);
-            // Clear corrupted data
-            localStorage.removeItem('orderFormData');
+            // Don't automatically clear - let user decide
+            console.log('Warning: Saved form data may be corrupted but keeping it for debugging');
         }
     } else {
         console.log('No saved form data found');
@@ -135,6 +135,16 @@ function loadFormValues() {
 window.testFormPersistence = function() {
     console.log('Testing form persistence...');
     
+    // Check localStorage availability
+    try {
+        localStorage.setItem('test', 'test');
+        localStorage.removeItem('test');
+        console.log('localStorage is available');
+    } catch (e) {
+        console.error('localStorage is NOT available:', e);
+        return;
+    }
+    
     // Check if elements exist
     const formFields = ['machine', 'prompt', 'negative_prompt', 'title', 'project', 'generationCount', 'batchSize'];
     formFields.forEach(fieldId => {
@@ -142,16 +152,33 @@ window.testFormPersistence = function() {
         console.log(`Field ${fieldId}:`, element ? `exists (value: "${element.value}")` : 'NOT FOUND');
     });
     
-    // Check saved data
+    // Check ALL localStorage keys
+    console.log('All localStorage keys:', Object.keys(localStorage));
+    
+    // Check saved data specifically
     const savedData = localStorage.getItem('orderFormData');
     if (savedData) {
-        console.log('Saved form data:', JSON.parse(savedData));
+        console.log('Found saved form data:', JSON.parse(savedData));
     } else {
-        console.log('No saved form data found');
+        console.log('No saved form data found in localStorage');
     }
     
-    // Trigger save
+    // Manually save some test data
+    console.log('Manually saving test data...');
+    const testData = { test: 'value', timestamp: new Date().toISOString() };
+    localStorage.setItem('orderFormData', JSON.stringify(testData));
+    
+    // Verify it was saved
+    const verifyData = localStorage.getItem('orderFormData');
+    console.log('Verification - saved data:', verifyData);
+    
+    // Trigger normal save
+    console.log('Triggering normal saveFormValues...');
     saveFormValues();
+    
+    // Check again
+    const afterSave = localStorage.getItem('orderFormData');
+    console.log('After saveFormValues:', afterSave);
 };
 
 // Initialize form management event listeners

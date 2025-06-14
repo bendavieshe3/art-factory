@@ -103,8 +103,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(data => {
                     if (data.success) {
-                        // Clear saved form data on successful submission
-                        localStorage.removeItem('orderFormData');
+                        // DO NOT clear saved form data - users may want to create similar orders
+                        console.log('Order submitted successfully (fallback) - keeping form data for future orders');
                         
                         // Show success notification
                         if (typeof ToastNotification !== 'undefined') {

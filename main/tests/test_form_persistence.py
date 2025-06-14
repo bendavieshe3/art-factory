@@ -108,15 +108,23 @@ class FormPersistenceTestCase(TestCase):
                        "loadFormValues should be called before form submit handler")
 
     def test_clear_form_functionality(self):
-        """Test that form clearing works and removes saved data."""
+        """Test that explicit form clearing works (via Clear button only)."""
         response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
         
         content = response.content.decode()
         
-        # Check that there's a clear form function or button
-        # This should clear localStorage when order is successfully submitted
-        self.assertIn("localStorage.removeItem('orderFormData')", content)
+        # Check that clear form function exists and removes data
+        # But only in the explicit clearForm() function, not on successful submission
+        self.assertIn("clearForm", content)
+        
+        # Find the clearForm function
+        clear_form_start = content.find("window.clearForm")
+        self.assertGreater(clear_form_start, 0)
+        
+        # localStorage.removeItem should only be in clearForm function
+        # Not in submission success handlers
+        self.assertIn("localStorage.removeItem('orderFormData')", content[clear_form_start:clear_form_start+1000])
 
     def test_form_persistence_error_handling(self):
         """Test that form persistence has proper error handling."""

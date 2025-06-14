@@ -78,6 +78,7 @@ window.clearForm = function() {
     
     if (form) {
         // Clear form and localStorage
+        console.log('clearForm() called - removing localStorage data');
         form.reset();
         localStorage.removeItem('orderFormData');
         

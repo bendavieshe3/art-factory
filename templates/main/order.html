@@ -19,6 +19,7 @@
                     </div>
                     <div class="card-body">
                         <form id="orderForm" class="form-dense">
+                            {% csrf_token %}
                             <div class="row g-3">
                                 <!-- Model Selection - First and required -->
                                 <div class="col-12">
@@ -68,7 +69,7 @@
                                     <select class="form-select" id="project" name="project">
                                         <option value="">Select a project...</option>
                                         {% for project in projects %}
-                                            <option value="{{ project.id }}">{{ project.name }}</option>
+                                            <option value="{{ project.id }}"{% if current_project and project.id == current_project.id %} selected{% endif %}>{{ project.name }}</option>
                                         {% endfor %}
                                     </select>
                                     <div class="form-text">Organize this order within a project (optional)</div>
