@@ -321,6 +321,28 @@ ToastNotification.warning('Warning message', 'Warning');
 {% include 'components/ui/loading_spinner.html' with size='lg' text='Processing...' center=True %}
 ```
 
+#### `components/ui/project_context_indicator.html`
+
+**Purpose**: Display current project context with change project link
+
+**Parameters**:
+- `current_project` (required): Current project instance or None
+- `show_change_link` (optional): Show "Change Project" link (default: true)
+- `show_description` (optional): Show project description (default: true) 
+- `show_no_project_message` (optional): Show message when no project selected (default: false)
+- `alert_class` (optional): Bootstrap alert class (default: 'alert-info')
+- `icon_class` (optional): Bootstrap icon class (default: 'bi-folder-open')
+
+**Usage Example**:
+```django
+{% include 'components/ui/project_context_indicator.html' %}
+```
+
+**Advanced Usage**:
+```django
+{% include 'components/ui/project_context_indicator.html' with show_no_project_message=True alert_class='alert-success' %}
+```
+
 #### `components/ui/toast_system.html`
 
 **Purpose**: Global toast notification system

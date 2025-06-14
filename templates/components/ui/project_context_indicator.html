@@ -1,0 +1,74 @@
+{% comment %}
+Project Context Indicator Component
+
+Shows current project context with change project link and project info.
+This component provides visual indication of which project the user is currently working in.
+
+Usage:
+    {% include 'components/ui/project_context_indicator.html' %}
+
+Required context variables:
+    - current_project: Project instance or None
+
+Optional parameters:
+    - show_change_link: Boolean, default True - whether to show "Change Project" link
+    - show_description: Boolean, default True - whether to show project description
+    - alert_class: String, default 'alert-info' - Bootstrap alert class
+    - icon_class: String, default 'bi-folder-open' - Bootstrap icon class
+{% endcomment %}
+
+{% if current_project %}
+<div class="alert {{ alert_class|default:'alert-info' }} d-flex justify-content-between align-items-start mb-3">
+    <div class="flex-grow-1">
+        <div class="d-flex align-items-center">
+            <i class="{{ icon_class|default:'bi-folder-open' }} me-2"></i>
+            <div>
+                <strong>Working in: {{ current_project.name }}</strong>
+                {% if show_description|default:True and current_project.description %}
+                    <br>
+                    <small class="text-muted">{{ current_project.description }}</small>
+                {% endif %}
+                <br>
+                <small class="text-muted">
+                    <i class="bi bi-clock me-1"></i>Last updated: {{ current_project.updated_at|date:"M j, Y g:i A" }}
+                    {% if current_project.product_count %}
+                        <span class="ms-2">
+                            <i class="bi bi-images me-1"></i>{{ current_project.product_count }} product{{ current_project.product_count|pluralize }}
+                        </span>
+                    {% endif %}
+                    {% if current_project.order_count %}
+                        <span class="ms-2">
+                            <i class="bi bi-list-ul me-1"></i>{{ current_project.order_count }} order{{ current_project.order_count|pluralize }}
+                        </span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    {% if show_change_link|default:True %}
+    <div class="flex-shrink-0 ms-3">
+        <a href="{% url 'main:projects' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-arrow-left me-1"></i>Change Project
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% elif show_no_project_message|default:False %}
+<div class="alert alert-secondary d-flex justify-content-between align-items-center mb-3">
+    <div class="flex-grow-1">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-folder me-2"></i>
+            <div>
+                <strong>No Project Selected</strong>
+                <br>
+                <small class="text-muted">You can organize your work by selecting a project</small>
+            </div>
+        </div>
+    </div>
+    <div class="flex-shrink-0 ms-3">
+        <a href="{% url 'main:projects' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-folder-plus me-1"></i>Select Project
+        </a>
+    </div>
+</div>
+{% endif %}

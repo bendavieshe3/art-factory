@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .error_handling import ErrorCategory, ErrorHandler, UserFriendlyMessages
 from .models import FactoryMachineDefinition, FactoryMachineInstance, LogEntry, Order, OrderItem, Product, Project
+from .utils.project_context import clear_project_context, ensure_project_context, get_project_aware_context, set_project_context
 
 
 def order_view(request):
@@ -18,22 +19,15 @@ def order_view(request):
     # Get active projects for selection
     projects = Project.objects.filter(status="active").order_by("-updated_at")
     
-    # Get current project from URL parameter (when coming from project page)
-    current_project = None
-    project_id = request.GET.get('project')
-    if project_id:
-        try:
-            current_project = Project.objects.get(id=project_id, status="active")
-        except (Project.DoesNotExist, ValueError):
-            # Invalid project ID or inactive project
-            pass
+    # Get current project from session context (with URL parameter override support)
+    current_project = ensure_project_context(request)
 
-    context = {
-        "factory_machines": factory_machines,
-        "projects": projects,
-        "current_project": current_project,
-        "page_title": "Place Order",
-    }
+    context = get_project_aware_context(
+        request,
+        factory_machines=factory_machines,
+        projects=projects,
+        page_title="Place Order",
+    )
     return render(request, "main/order.html", context)
 
 
@@ -41,14 +35,22 @@ def inventory_view(request):
     """Product gallery and inventory management."""
     products = Product.objects.all().order_by("-created_at")
 
-    # Project filter
+    # Project filter - check URL parameter for legacy compatibility, then session
     project_filter = request.GET.get("project")
+    current_project = None
+    
     if project_filter:
+        # Legacy URL-based filtering - still supported for direct links
         try:
-            project = Project.objects.get(id=project_filter)
-            products = project.get_products_queryset().order_by("-created_at")
+            current_project = Project.objects.get(id=project_filter, status="active")
+            products = current_project.get_products_queryset().order_by("-created_at")
         except Project.DoesNotExist:
             pass
+    else:
+        # Use session-based project context for filtering
+        current_project = ensure_project_context(request)
+        if current_project:
+            products = current_project.get_products_queryset().order_by("-created_at")
 
     # Get all active projects for filter dropdown
     projects = Project.objects.filter(status="active").order_by("name")
@@ -76,23 +78,15 @@ def inventory_view(request):
             }
         )
 
-    # Get current project for display
-    current_project = None
-    if project_filter:
-        try:
-            current_project = Project.objects.get(id=project_filter)
-        except Project.DoesNotExist:
-            pass
-
-    context = {
-        "page_obj": page_obj,
-        "products": page_obj,
-        "products_json": json.dumps(products_json),
-        "projects": projects,
-        "current_project": current_project,
-        "project_filter": project_filter,
-        "page_title": f"Inventory - {current_project.name}" if current_project else "Inventory",
-    }
+    context = get_project_aware_context(
+        request,
+        page_obj=page_obj,
+        products=page_obj,
+        products_json=json.dumps(products_json),
+        projects=projects,
+        project_filter=project_filter,
+        page_title=f"Inventory - {current_project.name}" if current_project else "Inventory",
+    )
     return render(request, "main/inventory.html", context)
 
 
@@ -294,10 +288,31 @@ def bulk_delete_products(request):
 
 # API Views
 def recent_orders_api(request):
-    """API endpoint for recent orders with status."""
+    """API endpoint for recent orders with status and project filtering support."""
     try:
-        # Get last 10 orders with their items
-        orders = Order.objects.select_related().prefetch_related("orderitem_set").order_by("-created_at")[:10]
+        # Check for explicit project parameter, otherwise use session context
+        project_id = request.GET.get('project')
+        limit = int(request.GET.get('limit', 10))
+        
+        # Build base queryset
+        orders_queryset = Order.objects.select_related().prefetch_related("orderitem_set")
+        
+        if project_id:
+            # Explicit project parameter provided
+            try:
+                project = Project.objects.get(id=project_id, status="active")
+                orders_queryset = orders_queryset.filter(project=project)
+            except (Project.DoesNotExist, ValueError):
+                # Invalid project ID, fall back to global orders (no additional filtering)
+                pass
+        else:
+            # Use session-based project context
+            current_project = ensure_project_context(request)
+            if current_project:
+                orders_queryset = orders_queryset.filter(project=current_project)
+        
+        # Get the orders with limit
+        orders = orders_queryset.order_by("-created_at")[:limit]
 
         orders_data = []
         for order in orders:
@@ -353,10 +368,27 @@ def recent_orders_api(request):
 
 
 def recent_products_api(request):
-    """API endpoint for recent products."""
+    """API endpoint for recent products with project filtering support."""
     try:
-        # Get last 8 products for the strip display
-        products = Product.objects.order_by("-created_at")[:8]
+        # Check for explicit project parameter, otherwise use session context
+        project_id = request.GET.get('project')
+        limit = int(request.GET.get('limit', 8))
+        
+        if project_id:
+            # Explicit project parameter provided
+            try:
+                project = Project.objects.get(id=project_id, status="active")
+                products = project.get_recent_products(limit)
+            except (Project.DoesNotExist, ValueError):
+                # Invalid project ID, fall back to global products
+                products = Product.objects.order_by("-created_at")[:limit]
+        else:
+            # Use session-based project context
+            current_project = ensure_project_context(request)
+            if current_project:
+                products = current_project.get_recent_products(limit)
+            else:
+                products = Product.objects.order_by("-created_at")[:limit]
 
         products_data = []
         for product in products:
@@ -776,6 +808,9 @@ def all_projects_view(request):
 def project_detail_view(request, project_id):
     """Project detail page showing orders and products."""
     project = get_object_or_404(Project, id=project_id)
+    
+    # Set this project as the current session context
+    set_project_context(request, project)
 
     # Get project orders
     orders = project.order_set.all().order_by("-created_at")
@@ -806,14 +841,15 @@ def project_detail_view(request, project_id):
             }
         )
 
-    context = {
-        "project": project,
-        "orders": orders[:10],  # Show first 10 orders
-        "page_obj": page_obj,
-        "products": page_obj,
-        "products_json": json.dumps(products_json),
-        "page_title": f"Project: {project.name}",
-    }
+    context = get_project_aware_context(
+        request,
+        project=project,
+        orders=orders[:10],  # Show first 10 orders
+        page_obj=page_obj,
+        products=page_obj,
+        products_json=json.dumps(products_json),
+        page_title=f"Project: {project.name}",
+    )
     return render(request, "main/project_detail.html", context)
 
 
@@ -878,6 +914,38 @@ def project_delete_view(request, project_id):
             messages.error(request, f"Error deleting project: {str(e)}")
 
     return redirect("main:projects")
+
+
+def set_project_context_view(request, project_id):
+    """Set project context in session and redirect to specified page."""
+    try:
+        project = Project.objects.get(id=project_id, status="active")
+        set_project_context(request, project)
+        messages.success(request, f'Switched to project: {project.name}')
+    except Project.DoesNotExist:
+        messages.error(request, "Project not found or inactive.")
+    
+    # Get redirect target from query parameter, default to order page
+    next_url = request.GET.get('next', 'main:order')
+    try:
+        return redirect(next_url)
+    except:
+        # Invalid redirect URL, fall back to order page
+        return redirect('main:order')
+
+
+def clear_project_context_view(request):
+    """Clear project context from session and redirect to specified page."""
+    clear_project_context(request)
+    messages.info(request, 'Project context cleared.')
+    
+    # Get redirect target from query parameter, default to projects page
+    next_url = request.GET.get('next', 'main:projects')
+    try:
+        return redirect(next_url)
+    except:
+        # Invalid redirect URL, fall back to projects page
+        return redirect('main:projects')
 
 
 # Project API Views
