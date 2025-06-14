@@ -36,6 +36,7 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - [Django Test Isolation](./django-test-isolation.md) - Test independence, mocking external services, controlling background tasks
 - [Django Fixtures vs Seed Data](./django-fixtures-vs-seed-data.md) - When to use fixtures vs management commands for data initialization
 - [Universal Worker Architecture](./universal-worker-architecture.md) - Provider-agnostic worker pattern for simplified deployment and scaling
+- [Django Template Testing Framework](./django-template-testing-framework.md) - Comprehensive template validation including inheritance, security, accessibility, and component consistency
 
 ### Troubleshooting & Solutions
 - [Replicate Model Versioning](./replicate-model-versioning.md) - Solving 404 errors with SDXL and other models requiring version hashes
@@ -51,6 +52,9 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - Knowledge is kept current through regular updates prioritizing frequently-changing topics
 
 ## Last Updated
+2025-06-15 - Added Django Template Testing Framework from Art Factory template standardization work:
+- Django Template Testing Framework: Comprehensive template validation framework covering inheritance validation, component consistency, security testing, accessibility compliance, and documentation validation. Includes implementation patterns, common issues/solutions, and integration with CI/CD pipelines.
+
 2025-06-08 - Added GitHub Actions knowledge from CI failure investigation:
 - GitHub Actions: Comprehensive guide covering CI/CD workflows, Python/Django pipelines, linting with flake8/black/isort, security scanning with bandit/safety, performance testing, and troubleshooting common failures. Includes specific solutions for deprecated actions, linting violations, and test environment configuration.
 
