@@ -368,6 +368,51 @@ class ProductViewerModalTest(TestCase):
         # Order page should include product components
         self.assertContains(order_response, "product-components.js")
 
+    def test_recent_orders_api_data_structure(self):
+        """Test recent orders API returns proper data structure with model and item info."""
+        # Create some order items to test the items count
+        OrderItem.objects.create(
+            order=self.order,
+            prompt="Test item 1",
+            status="completed",
+            parameters={"width": 512, "height": 512}
+        )
+        OrderItem.objects.create(
+            order=self.order,
+            prompt="Test item 2", 
+            status="failed",
+            parameters={"width": 512, "height": 512}
+        )
+        
+        url = reverse("main:recent_orders_api")
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content)
+        self.assertIn("orders", data)
+        
+        if data["orders"]:
+            order_data = data["orders"][0]
+            
+            # Verify essential fields are present
+            self.assertIn("id", order_data)
+            self.assertIn("title", order_data)
+            self.assertIn("status", order_data) 
+            self.assertIn("created_at", order_data)
+            
+            # Verify model and item information is present for table display
+            self.assertIn("factory_machine_name", order_data, "Model column data missing")
+            self.assertIn("total_items", order_data, "Total items count missing")
+            self.assertIn("completed_items", order_data, "Completed items count missing")
+            self.assertIn("failed_items", order_data, "Failed items count missing")
+            
+            # Verify the data values are correct
+            self.assertEqual(order_data["factory_machine_name"], self.machine.name)
+            self.assertEqual(order_data["total_items"], 3)  # 1 from setUp + 2 added above
+            self.assertEqual(order_data["completed_items"], 2)  # setUp item + completed test item
+            self.assertEqual(order_data["failed_items"], 1)    # failed test item
+
     def tearDown(self):
         """Clean up test data."""
         Product.objects.all().delete()

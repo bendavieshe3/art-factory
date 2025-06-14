@@ -41,8 +41,8 @@ class NotificationSystemTestCase(TestCase):
         # Check toast JavaScript is loaded
         self.assertContains(response, "window.ToastNotification")
         self.assertContains(response, "ToastNotification.success")
-        # Order page doesn't use ToastNotification.error, it uses error banner
-        self.assertContains(response, "ToastNotification.warning")
+        # Order page uses both toast notifications and error banner
+        self.assertContains(response, "ToastNotification.error")
 
     def test_order_form_uses_toast_notifications(self):
         """Test that order form JavaScript uses toast notifications instead of alerts."""
@@ -52,13 +52,13 @@ class NotificationSystemTestCase(TestCase):
         # Check that old alert() calls are replaced with ToastNotification calls
         self.assertNotContains(response, "alert(")
         self.assertContains(response, "ToastNotification.success(")
-        # Note: Order page uses error banner instead of error toasts
-        self.assertContains(response, "showErrorBanner(")
+        # Order page uses both toast notifications and error banner
+        self.assertContains(response, "ToastNotification.error(")
 
         # Check toast message content
         self.assertContains(response, "Order Placed")
-        self.assertContains(response, "Order failed")
-        self.assertContains(response, "Status polling failed")
+        self.assertContains(response, "Order Failed")
+        self.assertContains(response, "Generation Complete")
 
     @patch("main.tasks.process_order_items_async")
     def test_successful_order_shows_success_toast(self, mock_process):
