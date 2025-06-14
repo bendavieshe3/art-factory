@@ -48,7 +48,11 @@ main/
 ├── test_async_processing.py         # Async processing and retry tests
 ├── test_negative_prompts.py         # Negative prompt functionality tests
 ├── test_batch_generation.py         # Batch generation integration tests
-└── test_sdxl_fix.py                 # SDXL model fix validation tests
+├── test_sdxl_fix.py                 # SDXL model fix validation tests
+│
+├── test_template_framework.py       # Template inheritance and component tests
+├── test_template_validation.py      # Template syntax and consistency validation
+└── test_template_suite.py           # Comprehensive template testing runner
 ```
 
 #### Test Categories
@@ -56,6 +60,7 @@ main/
 - **Integration Tests**: Tests that combine multiple components (test_bootstrap_integration.py, test_worker_system.py, test_async_processing.py)
 - **UI Tests**: Frontend component and interaction tests (test_ui_notifications.py, test_bootstrap_integration.py)
 - **System Tests**: End-to-end workflow validation (test_batch_generation.py, test_sdxl_fix.py)
+- **Template Tests**: Template inheritance, component usage, and validation (test_template_framework.py, test_template_validation.py)
 
 #### Management Commands
 ```
@@ -469,6 +474,140 @@ time ./run_tests.sh all
 - **Log files**: Test execution logs are temporary and not committed
 - **Import consistency**: All test files use absolute imports (`from main.models import ...`)
 
+## Template Testing Framework
+
+Art Factory includes a comprehensive template testing framework that validates template inheritance, component usage, accessibility, security, and consistency across the application.
+
+### Template Test Organization
+
+The template testing framework consists of three main modules:
+
+1. **test_template_framework.py**: Core template testing functionality
+   - Template inheritance validation
+   - Component consistency checks
+   - Rendering tests with various contexts
+   - Accessibility compliance
+   - Security best practices
+   - Component documentation validation
+
+2. **test_template_validation.py**: Template syntax and structure validation
+   - Django template syntax validation
+   - Block and tag matching
+   - Template consistency across similar pages
+   - Static file and URL reference validation
+   - Performance considerations
+   - Template maintenance checks
+
+3. **test_template_suite.py**: Comprehensive test runner and reporting
+   - Categorized test execution
+   - Detailed reporting with success metrics
+   - Command-line interface for selective testing
+   - Django management command integration
+
+### Running Template Tests
+
+```bash
+# Run all template tests via Django
+python manage.py test main.tests.test_template_framework --settings=ai_art_factory.test_settings
+python manage.py test main.tests.test_template_validation --settings=ai_art_factory.test_settings
+
+# Run template test suite with detailed reporting
+python main/tests/test_template_suite.py
+
+# Run specific template test categories
+python main/tests/test_template_suite.py --category framework
+python main/tests/test_template_suite.py --category validation
+
+# Run with custom verbosity
+python main/tests/test_template_suite.py --verbosity 1
+```
+
+### Template Testing Categories
+
+#### 1. Inheritance Tests
+- Validates proper template inheritance chain (base.html → layouts → pages)
+- Ensures required blocks are preserved
+- Checks for proper block.super usage
+- Validates layout selection consistency
+
+#### 2. Component Tests
+- Ensures all templates use standardized components
+- Validates component parameter usage
+- Checks JavaScript component loading order
+- Tests component error handling
+
+#### 3. Accessibility Tests
+- Validates ARIA labels and attributes
+- Ensures form labels are properly associated
+- Checks alt attributes for images
+- Tests keyboard navigation support
+
+#### 4. Security Tests
+- Validates CSRF token inclusion in forms
+- Checks for unsafe inline JavaScript
+- Tests proper escaping of user data
+- Validates authentication requirements
+
+#### 5. Performance Tests
+- Identifies excessive template includes
+- Detects deep HTML nesting
+- Checks for render performance issues
+- Validates caching opportunities
+
+#### 6. Documentation Tests
+- Ensures all components are documented
+- Validates parameter documentation completeness
+- Checks for usage examples
+- Tests documentation accuracy
+
+### Template Best Practices Enforced
+
+1. **Consistent Layout Usage**: Similar pages must use the same layout
+2. **Component Reuse**: Common UI patterns must use shared components
+3. **Proper Inheritance**: Templates must follow the established hierarchy
+4. **Security First**: All forms must include CSRF tokens
+5. **Accessibility**: All interactive elements must be keyboard accessible
+6. **Performance**: Avoid excessive nesting and includes
+
+### Template Testing Output
+
+The template test suite provides detailed reporting:
+
+```
+======================================================================
+AI ART FACTORY - TEMPLATE TESTING SUITE
+======================================================================
+
+Template Framework Tests
+------------------------
+✓ Template inheritance chain validated
+✓ Component usage consistency verified
+✓ Accessibility standards met
+✓ Security best practices followed
+
+Template Validation Tests
+-------------------------
+✓ All templates have valid syntax
+✓ Block and tag matching correct
+✓ URL references properly namespaced
+✓ Static file references valid
+
+======================================================================
+TEMPLATE TEST SUMMARY
+======================================================================
+
+Total Tests Run: 45
+Passed: 45 ✓
+Failed: 0 ✗
+Errors: 0 ⚠
+Skipped: 0 ○
+
+Success Rate: 100.0%
+
+✅ All template tests passed!
+======================================================================
+```
+
 ## Test Execution
 
 ### Local Development
@@ -483,6 +622,10 @@ time ./run_tests.sh all
 ./run_tests.sh models
 ./run_tests.sh views
 ./run_tests.sh integration
+
+# Template tests
+python manage.py test main.tests.test_template_framework --settings=ai_art_factory.test_settings
+python manage.py test main.tests.test_template_validation --settings=ai_art_factory.test_settings
 
 # Coverage testing (recommended)
 ./run_tests.sh coverage           # Run all tests with coverage
