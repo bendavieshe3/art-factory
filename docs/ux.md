@@ -21,7 +21,7 @@ This document defines the user interface requirements, layouts, and interaction 
 ### Navigation
 The application uses a header navigation with main sections:
 
-- **Projects**: Project management and overview
+- **Projects**: Project management and overview (default home page)
 - **Order**: Place new orders and view recent activity
 - **Production**: Monitor generation progress and system status
 - **Inventory**: Browse and manage generated products
@@ -49,24 +49,63 @@ The application uses a header navigation with main sections:
 
 ## Main Sections
 
-### Projects Section
+### Projects Section (Home Page)
 
-**Purpose**: Organize work into logical projects
+**Purpose**: Primary entry point and organizational hub for all work
 
+#### Projects Overview Page (`/` or `/projects/`)
 **Layout**:
-- Grid of project cards
-- Each card shows:
+- Hero section with recent/active projects
+- Grid of project cards showing:
   - Project name and description
-  - Sample thumbnail from project
-  - Order count and recent activity
-  - Quick actions (view, archive)
+  - Featured product thumbnails (3-4 images)
+  - Order count and product count
+  - Last activity timestamp
+  - Status indicator (active/archived/completed)
+  - Quick actions (view, edit, archive)
+- "Create New Project" prominent button
+- Search bar for finding projects
+- Filter controls (status, date range)
 
 **Actions**:
-- Create new project
-- View project details and associated content
+- Create new project with modal/inline form
+- Click project card to view details
+- Quick jump to order page with project context
+- Edit project details inline
 - Archive/restore projects
-- Jump to order page for new orders in project
-- Jump to gallery filtered by project
+- Search across projects, orders, and products
+
+#### All Projects Page (`/projects/all/`)
+**Layout**:
+- Traditional list/table view of all projects
+- Columns: Name, Description, Status, Orders, Products, Created, Updated
+- Sortable columns
+- Pagination for large project lists
+- Bulk operations toolbar
+
+**Actions**:
+- Same as overview but optimized for managing many projects
+- Bulk archive/delete operations
+- Export project list
+
+#### Project Detail Page (`/projects/<id>/`)
+**Layout**:
+- Project header with name, description, status
+- Statistics dashboard:
+  - Total products generated
+  - Total orders placed
+  - Storage consumed
+  - Generation time metrics
+- Recent orders list with status
+- Product gallery filtered to project
+- Featured products management
+
+**Actions**:
+- Edit project details
+- Manage featured products
+- Create new order in project context
+- View all products/orders
+- Archive/delete project
 
 ### Order Section
 

@@ -27,6 +27,7 @@ Art Factory maintains a comprehensive Django-first testing approach that balance
 - Management commands
 - External API integration (mocked)
 - End-to-end workflow testing
+- Project management operations (CRUD, associations)
 
 ### Test Organization
 
@@ -61,6 +62,30 @@ main/
 main/management/commands/
 └── test_fal.py                      # Test utility for fal.ai integration
 ```
+
+### Project Management Tests
+
+The project management system includes comprehensive tests covering:
+
+**Core Project Operations:**
+- Test project CRUD operations (create, read, update, delete)
+- Test order-project associations  
+- Test product count denormalization via signals
+- Test featured product management
+- Test project status transitions
+- Test bulk operations on projects
+
+**Integration Tests:**
+- Test project filtering in inventory views
+- Test project context in order creation
+- Test batch product assignment to projects
+- Test project deletion with cascading behavior
+- Test project count updates on product/order changes
+
+**Test Files:**
+- `test_batch_project_assignment.py` - Tests for batch product project inheritance
+- `test_inventory_project_filtering.py` - Tests for inventory filtering by project
+- General project tests in main test suite
 
 ## Target State Vision
 

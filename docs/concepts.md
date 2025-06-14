@@ -168,7 +168,7 @@ An Order contains:
 
 * Base parameter set (complete user input in JSON)
 * Reference to the ProductFactory specification
-* Project association
+* Project association (optional but recommended)
 * Generated products
 
 An order defines multiple generations through:
@@ -208,7 +208,23 @@ Properties:
 
 ## Projects
 
-Projects are a way to organise orders based on a specific intent, theme or concept. 
+Projects are the primary organizational unit for orders and products in Art Factory. They allow users to group related work by intent, theme, or concept.
+
+Properties:
+- has a name
+- has a description  
+- has a status: active, archived, completed
+- has a product_count (denormalized for performance)
+- has an order_count (denormalized for performance)
+- can feature specific products for display
+- has timestamps (created_at, updated_at)
+
+Usage:
+- Projects serve as the main entry point for the application
+- Orders are associated with projects
+- Products inherit their project association from orders
+- Projects can be filtered, searched, and managed
+- Featured products can be selected for project cards 
 
 ## Collections
 
@@ -332,8 +348,12 @@ All database models are assumed to have an ID, created_at, updated_at and delete
 ## Projects
 
 - has a name
-- has a description
-- has a status: active, archived
+- has a description  
+- has a status: active, archived, completed
+- has featured_products: many-to-many relationship with Products
+- has product_count: denormalized count for performance
+- has order_count: denormalized count for performance
+- has created_at, updated_at timestamps
 
 
 ## Collection

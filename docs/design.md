@@ -82,13 +82,35 @@ Key models are organized in separate files under the `main/models/` directory
 
 Key models include:
 
-1. `FactoryMachineDefinition`: Stores metadata about different types of factory machines.
-2. `FactoryMachineInstance`: Represents active instances of factory machines and their current status.
-3. `Product`: Stores information about generated products, including file details and parameters used for generation.
-4. `Order`: Stores information about generation directly requested by the user. `OrderItem` is created from a user as one particular product to be generated.
-5. `LogEntry`: Stores application logs for monitoring and debugging purposes.
+1. `Project`: Primary organizational unit for orders and products
+   - Stores project metadata and status
+   - Tracks denormalized counts for performance
+   - Manages featured products for display
+2. `FactoryMachineDefinition`: Stores metadata about different types of factory machines.
+3. `FactoryMachineInstance`: Represents active instances of factory machines and their current status.
+4. `Product`: Stores information about generated products, including file details and parameters used for generation.
+5. `Order`: Stores information about generation directly requested by the user, with project association
+6. `OrderItem`: Created from an order as one particular product to be generated.
+7. `LogEntry`: Stores application logs for monitoring and debugging purposes.
 
-### 3.3 Views
+### 3.3 Project Management System
+
+The project management system provides the primary organizational structure for the application:
+
+**Key Components:**
+- `Project` model with denormalized counts for performance
+- Signal handlers to maintain count accuracy
+- Featured products for visual project representation
+- Project-aware order creation workflow
+- Project filtering throughout the application
+
+**Integration Points:**
+- Order form includes project selection/creation
+- Inventory filtering by project
+- Home page displays project overview
+- WebSocket events for real-time project updates
+
+### 3.4 Views
 
 Key views include:
 - Generate: Handles product generation requests

@@ -17,7 +17,13 @@ This document outlines the functional requirements and features for progressive 
 - Batch generation with parameter variations
 
 ### 3. Project Organization
-- Project-based organization of orders and products
+- **Project Management**: Create, edit, archive projects
+- **Project-based organization**: Orders and products grouped by project
+- **Project Pages**: Dedicated project overview and detail pages  
+- **Featured Products**: Highlight key products in project cards
+- **Quick Navigation**: Jump from project to order creation
+- **Filtering**: Filter inventory and orders by project
+- **Search**: Search across projects, orders, and products
 - Collections for manual product curation
 - Tagging system for cross-cutting organization
 - Template system for reusable parameter sets
@@ -140,6 +146,11 @@ This document outlines the functional requirements and features for progressive 
 - As a user, I want to view generated images in a gallery
 
 ### Organization
+- As a user, I want to create projects to organize my orders by theme or purpose
+- As a user, I want to quickly resume work by selecting a project
+- As a user, I want to associate new orders with existing projects
+- As a user, I want to filter inventory by project
+- As a user, I want to see all products and orders within a project
 - As a user, I want to organize my work into projects
 - As a user, I want to create collections of related products
 - As a user, I want to tag products for easy retrieval
