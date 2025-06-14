@@ -157,3 +157,90 @@ class OrderViewTestCase(TestCase):
         
         # Should include CSRF token for form submission
         self.assertContains(response, 'name="csrfmiddlewaretoken"', msg_prefix="Missing CSRF token")
+
+    def test_order_form_persistence_functions_loaded(self):
+        """Test that form persistence JavaScript functions are loaded and properly configured."""
+        response = self.client.get("/order/")
+        self.assertEqual(response.status_code, 200)
+        
+        # Should include form persistence functions
+        persistence_functions = [
+            "saveFormValues",      # Save form data to localStorage
+            "loadFormValues",      # Load form data from localStorage
+            "updateTotalProducts", # Update total calculation
+            "changeGenerationCount" # Generation count controls
+        ]
+        
+        for function in persistence_functions:
+            self.assertContains(
+                response,
+                function,
+                msg_prefix=f"Missing form persistence function: {function}"
+            )
+        
+        # Should include localStorage operations
+        self.assertContains(response, "localStorage.setItem", msg_prefix="Missing localStorage save")
+        self.assertContains(response, "localStorage.getItem", msg_prefix="Missing localStorage load")
+        self.assertContains(response, "'orderFormData'", msg_prefix="Missing localStorage key")
+        
+        # Should include event listeners for form changes
+        self.assertContains(response, "addEventListener('change'", msg_prefix="Missing change event listeners")
+        self.assertContains(response, "addEventListener('input'", msg_prefix="Missing input event listeners")
+        
+        # Should include proper form field references
+        form_fields = ['machine', 'prompt', 'negative_prompt', 'title', 'project', 'generationCount', 'batchSize']
+        for field in form_fields:
+            self.assertContains(
+                response,
+                f"getElementById('{field}')",
+                msg_prefix=f"Missing getElementById reference for field: {field}"
+            )
+
+    def test_order_form_has_required_ids(self):
+        """Test that order form has all required element IDs for persistence."""
+        response = self.client.get("/order/")
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that all form fields have the correct IDs for JavaScript
+        required_ids = [
+            'machine',          # AI model select
+            'prompt',           # Main prompt textarea
+            'negative_prompt',  # Negative prompt textarea
+            'title',           # Optional title input
+            'project',         # Project select
+            'generationCount', # Generation count input
+            'batchSize',       # Batch size select
+            'totalProducts',   # Total products display
+            'orderForm'        # Main form element
+        ]
+        
+        for element_id in required_ids:
+            self.assertContains(
+                response,
+                f'id="{element_id}"',
+                msg_prefix=f"Missing required element ID: {element_id}"
+            )
+
+    def test_order_form_initialization_order(self):
+        """Test that form components are loaded in the correct order for initialization."""
+        response = self.client.get("/order/")
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode()
+        
+        # Find positions of key components
+        form_mgmt_pos = content.find("order_form_management.html")
+        main_init_pos = content.find("order_main_init.html")
+        load_form_values_pos = content.find("loadFormValues()")
+        
+        # Form management should be loaded before main init
+        self.assertLess(form_mgmt_pos, main_init_pos, 
+                       "Form management component should be loaded before main init")
+        
+        # loadFormValues should be called in main init
+        self.assertGreater(load_form_values_pos, 0, 
+                          "loadFormValues() should be called during initialization")
+        
+        # Check that DOMContentLoaded handlers are properly structured
+        self.assertContains(response, "DOMContentLoaded", 
+                           msg_prefix="Missing DOMContentLoaded event handlers")

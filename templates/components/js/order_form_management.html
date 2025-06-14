@@ -43,27 +43,32 @@ function updateTotalProducts() {
 
 // Save form values to localStorage
 function saveFormValues() {
-    const formData = {
-        machine: document.getElementById('machine').value,
-        prompt: document.getElementById('prompt').value,
-        negative_prompt: document.getElementById('negative_prompt').value,
-        title: document.getElementById('title').value,
-        project: document.getElementById('project').value,
-        generationCount: document.getElementById('generationCount').value,
-        batchSize: document.getElementById('batchSize').value
-    };
-    
-    // Save advanced parameters
-    const advancedParams = {};
-    const parameterInputs = document.querySelectorAll('#advancedParams input, #advancedParams select');
-    parameterInputs.forEach(input => {
-        if (input.value !== '') {
-            advancedParams[input.name] = input.value;
-        }
-    });
-    formData.advancedParams = advancedParams;
-    
-    localStorage.setItem('orderFormData', JSON.stringify(formData));
+    try {
+        const formData = {
+            machine: document.getElementById('machine')?.value || '',
+            prompt: document.getElementById('prompt')?.value || '',
+            negative_prompt: document.getElementById('negative_prompt')?.value || '',
+            title: document.getElementById('title')?.value || '',
+            project: document.getElementById('project')?.value || '',
+            generationCount: document.getElementById('generationCount')?.value || '1',
+            batchSize: document.getElementById('batchSize')?.value || '4'
+        };
+        
+        // Save advanced parameters
+        const advancedParams = {};
+        const parameterInputs = document.querySelectorAll('#advancedParams input, #advancedParams select');
+        parameterInputs.forEach(input => {
+            if (input.value !== '') {
+                advancedParams[input.name] = input.value;
+            }
+        });
+        formData.advancedParams = advancedParams;
+        
+        localStorage.setItem('orderFormData', JSON.stringify(formData));
+        console.log('Form data saved:', formData);
+    } catch (e) {
+        console.error('Error saving form data:', e);
+    }
 }
 
 // Load form values from localStorage
@@ -72,19 +77,33 @@ function loadFormValues() {
     if (savedData) {
         try {
             const formData = JSON.parse(savedData);
+            console.log('Loading saved form data:', formData);
             
-            // Restore basic form fields
-            if (formData.machine) {
-                document.getElementById('machine').value = formData.machine;
+            // Restore basic form fields with null checks
+            const machineField = document.getElementById('machine');
+            if (formData.machine && machineField) {
+                machineField.value = formData.machine;
                 // Trigger change event to load parameters
-                document.getElementById('machine').dispatchEvent(new Event('change'));
+                machineField.dispatchEvent(new Event('change'));
             }
-            if (formData.prompt) document.getElementById('prompt').value = formData.prompt;
-            if (formData.negative_prompt) document.getElementById('negative_prompt').value = formData.negative_prompt;
-            if (formData.title) document.getElementById('title').value = formData.title;
-            if (formData.project) document.getElementById('project').value = formData.project;
-            if (formData.generationCount) document.getElementById('generationCount').value = formData.generationCount;
-            if (formData.batchSize) document.getElementById('batchSize').value = formData.batchSize;
+            
+            const promptField = document.getElementById('prompt');
+            if (formData.prompt && promptField) promptField.value = formData.prompt;
+            
+            const negativePromptField = document.getElementById('negative_prompt');
+            if (formData.negative_prompt && negativePromptField) negativePromptField.value = formData.negative_prompt;
+            
+            const titleField = document.getElementById('title');
+            if (formData.title && titleField) titleField.value = formData.title;
+            
+            const projectField = document.getElementById('project');
+            if (formData.project && projectField) projectField.value = formData.project;
+            
+            const generationCountField = document.getElementById('generationCount');
+            if (formData.generationCount && generationCountField) generationCountField.value = formData.generationCount;
+            
+            const batchSizeField = document.getElementById('batchSize');
+            if (formData.batchSize && batchSizeField) batchSizeField.value = formData.batchSize;
             
             // Restore advanced parameters after a short delay to ensure they're generated
             if (formData.advancedParams) {
@@ -101,14 +120,44 @@ function loadFormValues() {
             
             // Update calculation after restoring values
             updateTotalProducts();
+            console.log('Form values loaded successfully');
         } catch (e) {
             console.error('Error loading saved form data:', e);
+            // Clear corrupted data
+            localStorage.removeItem('orderFormData');
         }
+    } else {
+        console.log('No saved form data found');
     }
 }
 
+// Test function to check if form persistence is working
+window.testFormPersistence = function() {
+    console.log('Testing form persistence...');
+    
+    // Check if elements exist
+    const formFields = ['machine', 'prompt', 'negative_prompt', 'title', 'project', 'generationCount', 'batchSize'];
+    formFields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        console.log(`Field ${fieldId}:`, element ? `exists (value: "${element.value}")` : 'NOT FOUND');
+    });
+    
+    // Check saved data
+    const savedData = localStorage.getItem('orderFormData');
+    if (savedData) {
+        console.log('Saved form data:', JSON.parse(savedData));
+    } else {
+        console.log('No saved form data found');
+    }
+    
+    // Trigger save
+    saveFormValues();
+};
+
 // Initialize form management event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Form management component initialized');
+    
     // Add event listeners for generation count and batch size changes
     const batchSizeElement = document.getElementById('batchSize');
     if (batchSizeElement) {
@@ -116,6 +165,9 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTotalProducts();
             saveFormValues();
         });
+        console.log('Batch size event listener attached');
+    } else {
+        console.warn('Batch size element not found');
     }
     
     const generationCountElement = document.getElementById('generationCount');
@@ -124,16 +176,28 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTotalProducts();
             saveFormValues();
         });
+        console.log('Generation count event listener attached');
+    } else {
+        console.warn('Generation count element not found');
     }
     
     // Add event listeners for form field changes to save values
     const formFields = ['machine', 'prompt', 'negative_prompt', 'title', 'project'];
+    let attachedCount = 0;
     formFields.forEach(fieldId => {
         const element = document.getElementById(fieldId);
         if (element) {
             element.addEventListener('change', saveFormValues);
             element.addEventListener('input', saveFormValues);
+            attachedCount++;
+        } else {
+            console.warn(`Form field element not found: ${fieldId}`);
         }
     });
+    console.log(`Attached event listeners to ${attachedCount} form fields`);
+    
+    // Expose test function globally
+    window.testFormPersistence = testFormPersistence;
+    console.log('Form persistence test function available as window.testFormPersistence()');
 });
 </script>
