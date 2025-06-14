@@ -35,12 +35,11 @@ class FormPersistenceTestCase(TestCase):
 
         content = response.content.decode()
 
-        # Test that saveFormValues function captures all form fields (updated syntax)
+        # Test that saveFormValues function captures all form fields (updated syntax, project removed)
         self.assertIn("machine: machineField?.value || ''", content)
         self.assertIn("prompt: promptField?.value || ''", content)
         self.assertIn("negative_prompt: negativePromptField?.value || ''", content)
         self.assertIn("title: document.getElementById('title')?.value || ''", content)
-        self.assertIn("project: document.getElementById('project')?.value || ''", content)
         self.assertIn("generationCount: document.getElementById('generationCount')?.value || '1'", content)
         self.assertIn("batchSize: document.getElementById('batchSize')?.value || '4'", content)
 
@@ -48,10 +47,9 @@ class FormPersistenceTestCase(TestCase):
         self.assertIn("localStorage.setItem('orderFormData'", content)
         self.assertIn("localStorage.getItem('orderFormData')", content)
 
-        # Test that loadFormValues restores fields (updated syntax with null checks)
+        # Test that loadFormValues restores fields (updated syntax with null checks, project removed)
         self.assertIn("machineField.value = formData.machine", content)
         self.assertIn("promptField.value = formData.prompt", content)
-        self.assertIn("projectField.value = formData.project", content)
 
     def test_form_persistence_event_listeners(self):
         """Test that event listeners are properly attached for form persistence."""
@@ -68,8 +66,8 @@ class FormPersistenceTestCase(TestCase):
         self.assertIn("batchSizeElement.addEventListener('change'", content)
         self.assertIn("generationCountElement.addEventListener('input'", content)
 
-        # Check that the form fields array includes all expected fields
-        self.assertIn("['machine', 'prompt', 'negative_prompt', 'title', 'project']", content)
+        # Check that the form fields array includes all expected fields (project removed in session-based context)
+        self.assertIn("['machine', 'prompt', 'negative_prompt', 'title']", content)
 
     def test_form_persistence_advanced_parameters(self):
         """Test that advanced parameters are included in persistence."""

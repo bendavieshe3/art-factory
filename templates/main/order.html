@@ -66,17 +66,6 @@
                                     <div class="form-text">Give this order a memorable name (optional)</div>
                                 </div>
                                 
-                                <!-- Project Selection -->
-                                <div class="col-12">
-                                    <label for="project" class="form-label">Project</label>
-                                    <select class="form-select" id="project" name="project">
-                                        <option value="">Select a project...</option>
-                                        {% for project in projects %}
-                                            <option value="{{ project.id }}"{% if current_project and project.id == current_project.id %} selected{% endif %}>{{ project.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <div class="form-text">Organize this order within a project (optional)</div>
-                                </div>
                                 
                                 <!-- Generation Control -->
                                 <div class="col-md-4">

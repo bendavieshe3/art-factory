@@ -21,16 +21,12 @@ def order_view(request):
     # Get available factory machines
     factory_machines = FactoryMachineDefinition.objects.filter(is_active=True).order_by("provider", "display_name")
 
-    # Get active projects for selection
-    projects = Project.objects.filter(status="active").order_by("-updated_at")
-
     # Get current project from session context (with URL parameter override support)
     current_project = ensure_project_context(request)
 
     context = get_project_aware_context(
         request,
         factory_machines=factory_machines,
-        projects=projects,
         page_title="Place Order",
     )
     return render(request, "main/order.html", context)
@@ -593,15 +589,19 @@ def place_order_api(request):
                 status=400,
             )
 
-        # Get project if specified
+        # Get project from session context (with fallback to explicit project_id for API compatibility)
         project = None
         project_id_str = data.get("project_id")
         if project_id_str:
+            # Explicit project_id provided (for API backward compatibility)
             try:
                 project_id = int(project_id_str)
                 project = Project.objects.get(id=project_id, status="active")
             except (ValueError, TypeError, Project.DoesNotExist):
                 pass
+        else:
+            # Use session-based project context
+            project = ensure_project_context(request)
 
         # Create the order
         order = Order.objects.create(

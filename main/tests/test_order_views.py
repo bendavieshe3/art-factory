@@ -27,8 +27,8 @@ class OrderViewTestCase(TestCase):
             is_active=True,
         )
 
-    def test_order_page_project_dropdown_context(self):
-        """Test that order page provides projects in context for dropdown."""
+    def test_order_page_no_project_dropdown(self):
+        """Test that order page no longer has project dropdown (uses session context instead)."""
         # Create test projects
         project1 = Project.objects.create(name="Test Project 1", description="First test project", status="active")
         project2 = Project.objects.create(name="Test Project 2", description="Second test project", status="active")
@@ -37,25 +37,16 @@ class OrderViewTestCase(TestCase):
         response = self.client.get("/order/")
         self.assertEqual(response.status_code, 200)
 
-        # Should include projects in context
-        self.assertIn("projects", response.context, "Order page should provide projects in context")
+        # Should NOT include projects dropdown (projects are managed via session context now)
+        self.assertNotContains(response, 'name="project"', msg_prefix="Project dropdown should be removed")
+        self.assertNotContains(response, 'id="project"', msg_prefix="Project dropdown ID should not exist")
 
-        # Should only include active projects
-        projects = response.context["projects"]
-        project_names = [p.name for p in projects]
+        # Project names should not appear in form since dropdown is removed
+        self.assertNotContains(response, "Test Project 1")
+        self.assertNotContains(response, "Test Project 2")
 
-        self.assertIn("Test Project 1", project_names)
-        self.assertIn("Test Project 2", project_names)
-        self.assertNotIn("Inactive Project", project_names, "Inactive projects should not appear")
-
-        # Should render project options in the HTML
-        self.assertContains(response, 'name="project"')
-        self.assertContains(response, "Test Project 1")
-        self.assertContains(response, "Test Project 2")
-        self.assertNotContains(response, "Inactive Project")
-
-    def test_order_page_preselects_project_from_url(self):
-        """Test that order page pre-selects project when coming from project page."""
+    def test_order_page_sets_project_context_from_url(self):
+        """Test that order page sets session context when coming from project page."""
         # Create test project
         test_project = Project.objects.create(
             name="Pre-selected Project", description="Should be pre-selected", status="active"
@@ -65,18 +56,15 @@ class OrderViewTestCase(TestCase):
         response = self.client.get(f"/order/?project={test_project.id}")
         self.assertEqual(response.status_code, 200)
 
-        # Should include current_project in context
+        # Should include current_project in context (from session)
         self.assertIn("current_project", response.context)
         self.assertEqual(response.context["current_project"], test_project)
 
-        # Should pre-select the project in the dropdown HTML
-        expected_option = f'<option value="{test_project.id}" selected>Pre-selected Project</option>'
-        self.assertContains(response, expected_option)
+        # Should show project context indicator instead of dropdown
+        self.assertContains(response, "Pre-selected Project", msg_prefix="Project name should appear in context indicator")
 
-        # Should not pre-select other projects
-        other_project = Project.objects.create(name="Other Project", status="active")
-        not_selected_option = f'<option value="{other_project.id}" selected>Other Project</option>'
-        self.assertNotContains(response, not_selected_option)
+        # Should NOT contain project dropdown
+        self.assertNotContains(response, 'name="project"')
 
     def test_order_page_handles_invalid_project_parameter(self):
         """Test that order page handles invalid project ID gracefully."""
@@ -87,26 +75,16 @@ class OrderViewTestCase(TestCase):
         # Should not have current_project set
         self.assertIsNone(response.context.get("current_project"))
 
-        # Check that there are no selected project options
-        # (since project pre-selection only applies when project is valid)
-        content = response.content.decode()
-        project_select_pattern = r'<select[^>]*name="project"[^>]*>.*?</select>'
-        project_select_match = re.search(project_select_pattern, content, re.DOTALL)
-        if project_select_match:
-            project_select_html = project_select_match.group(0)
-            self.assertNotIn(" selected", project_select_html)
+        # Should not contain project dropdown
+        self.assertNotContains(response, 'name="project"')
 
         # Visit with invalid project ID format
         response = self.client.get("/order/?project=invalid")
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context.get("current_project"))
 
-        # Check that there are no selected project options for invalid format too
-        content = response.content.decode()
-        project_select_match = re.search(project_select_pattern, content, re.DOTALL)
-        if project_select_match:
-            project_select_html = project_select_match.group(0)
-            self.assertNotIn(" selected", project_select_html)
+        # Should not contain project dropdown
+        self.assertNotContains(response, 'name="project"')
 
     def test_order_form_javascript_components_loaded(self):
         """Test that all required JavaScript components are loaded for order functionality."""
@@ -131,7 +109,6 @@ class OrderViewTestCase(TestCase):
         # Should include form field management
         self.assertContains(response, 'id="machine"', msg_prefix="Missing machine select field")
         self.assertContains(response, 'id="prompt"', msg_prefix="Missing prompt field")
-        self.assertContains(response, 'id="project"', msg_prefix="Missing project field")
         self.assertContains(response, 'id="orderForm"', msg_prefix="Missing order form")
 
         # Should include CSRF token for form submission
@@ -163,7 +140,7 @@ class OrderViewTestCase(TestCase):
         self.assertContains(response, "addEventListener('input'", msg_prefix="Missing input event listeners")
 
         # Should include proper form field references
-        form_fields = ["machine", "prompt", "negative_prompt", "title", "project", "generationCount", "batchSize"]
+        form_fields = ["machine", "prompt", "negative_prompt", "title", "generationCount", "batchSize"]
         for field in form_fields:
             self.assertContains(
                 response, f"getElementById('{field}')", msg_prefix=f"Missing getElementById reference for field: {field}"
@@ -180,7 +157,6 @@ class OrderViewTestCase(TestCase):
             "prompt",  # Main prompt textarea
             "negative_prompt",  # Negative prompt textarea
             "title",  # Optional title input
-            "project",  # Project select
             "generationCount",  # Generation count input
             "batchSize",  # Batch size select
             "totalProducts",  # Total products display
