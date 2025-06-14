@@ -1,0 +1,19 @@
+{% comment %}
+Product Data Initialization Component
+
+This component initializes a window variable with product data for JavaScript consumption.
+
+Parameters:
+- data_variable (required): The name of the window variable to create (e.g., 'inventoryProductsData')
+- products_json (required): The JSON data to assign to the variable
+- comment (optional): Descriptive comment for the initialization
+
+Usage:
+{% include 'components/js/product_data_init.html' with data_variable='inventoryProductsData' products_json=products_json comment='Initialize inventory collection with data' %}
+{% include 'components/js/product_data_init.html' with data_variable='projectProductsData' products_json=products_json %}
+{% endcomment %}
+
+<!-- {{ comment|default:'Initialize products data' }} -->
+<script>
+window.{{ data_variable }} = {{ products_json|safe }};
+</script>

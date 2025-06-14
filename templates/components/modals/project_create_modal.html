@@ -1,0 +1,44 @@
+{% comment %}
+Create Project Modal Component
+
+This modal provides a form for creating new projects.
+
+Parameters:
+- modal_id (optional): Custom modal ID, defaults to "createProjectModal"
+- form_action (optional): Custom form action URL, defaults to main:project_create
+- modal_title (optional): Custom modal title, defaults to "Create New Project"
+- submit_text (optional): Custom submit button text, defaults to "Create Project"
+
+Usage:
+{% include 'components/modals/project_create_modal.html' %}
+{% include 'components/modals/project_create_modal.html' with modal_id="customModal" modal_title="Add New Project" %}
+{% endcomment %}
+
+<div class="modal fade" id="{{ modal_id|default:'createProjectModal' }}" tabindex="-1" aria-labelledby="{{ modal_id|default:'createProjectModal' }}Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url form_action|default:'main:project_create' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="{{ modal_id|default:'createProjectModal' }}Label">{{ modal_title|default:"Create New Project" }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="projectName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="projectDescription" name="description" rows="3" 
+                                  placeholder="Describe the theme or purpose of this project..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">{{ submit_text|default:"Create Project" }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

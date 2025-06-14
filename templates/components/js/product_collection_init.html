@@ -1,0 +1,49 @@
+{% comment %}
+Product Collection JavaScript Initialization Component
+
+Parameters:
+- collection_id (required): DOM ID of container (e.g., 'inventoryCollection')
+- data_variable (required): Window variable name with products data (e.g., 'inventoryProductsData')
+- layout_type (optional): 'grid' or 'strip', defaults to 'grid'
+- selectable (optional): Boolean, defaults to true
+- show_bulk_actions (optional): Boolean, defaults to true
+- card_variant (optional): 'standard' or 'compact', defaults to 'standard'
+- show_checkbox (optional): Boolean, defaults to true
+- show_actions (optional): Boolean, defaults to true
+- show_delete (optional): Boolean, defaults to true
+- click_action (optional): 'select' or 'modal', defaults to 'select'
+- condition (optional): Template variable to check before initialization
+
+Usage:
+{% include 'components/js/product_collection_init.html' with collection_id='inventoryCollection' data_variable='inventoryProductsData' %}
+{% include 'components/js/product_collection_init.html' with collection_id='projectProductsCollection' data_variable='projectProductsData' condition=products %}
+{% endcomment %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if not condition or condition %}
+    // Initialize {{ collection_id }} with unified components
+    const {{ collection_id|default:'productCollection' }} = new ProductCollection('#{{ collection_id }}', '{{ layout_type|default:'grid' }}', {
+        selectable: {{ selectable|default:'true' }},
+        showBulkActions: {{ show_bulk_actions|default:'true' }},
+        cardVariant: '{{ card_variant|default:'standard' }}',
+        cardOptions: {
+            showCheckbox: {{ show_checkbox|default:'true' }},
+            showActions: {{ show_actions|default:'true' }},
+            showDelete: {{ show_delete|default:'true' }},
+            clickAction: '{{ click_action|default:'select' }}'
+        }
+    });
+    
+    // Load products data
+    if (window.{{ data_variable }} && window.{{ data_variable }}.length > 0) {
+        {{ collection_id|default:'productCollection' }}.loadProducts(window.{{ data_variable }});
+    }
+    
+    // Handle product modal open events
+    document.getElementById('{{ collection_id }}').addEventListener('productModalOpen', function(e) {
+        console.log('Product modal open requested:', e.detail.product);
+    });
+    {% endif %}
+});
+</script>

@@ -1,0 +1,58 @@
+{% comment %}
+Reusable pagination component
+
+Parameters:
+- page_obj (required): Django Paginator page object
+- aria_label (optional): Aria label for navigation, defaults to "Pagination"
+- query_params (optional): Dict of additional query parameters to preserve in URLs
+- css_classes (optional): Additional CSS classes for the nav element, defaults to "mt-4"
+
+Usage examples:
+{% include 'components/navigation/pagination.html' with page_obj=page_obj aria_label="Product pagination" %}
+{% include 'components/navigation/pagination.html' with page_obj=page_obj query_params=request.GET css_classes="mt-3" %}
+{% include 'components/navigation/pagination.html' with page_obj=page_obj query_params=filters %}
+{% endcomment %}
+
+{% if page_obj.has_other_pages %}
+    <nav aria-label="{{ aria_label|default:'Pagination' }}" class="{{ css_classes|default:'mt-4' }}">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% for key, value in query_params.items %}{% if key != 'page' and value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in query_params.items %}{% if key != 'page' and value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">First</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Previous</span>
+                </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in query_params.items %}{% if key != 'page' and value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in query_params.items %}{% if key != 'page' and value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Next</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Last</span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}

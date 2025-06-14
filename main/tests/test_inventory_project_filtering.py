@@ -268,4 +268,3 @@ class InventoryProjectFilteringTest(TestCase):
         # Should show remaining 5 products
         page2_products = json.loads(response.context["products_json"])
         self.assertEqual(len(page2_products), 5, "Second page should show remaining 5 products")
-

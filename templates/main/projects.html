@@ -140,33 +140,6 @@
     </div>
 </div>
 
-<!-- Create Project Modal -->
-<div class="modal fade" id="createProjectModal" tabindex="-1" aria-labelledby="createProjectModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" action="{% url 'main:project_create' %}">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createProjectModalLabel">Create New Project</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="projectName" class="form-label">Project Name *</label>
-                        <input type="text" class="form-control" id="projectName" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="projectDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="projectDescription" name="description" rows="3" 
-                                  placeholder="Describe the theme or purpose of this project..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Project</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- Project Modals -->
+{% include 'components/modals/project_create_modal.html' %}
 {% endblock %}

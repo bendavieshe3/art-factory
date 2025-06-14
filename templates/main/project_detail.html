@@ -157,49 +157,7 @@
             <div id="projectProductsCollection"></div>
             
             <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-                <nav aria-label="Product pagination" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1">First</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">First</span>
-                            </li>
-                            <li class="page-item disabled">
-                                <span class="page-link">Previous</span>
-                            </li>
-                        {% endif %}
-                        
-                        <li class="page-item active">
-                            <span class="page-link">
-                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                            </span>
-                        </li>
-                        
-                        {% if page_obj.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">Next</span>
-                            </li>
-                            <li class="page-item disabled">
-                                <span class="page-link">Last</span>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
+            {% include 'components/navigation/pagination.html' with page_obj=page_obj aria_label="Product pagination" query_params=request.GET %}
         {% else %}
             <!-- Empty State -->
             <div class="text-center py-5">
@@ -280,37 +238,7 @@
     </div>
 </div>
 
-<!-- Initialize project products collection with data -->
-<script>
-window.projectProductsData = {{ products_json|safe }};
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize project products collection with unified components
-    {% if products %}
-    const projectProductsCollection = new ProductCollection('#projectProductsCollection', 'grid', {
-        selectable: true,
-        showBulkActions: true,
-        cardVariant: 'standard',
-        cardOptions: {
-            showCheckbox: true,
-            showActions: true,
-            showDelete: true,
-            clickAction: 'select'
-        }
-    });
-    
-    // Load products data
-    if (window.projectProductsData && window.projectProductsData.length > 0) {
-        projectProductsCollection.loadProducts(window.projectProductsData);
-    }
-    
-    // Handle product modal open events
-    document.getElementById('projectProductsCollection').addEventListener('productModalOpen', function(e) {
-        console.log('Product modal open requested:', e.detail.product);
-    });
-    {% endif %}
-});
-</script>
+<!-- Product Data and Collection Initialization -->
+{% include 'components/js/product_data_init.html' with data_variable='projectProductsData' products_json=products_json comment='Initialize project products collection with data' %}
+{% include 'components/js/product_collection_init.html' with collection_id='projectProductsCollection' data_variable='projectProductsData' condition=products %}
 {% endblock %}

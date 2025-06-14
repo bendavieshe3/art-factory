@@ -58,7 +58,7 @@ class ProjectModelTest(TestCase):
             file_format="jpg",
             width=1024,
             height=1024,
-            order_item=order_item  # Properly link to order item
+            order_item=order_item,  # Properly link to order item
         )
 
         # Associate product with order item for backward compatibility
@@ -101,7 +101,7 @@ class ProjectModelTest(TestCase):
         for i in range(3):
             # Create a separate order item for each product
             item = OrderItem.objects.create(order=order, prompt="Test prompt", parameters={})
-            
+
             product = Product.objects.create(
                 title=f"Test Product {i}",
                 prompt="Test prompt",
@@ -112,7 +112,7 @@ class ProjectModelTest(TestCase):
                 file_format="jpg",
                 width=1024,
                 height=1024,
-                order_item=item  # Properly link to order item
+                order_item=item,  # Properly link to order item
             )
 
             # Associate product with order item for backward compatibility

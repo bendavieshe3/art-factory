@@ -43,10 +43,10 @@ class Project(models.Model):
     def get_products_queryset(self):
         """Get a queryset of all products from this project."""
         from .products import Product
-        
+
         order_ids = self.order_set.values_list("id", flat=True)
         return Product.objects.filter(order_item__order__id__in=order_ids)
-    
+
     def get_recent_products(self, limit=4):
         """Get recent products from this project for display."""
         return self.get_products_queryset().order_by("-created_at")[:limit]

@@ -1,0 +1,67 @@
+{% comment %}
+Project Modals JavaScript Initialization Component
+
+This component provides the JavaScript initialization for project CRUD modals.
+It handles the dynamic population of edit and delete modals with project data.
+
+Parameters:
+- edit_modal_id (optional): Custom edit modal ID, defaults to "editProjectModal"
+- edit_form_id (optional): Custom edit form ID, defaults to "editProjectForm"
+- delete_modal_id (optional): Custom delete modal ID, defaults to "deleteProjectModal"
+- delete_form_id (optional): Custom delete form ID, defaults to "deleteProjectForm"
+- project_update_url_pattern (optional): URL pattern for project updates, defaults to "main:project_update"
+- project_delete_url_pattern (optional): URL pattern for project deletion, defaults to "main:project_delete"
+
+Usage:
+{% include 'components/js/project_modals_init.html' %}
+{% include 'components/js/project_modals_init.html' with edit_modal_id="customEditModal" %}
+{% endcomment %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle edit project modal
+    const editModal = document.getElementById('{{ edit_modal_id|default:"editProjectModal" }}');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const projectId = button.getAttribute('data-project-id');
+            const projectName = button.getAttribute('data-project-name');
+            const projectDescription = button.getAttribute('data-project-description');
+            const projectStatus = button.getAttribute('data-project-status');
+            
+            const form = document.getElementById('{{ edit_form_id|default:"editProjectForm" }}');
+            if (form) {
+                form.action = '{% url project_update_url_pattern|default:"main:project_update" 0 %}'.replace('0', projectId);
+            }
+            
+            const nameField = document.getElementById('editProjectName');
+            const descField = document.getElementById('editProjectDescription');
+            const statusField = document.getElementById('editProjectStatus');
+            
+            if (nameField) nameField.value = projectName;
+            if (descField) descField.value = projectDescription;
+            if (statusField) statusField.value = projectStatus;
+        });
+    }
+    
+    // Handle delete project modal
+    const deleteModal = document.getElementById('{{ delete_modal_id|default:"deleteProjectModal" }}');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const projectId = button.getAttribute('data-project-id');
+            const projectName = button.getAttribute('data-project-name');
+            
+            const form = document.getElementById('{{ delete_form_id|default:"deleteProjectForm" }}');
+            if (form) {
+                form.action = '{% url project_delete_url_pattern|default:"main:project_delete" 0 %}'.replace('0', projectId);
+            }
+            
+            const nameSpan = document.getElementById('deleteProjectName');
+            if (nameSpan) {
+                nameSpan.textContent = projectName;
+            }
+        });
+    }
+});
+</script>

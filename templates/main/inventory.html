@@ -63,82 +63,11 @@
         <div id="inventoryCollection"></div>
         
         <!-- Pagination -->
-        {% if page_obj.has_other_pages %}
-            <nav aria-label="Product pagination" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% if project_filter %}&project={{ project_filter }}{% endif %}">First</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if project_filter %}&project={{ project_filter }}{% endif %}">Previous</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">First</span>
-                        </li>
-                        <li class="page-item disabled">
-                            <span class="page-link">Previous</span>
-                        </li>
-                    {% endif %}
-                    
-                    <li class="page-item active">
-                        <span class="page-link">
-                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                        </span>
-                    </li>
-                    
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if project_filter %}&project={{ project_filter }}{% endif %}">Next</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if project_filter %}&project={{ project_filter }}{% endif %}">Last</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">Next</span>
-                        </li>
-                        <li class="page-item disabled">
-                            <span class="page-link">Last</span>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% endif %}
+        {% include 'components/navigation/pagination.html' with page_obj=page_obj aria_label="Product pagination" query_params=request.GET %}
     </div>
 </div>
 
-<!-- Initialize inventory collection with data -->
-<script>
-window.inventoryProductsData = {{ products_json|safe }};
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize inventory collection with unified components
-    const inventoryCollection = new ProductCollection('#inventoryCollection', 'grid', {
-        selectable: true,
-        showBulkActions: true,
-        cardVariant: 'standard',
-        cardOptions: {
-            showCheckbox: true,
-            showActions: true,
-            showDelete: true,
-            clickAction: 'select' // In inventory, clicking selects for bulk operations
-        }
-    });
-    
-    // Load products data
-    if (window.inventoryProductsData && window.inventoryProductsData.length > 0) {
-        inventoryCollection.loadProducts(window.inventoryProductsData);
-    }
-    
-    // Handle product modal open events
-    document.getElementById('inventoryCollection').addEventListener('productModalOpen', function(e) {
-        // Future implementation for product viewer modal
-        console.log('Product modal open requested:', e.detail.product);
-    });
-});
-</script>
+<!-- Product Data and Collection Initialization -->
+{% include 'components/js/product_data_init.html' with data_variable='inventoryProductsData' products_json=products_json comment='Initialize inventory collection with data' %}
+{% include 'components/js/product_collection_init.html' with collection_id='inventoryCollection' data_variable='inventoryProductsData' click_action='select' %}
 {% endblock %}
