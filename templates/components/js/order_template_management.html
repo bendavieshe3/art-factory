@@ -77,10 +77,13 @@ window.clearForm = function() {
     const descriptionDiv = document.getElementById('machineDescription');
     
     if (form) {
-        // Clear form and localStorage
-        console.log('clearForm() called - removing localStorage data');
+        // Clear form and localStorage with detailed logging
+        console.log('🗑️ clearForm() called at', new Date().toISOString());
+        console.log('🗑️ Call stack:', new Error().stack);
+        console.log('🗑️ Current localStorage before clearing:', localStorage.getItem('orderFormData'));
         form.reset();
         localStorage.removeItem('orderFormData');
+        console.log('🗑️ localStorage cleared - orderFormData removed');
         
         if (descriptionDiv) {
             descriptionDiv.style.display = 'none';

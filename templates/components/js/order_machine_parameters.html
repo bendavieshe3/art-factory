@@ -36,6 +36,17 @@ function updateDynamicParameters(machineId) {
 
 function generateParameterFields(machine) {
     const container = document.getElementById('{{ dynamic_container_id|default:"dynamicParameters" }}');
+    
+    // Preserve existing values before clearing (including main form fields like negative_prompt)
+    const existingValues = {};
+    const existingInputs = document.querySelectorAll('#{{ dynamic_container_id|default:"dynamicParameters" }} input, #{{ dynamic_container_id|default:"dynamicParameters" }} select, #{{ dynamic_container_id|default:"dynamicParameters" }} textarea, #negative_prompt, #prompt, #title');
+    existingInputs.forEach(input => {
+        if (input.value) {
+            existingValues[input.name || input.id] = input.value;
+        }
+    });
+    console.log('Preserving existing values:', existingValues);
+    
     container.innerHTML = '';
     
     // Handle different parameter schema formats
@@ -50,11 +61,24 @@ function generateParameterFields(machine) {
         // Simple object format (SDXL models)
         generateFromSimpleSchema(schema, defaults, container);
     }
+    
+    // Restore preserved values after generating new fields
+    setTimeout(() => {
+        Object.entries(existingValues).forEach(([fieldId, value]) => {
+            const input = document.getElementById(fieldId) || document.querySelector(`[name="${fieldId}"]`);
+            if (input && value) {
+                console.log(`Restoring ${fieldId}:`, value);
+                input.value = value;
+            }
+        });
+        console.log('Values restored after parameter generation');
+    }, 0);
 }
 
 function generateFromJsonSchema(properties, defaults, container) {
     for (const [key, config] of Object.entries(properties)) {
-        if (key === 'prompt') continue; // Skip prompt, it's handled separately
+        // Skip main form fields that are handled separately
+        if (key === 'prompt' || key === 'negative_prompt' || key === 'title') continue;
         
         const defaultValue = defaults[key] !== undefined ? defaults[key] : config.default;
         const fieldHtml = createParameterField(key, config, defaultValue);
@@ -66,7 +90,8 @@ function generateFromJsonSchema(properties, defaults, container) {
 
 function generateFromSimpleSchema(schema, defaults, container) {
     for (const [key, value] of Object.entries(schema)) {
-        if (key === 'prompt') continue; // Skip prompt
+        // Skip main form fields that are handled separately
+        if (key === 'prompt' || key === 'negative_prompt' || key === 'title') continue;
         
         const defaultValue = defaults[key] !== undefined ? defaults[key] : value;
         const config = { type: typeof value === 'number' ? 'number' : 'string', default: defaultValue };

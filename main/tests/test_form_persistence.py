@@ -38,9 +38,9 @@ class FormPersistenceTestCase(TestCase):
         content = response.content.decode()
         
         # Test that saveFormValues function captures all form fields (updated syntax)
-        self.assertIn("machine: document.getElementById('machine')?.value || ''", content)
-        self.assertIn("prompt: document.getElementById('prompt')?.value || ''", content)
-        self.assertIn("negative_prompt: document.getElementById('negative_prompt')?.value || ''", content)
+        self.assertIn("machine: machineField?.value || ''", content)
+        self.assertIn("prompt: promptField?.value || ''", content)
+        self.assertIn("negative_prompt: negativePromptField?.value || ''", content)
         self.assertIn("title: document.getElementById('title')?.value || ''", content)
         self.assertIn("project: document.getElementById('project')?.value || ''", content)
         self.assertIn("generationCount: document.getElementById('generationCount')?.value || '1'", content)
@@ -161,3 +161,21 @@ class FormPersistenceTestCase(TestCase):
         # Check that the function exists and updates the display
         self.assertIn("function updateTotalProducts()", content)
         self.assertIn("totalEl.textContent = totalProducts", content)
+
+    def test_negative_prompt_persistence_preservation(self):
+        """Test that negative_prompt values are preserved during machine parameter loading."""
+        response = self.client.get("/order/")
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode()
+        
+        # Test that negative_prompt is excluded from dynamic parameter generation
+        self.assertIn("if (key === 'prompt' || key === 'negative_prompt' || key === 'title') continue;", content)
+        
+        # Test that existing values are preserved before clearing dynamic parameters
+        self.assertIn("Preserve existing values before clearing", content)
+        self.assertIn("#negative_prompt", content)
+        
+        # Test that values are restored after parameter generation
+        self.assertIn("Restoring ${fieldId}:", content)
+        self.assertIn("Values restored after parameter generation", content)

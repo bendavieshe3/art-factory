@@ -44,15 +44,44 @@ function updateTotalProducts() {
 // Save form values to localStorage
 function saveFormValues() {
     try {
+        // Skip saving if we're currently restoring form data
+        if (window._restoringFormData) {
+            console.log('🔒 Skipping save - currently restoring form data to prevent overwrite');
+            return;
+        }
+        
+        // Check if form elements actually exist before saving
+        const machineField = document.getElementById('machine');
+        const promptField = document.getElementById('prompt');
+        const negativePromptField = document.getElementById('negative_prompt');
+        
+        if (!machineField || !promptField || !negativePromptField) {
+            console.log('⚠️ Skipping save - key form elements not found yet (DOM may still be loading)');
+            return;
+        }
+        
         const formData = {
-            machine: document.getElementById('machine')?.value || '',
-            prompt: document.getElementById('prompt')?.value || '',
-            negative_prompt: document.getElementById('negative_prompt')?.value || '',
+            machine: machineField?.value || '',
+            prompt: promptField?.value || '',
+            negative_prompt: negativePromptField?.value || '',
             title: document.getElementById('title')?.value || '',
             project: document.getElementById('project')?.value || '',
             generationCount: document.getElementById('generationCount')?.value || '1',
             batchSize: document.getElementById('batchSize')?.value || '4'
         };
+        
+        // Check if we're about to save all empty values
+        const hasAnyData = Object.entries(formData).some(([key, value]) => {
+            if (key === 'generationCount' || key === 'batchSize') return false; // These have defaults
+            return value && value.trim() !== '';
+        });
+        
+        if (!hasAnyData) {
+            console.log('⚠️ Not saving - all form fields appear to be empty');
+            console.log('⚠️ This might be called too early during page load or after form reset');
+            console.log('⚠️ Current form values:', formData);
+            return;
+        }
         
         // Save advanced parameters
         const advancedParams = {};
@@ -65,7 +94,8 @@ function saveFormValues() {
         formData.advancedParams = advancedParams;
         
         localStorage.setItem('orderFormData', JSON.stringify(formData));
-        console.log('Form data saved:', formData);
+        console.log('📝 Form data saved at', new Date().toISOString(), ':', formData);
+        console.log('📦 Current localStorage keys:', Object.keys(localStorage));
     } catch (e) {
         console.error('Error saving form data:', e);
     }
@@ -73,37 +103,45 @@ function saveFormValues() {
 
 // Load form values from localStorage
 function loadFormValues() {
+    console.log('🔄 loadFormValues() called at', new Date().toISOString());
+    console.log('🔄 All localStorage keys:', Object.keys(localStorage));
     const savedData = localStorage.getItem('orderFormData');
+    console.log('🔄 Retrieved orderFormData:', savedData);
     if (savedData) {
         try {
             const formData = JSON.parse(savedData);
-            console.log('Loading saved form data:', formData);
+            console.log('✅ Successfully parsed saved form data:', formData);
+            
+            // Temporarily disable saveFormValues during restoration to prevent overwriting
+            window._restoringFormData = true;
+            console.log('🔒 Temporarily disabling saveFormValues during restoration');
             
             // Restore basic form fields with null checks
             const machineField = document.getElementById('machine');
+            const promptField = document.getElementById('prompt');
+            const negativePromptField = document.getElementById('negative_prompt');
+            const titleField = document.getElementById('title');
+            const projectField = document.getElementById('project');
+            const generationCountField = document.getElementById('generationCount');
+            const batchSizeField = document.getElementById('batchSize');
+            
+            // Restore all basic fields first
+            if (formData.prompt && promptField) promptField.value = formData.prompt;
+            if (negativePromptField && formData.negative_prompt !== undefined) {
+                console.log('Restoring negative_prompt:', formData.negative_prompt);
+                negativePromptField.value = formData.negative_prompt || '';
+            }
+            if (formData.title && titleField) titleField.value = formData.title;
+            if (formData.project && projectField) projectField.value = formData.project;
+            if (formData.generationCount && generationCountField) generationCountField.value = formData.generationCount;
+            if (formData.batchSize && batchSizeField) batchSizeField.value = formData.batchSize;
+            
+            // Restore machine selection LAST to trigger parameter loading after other fields are set
             if (formData.machine && machineField) {
                 machineField.value = formData.machine;
                 // Trigger change event to load parameters
                 machineField.dispatchEvent(new Event('change'));
             }
-            
-            const promptField = document.getElementById('prompt');
-            if (formData.prompt && promptField) promptField.value = formData.prompt;
-            
-            const negativePromptField = document.getElementById('negative_prompt');
-            if (formData.negative_prompt && negativePromptField) negativePromptField.value = formData.negative_prompt;
-            
-            const titleField = document.getElementById('title');
-            if (formData.title && titleField) titleField.value = formData.title;
-            
-            const projectField = document.getElementById('project');
-            if (formData.project && projectField) projectField.value = formData.project;
-            
-            const generationCountField = document.getElementById('generationCount');
-            if (formData.generationCount && generationCountField) generationCountField.value = formData.generationCount;
-            
-            const batchSizeField = document.getElementById('batchSize');
-            if (formData.batchSize && batchSizeField) batchSizeField.value = formData.batchSize;
             
             // Restore advanced parameters after a short delay to ensure they're generated
             if (formData.advancedParams) {
@@ -115,25 +153,92 @@ function loadFormValues() {
                         }
                     }
                     updateTotalProducts();
+                    
+                    // Re-enable saving after advanced parameters are restored
+                    window._restoringFormData = false;
+                    console.log('🔓 Re-enabled saveFormValues after advanced parameter restoration');
                 }, 500);
+            } else {
+                // Re-enable saving immediately if no advanced parameters
+                setTimeout(() => {
+                    window._restoringFormData = false;
+                    console.log('🔓 Re-enabled saveFormValues after basic field restoration');
+                }, 100);
             }
             
             // Update calculation after restoring values
             updateTotalProducts();
-            console.log('Form values loaded successfully');
+            console.log('✅ Form values loaded successfully');
         } catch (e) {
             console.error('Error loading saved form data:', e);
             // Don't automatically clear - let user decide
-            console.log('Warning: Saved form data may be corrupted but keeping it for debugging');
+            console.log('⚠️ Warning: Saved form data may be corrupted but keeping it for debugging');
+            // Re-enable saving even on error
+            window._restoringFormData = false;
+            console.log('🔓 Re-enabled saveFormValues after error');
         }
     } else {
-        console.log('No saved form data found');
+        console.log('❌ No saved form data found in localStorage');
+        console.log('❓ This could mean: 1) First visit, 2) Data was cleared, 3) Storage issue');
     }
 }
 
+// Debug function to track form persistence issues
+window.debugFormPersistence = function() {
+    console.log('🐛 === FORM PERSISTENCE DEBUG REPORT ===');
+    console.log('🐛 Timestamp:', new Date().toISOString());
+    console.log('🐛 Form restoration flag:', window._restoringFormData ? 'LOCKED' : 'UNLOCKED');
+    
+    // Check localStorage availability and contents
+    try {
+        localStorage.setItem('test', 'test');
+        localStorage.removeItem('test');
+        console.log('✅ localStorage is available');
+    } catch (e) {
+        console.error('❌ localStorage is NOT available:', e);
+        return;
+    }
+    
+    // Show all localStorage keys
+    console.log('📦 All localStorage keys:', Object.keys(localStorage));
+    
+    // Check specific orderFormData
+    const orderData = localStorage.getItem('orderFormData');
+    if (orderData) {
+        console.log('✅ Found orderFormData:', JSON.parse(orderData));
+    } else {
+        console.log('❌ No orderFormData found');
+    }
+    
+    // Check form field values
+    console.log('📝 Current form field values:');
+    const fields = ['machine', 'prompt', 'negative_prompt', 'title', 'project', 'generationCount', 'batchSize'];
+    fields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            console.log(`  ${fieldId}: "${element.value}" (type: ${element.type || element.tagName})`);
+        } else {
+            console.log(`  ${fieldId}: NOT FOUND`);
+        }
+    });
+    
+    // Test saving current form data
+    console.log('🧪 Testing saveFormValues()...');
+    if (typeof saveFormValues === 'function') {
+        saveFormValues();
+        const afterSave = localStorage.getItem('orderFormData');
+        console.log('✅ After save test:', afterSave ? JSON.parse(afterSave) : 'NOTHING SAVED');
+    } else {
+        console.log('❌ saveFormValues function not found');
+    }
+    
+    console.log('🐛 === END DEBUG REPORT ===');
+};
+
 // Test function to check if form persistence is working
 window.testFormPersistence = function() {
-    console.log('Testing form persistence...');
+    console.log('⚠️ DEPRECATED: Use window.debugFormPersistence() instead');
+    window.debugFormPersistence();
     
     // Check localStorage availability
     try {
@@ -181,9 +286,44 @@ window.testFormPersistence = function() {
     console.log('After saveFormValues:', afterSave);
 };
 
+// Monitor localStorage changes for debugging
+function monitorLocalStorage() {
+    const originalSetItem = localStorage.setItem;
+    const originalRemoveItem = localStorage.removeItem;
+    const originalClear = localStorage.clear;
+    
+    localStorage.setItem = function(key, value) {
+        if (key === 'orderFormData') {
+            console.log('🔧 localStorage.setItem called for orderFormData:', value);
+            console.log('🔧 Call stack:', new Error().stack);
+        }
+        return originalSetItem.apply(this, arguments);
+    };
+    
+    localStorage.removeItem = function(key) {
+        if (key === 'orderFormData') {
+            console.log('🚫 localStorage.removeItem called for orderFormData');
+            console.log('🚫 Call stack:', new Error().stack);
+        }
+        return originalRemoveItem.apply(this, arguments);
+    };
+    
+    localStorage.clear = function() {
+        console.log('💥 localStorage.clear called - ALL data will be lost');
+        console.log('💥 Call stack:', new Error().stack);
+        return originalClear.apply(this, arguments);
+    };
+}
+
 // Initialize form management event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Form management component initialized');
+    console.log('📊 Form management component initialized at', new Date().toISOString());
+    
+    // Start monitoring localStorage in development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        monitorLocalStorage();
+        console.log('🔍 localStorage monitoring enabled for debugging');
+    }
     
     // Add event listeners for generation count and batch size changes
     const batchSizeElement = document.getElementById('batchSize');
