@@ -1,0 +1,161 @@
+{% comment %}
+Order Machine Parameters JavaScript Component
+
+This component handles dynamic parameter loading for factory machines,
+including JSON schema and simple object formats.
+
+Parameters:
+- factory_machines_api_url (optional): URL for factory machines API, defaults to main:factory_machines_api
+- dynamic_container_id (optional): Container ID for dynamic parameters, defaults to 'dynamicParameters'
+- machine_select_id (optional): Machine select element ID, defaults to 'machine'
+- description_div_id (optional): Description div ID, defaults to 'machineDescription'
+
+Usage:
+{% include 'components/js/order_machine_parameters.html' %}
+{% include 'components/js/order_machine_parameters.html' with dynamic_container_id='customParams' %}
+{% endcomment %}
+
+<script>
+// Dynamic parameter management functions
+function updateDynamicParameters(machineId) {
+    // Fetch machine parameter schema from API
+    fetch('{% url factory_machines_api_url|default:"main:factory_machines_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            const machine = data.machines.find(m => m.id == machineId);
+            if (machine && machine.parameter_schema) {
+                generateParameterFields(machine);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching machine parameters:', error);
+            // Fallback to basic parameters
+            generateBasicParameters();
+        });
+}
+
+function generateParameterFields(machine) {
+    const container = document.getElementById('{{ dynamic_container_id|default:"dynamicParameters" }}');
+    container.innerHTML = '';
+    
+    // Handle different parameter schema formats
+    let schema = machine.parameter_schema;
+    let defaults = machine.default_parameters || {};
+    
+    // Handle JSON schema format vs simple object format
+    if (schema.type === 'object' && schema.properties) {
+        // JSON Schema format (FLUX models)
+        generateFromJsonSchema(schema.properties, defaults, container);
+    } else {
+        // Simple object format (SDXL models)
+        generateFromSimpleSchema(schema, defaults, container);
+    }
+}
+
+function generateFromJsonSchema(properties, defaults, container) {
+    for (const [key, config] of Object.entries(properties)) {
+        if (key === 'prompt') continue; // Skip prompt, it's handled separately
+        
+        const defaultValue = defaults[key] !== undefined ? defaults[key] : config.default;
+        const fieldHtml = createParameterField(key, config, defaultValue);
+        if (fieldHtml) {
+            container.insertAdjacentHTML('beforeend', fieldHtml);
+        }
+    }
+}
+
+function generateFromSimpleSchema(schema, defaults, container) {
+    for (const [key, value] of Object.entries(schema)) {
+        if (key === 'prompt') continue; // Skip prompt
+        
+        const defaultValue = defaults[key] !== undefined ? defaults[key] : value;
+        const config = { type: typeof value === 'number' ? 'number' : 'string', default: defaultValue };
+        const fieldHtml = createParameterField(key, config, defaultValue);
+        if (fieldHtml) {
+            container.insertAdjacentHTML('beforeend', fieldHtml);
+        }
+    }
+}
+
+function createParameterField(key, config, defaultValue) {
+    const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const inputType = config.type === 'integer' || config.type === 'number' ? 'number' : 'text';
+    const step = config.type === 'number' && key.includes('scale') ? '0.1' : '';
+    const min = config.minimum || '';
+    const max = config.maximum || '';
+    
+    return `
+        <div class="col-md-3">
+            <label for="${key}" class="form-label">${label}</label>
+            <input type="${inputType}" class="form-control form-control-sm" 
+                   id="${key}" name="${key}" value="${defaultValue}"
+                   ${step ? `step="${step}"` : ''}
+                   ${min ? `min="${min}"` : ''}
+                   ${max ? `max="${max}"` : ''}>
+            ${config.description ? `<small class="form-text text-muted">${config.description}</small>` : ''}
+        </div>
+    `;
+}
+
+function generateBasicParameters() {
+    // Fallback basic parameters
+    const container = document.getElementById('{{ dynamic_container_id|default:"dynamicParameters" }}');
+    container.innerHTML = `
+        <div class="col-md-3">
+            <label for="width" class="form-label">Width</label>
+            <input type="number" class="form-control form-control-sm" id="width" name="width" value="1024">
+        </div>
+        <div class="col-md-3">
+            <label for="height" class="form-label">Height</label>
+            <input type="number" class="form-control form-control-sm" id="height" name="height" value="1024">
+        </div>
+        <div class="col-md-3">
+            <label for="num_inference_steps" class="form-label">Steps</label>
+            <input type="number" class="form-control form-control-sm" id="num_inference_steps" name="num_inference_steps" value="25">
+        </div>
+        <div class="col-md-3">
+            <label for="guidance_scale" class="form-label">Guidance</label>
+            <input type="number" class="form-control form-control-sm" id="guidance_scale" name="guidance_scale" value="7.5" step="0.1">
+        </div>
+    `;
+}
+
+function clearDynamicParameters() {
+    const container = document.getElementById('{{ dynamic_container_id|default:"dynamicParameters" }}');
+    container.innerHTML = '<div class="col-12 text-muted"><small>Select a model to see available parameters</small></div>';
+}
+
+// Initialize machine parameter handling
+document.addEventListener('DOMContentLoaded', function() {
+    const machineSelect = document.getElementById('{{ machine_select_id|default:"machine" }}');
+    const descriptionDiv = document.getElementById('{{ description_div_id|default:"machineDescription" }}');
+    const descriptionText = document.getElementById('descriptionText');
+    
+    if (machineSelect && descriptionDiv) {
+        // Show machine description and update parameters when selected
+        machineSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const description = selectedOption.dataset.description;
+                const provider = selectedOption.dataset.provider;
+                const modality = selectedOption.dataset.modality;
+                
+                if (descriptionText) {
+                    descriptionText.innerHTML = `
+                        <strong>${selectedOption.text}</strong><br>
+                        <strong>Type:</strong> ${modality} | <strong>Provider:</strong> ${provider}<br>
+                        <strong>Description:</strong> ${description}
+                    `;
+                }
+                descriptionDiv.style.display = 'block';
+                
+                // Update dynamic parameters based on selected model
+                updateDynamicParameters(selectedOption.value);
+            } else {
+                descriptionDiv.style.display = 'none';
+                clearDynamicParameters();
+            }
+        });
+    }
+});
+</script>

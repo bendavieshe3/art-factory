@@ -1,0 +1,163 @@
+{% comment %}
+Order Template Management JavaScript Component
+
+This component handles template loading, form clearing, and utility functions
+for the order form.
+
+Parameters:
+- form_id (optional): Order form ID, defaults to 'orderForm'
+
+Usage:
+{% include 'components/js/order_template_management.html' %}
+{% include 'components/js/order_template_management.html' with form_id='customOrderForm' %}
+{% endcomment %}
+
+<script>
+// Template loading function
+window.loadTemplate = function(type) {
+    const templates = {
+        fantasy: {
+            title: 'Fantasy Art',
+            prompt: 'A magical fantasy landscape with ancient castles, mystical creatures, and ethereal lighting',
+            negative_prompt: 'blurry, low quality, distorted, ugly, cartoon, anime',
+            width: 1024,
+            height: 1024
+        },
+        portrait: {
+            title: 'Portrait Study',
+            prompt: 'A professional portrait of a person with dramatic lighting and detailed facial features',
+            negative_prompt: 'blurry, distorted, low quality, bad anatomy, extra limbs',
+            width: 768,
+            height: 1024
+        },
+        landscape: {
+            title: 'Landscape Art',
+            prompt: 'A breathtaking natural landscape with mountains, forests, and golden hour lighting',
+            negative_prompt: 'blurry, oversaturated, low quality, distorted, urban',
+            width: 1344,
+            height: 768
+        }
+    };
+    
+    const template = templates[type];
+    if (template) {
+        const titleField = document.getElementById('title');
+        const promptField = document.getElementById('prompt');
+        const negativePromptField = document.getElementById('negative_prompt');
+        
+        if (titleField) titleField.value = template.title;
+        if (promptField) promptField.value = template.prompt;
+        if (negativePromptField) negativePromptField.value = template.negative_prompt || '';
+        
+        // Apply template parameters to dynamic fields if they exist
+        for (const [key, value] of Object.entries(template)) {
+            if (key !== 'title' && key !== 'prompt' && key !== 'negative_prompt') {
+                const input = document.getElementById(key);
+                if (input) {
+                    input.value = value;
+                }
+            }
+        }
+        
+        // Save changes if save function exists
+        if (typeof saveFormValues === 'function') {
+            saveFormValues();
+        }
+        
+        // Show notification if ToastNotification exists
+        if (typeof ToastNotification !== 'undefined') {
+            ToastNotification.info(`Loaded ${type} template`, 'Template Applied');
+        }
+    }
+};
+
+// Form clearing function
+window.clearForm = function() {
+    const form = document.getElementById('{{ form_id|default:"orderForm" }}');
+    const descriptionDiv = document.getElementById('machineDescription');
+    
+    if (form) {
+        // Clear form and localStorage
+        form.reset();
+        localStorage.removeItem('orderFormData');
+        
+        if (descriptionDiv) {
+            descriptionDiv.style.display = 'none';
+        }
+        
+        // Hide progress if function exists
+        if (typeof hideOrderProgress === 'function') {
+            hideOrderProgress();
+        }
+        
+        // Clear dynamic parameters if function exists
+        if (typeof clearDynamicParameters === 'function') {
+            clearDynamicParameters();
+        }
+        
+        // Show notification if ToastNotification exists
+        if (typeof ToastNotification !== 'undefined') {
+            ToastNotification.info('Form cleared', 'Reset Complete');
+        }
+    }
+};
+
+// Quantity management (legacy support)
+window.changeQuantity = function(delta) {
+    const quantityInput = document.getElementById('quantity');
+    if (quantityInput) {
+        const currentValue = parseInt(quantityInput.value) || 1;
+        const newValue = Math.max(1, Math.min(10, currentValue + delta));
+        quantityInput.value = newValue;
+        
+        // Save changes if save function exists
+        if (typeof saveFormValues === 'function') {
+            saveFormValues();
+        }
+    }
+};
+
+// Error banner functionality
+window.showErrorBanner = function(message, details = null) {
+    const banner = document.getElementById('errorBanner');
+    const messageDiv = document.getElementById('errorMessage');
+    const detailsDiv = document.getElementById('errorDetails');
+    const detailsText = document.getElementById('errorDetailsText');
+    const toggleBtn = document.getElementById('errorDetailsToggle');
+    
+    if (banner && messageDiv) {
+        messageDiv.textContent = message;
+        
+        if (details && detailsText && toggleBtn) {
+            detailsText.textContent = details;
+            toggleBtn.style.display = 'inline-block';
+            toggleBtn.onclick = function() {
+                const isHidden = detailsDiv.style.display === 'none';
+                detailsDiv.style.display = isHidden ? 'block' : 'none';
+                toggleBtn.textContent = isHidden ? 'Less' : 'More';
+            };
+        } else if (toggleBtn && detailsDiv) {
+            toggleBtn.style.display = 'none';
+            detailsDiv.style.display = 'none';
+        }
+        
+        banner.style.display = 'block';
+    }
+};
+
+// Advanced params collapse handling
+document.addEventListener('DOMContentLoaded', function() {
+    const advancedCollapse = document.getElementById('advancedParams');
+    const advancedIcon = document.getElementById('advancedIcon');
+    
+    if (advancedCollapse && advancedIcon) {
+        advancedCollapse.addEventListener('show.bs.collapse', function() {
+            advancedIcon.className = 'bi bi-chevron-down';
+        });
+        
+        advancedCollapse.addEventListener('hide.bs.collapse', function() {
+            advancedIcon.className = 'bi bi-chevron-right';
+        });
+    }
+});
+</script>

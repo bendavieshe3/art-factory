@@ -1,0 +1,121 @@
+{% comment %}
+Order Main Initialization JavaScript Component
+
+This component initializes the order page, handles form submission,
+and coordinates all other order components.
+
+Parameters:
+- form_id (optional): Order form ID, defaults to 'orderForm'
+- submit_btn_id (optional): Submit button ID, defaults to 'submitBtn'
+- place_order_api_url (optional): URL for place order API, defaults to '/api/place-order/'
+
+Usage:
+{% include 'components/js/order_main_init.html' %}
+{% include 'components/js/order_main_init.html' with form_id='customForm' %}
+{% endcomment %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('{{ form_id|default:"orderForm" }}');
+    const submitBtn = document.getElementById('{{ submit_btn_id|default:"submitBtn" }}');
+    
+    // Initialize page data
+    if (typeof loadPageData === 'function') {
+        loadPageData();
+    }
+    
+    // Load saved form values
+    if (typeof loadFormValues === 'function') {
+        loadFormValues();
+    }
+    
+    // Handle form submission
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Placing Order...';
+            }
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const jsonData = {};
+            
+            // Convert FormData to JSON
+            for (let [key, value] of formData.entries()) {
+                if (key.startsWith('csrfmiddlewaretoken')) continue;
+                jsonData[key] = value;
+            }
+            
+            // Collect advanced parameters
+            const advancedParams = {};
+            const parameterInputs = document.querySelectorAll('#dynamicParameters input, #dynamicParameters select');
+            parameterInputs.forEach(input => {
+                if (input.value !== '') {
+                    advancedParams[input.name] = input.value;
+                }
+            });
+            
+            if (Object.keys(advancedParams).length > 0) {
+                jsonData.advanced_parameters = advancedParams;
+            }
+            
+            // Handle order submission
+            if (typeof handleOrderSubmission === 'function') {
+                handleOrderSubmission(jsonData, submitBtn);
+            } else {
+                // Fallback basic submission
+                fetch('{{ place_order_api_url|default:"/api/place-order/" }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(jsonData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear saved form data on successful submission
+                        localStorage.removeItem('orderFormData');
+                        
+                        // Show success notification
+                        if (typeof ToastNotification !== 'undefined') {
+                            ToastNotification.success(
+                                `Order #${data.order_id} submitted successfully!`,
+                                'Order Placed'
+                            );
+                        }
+                        
+                        // Refresh page data
+                        if (typeof loadPageData === 'function') {
+                            setTimeout(loadPageData, 1000);
+                        }
+                    } else {
+                        throw new Error(data.message || 'Failed to place order');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error placing order:', error);
+                    
+                    // Show error notification
+                    if (typeof ToastNotification !== 'undefined') {
+                        ToastNotification.error(
+                            error.message || 'Failed to place order. Please try again.',
+                            'Order Failed'
+                        );
+                    }
+                })
+                .finally(() => {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-lightning"></i> Place Order';
+                    }
+                });
+            }
+        });
+    }
+});
+</script>

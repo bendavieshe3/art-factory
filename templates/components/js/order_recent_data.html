@@ -1,0 +1,123 @@
+{% comment %}
+Order Recent Data Loading JavaScript Component
+
+This component handles loading and displaying recent products and orders
+for the order page, including the ProductCollection initialization.
+
+Parameters:
+- recent_products_url (optional): URL for recent products API, defaults to main:recent_products_api
+- recent_orders_url (optional): URL for recent orders API, defaults to main:recent_orders_api
+- collection_container (optional): Container ID for product collection, defaults to 'recentProductsCollection'
+
+Usage:
+{% include 'components/js/order_recent_data.html' %}
+{% include 'components/js/order_recent_data.html' with collection_container='customContainer' %}
+{% endcomment %}
+
+<script>
+// Initialize recent products collection
+let recentProductsCollection = null;
+
+function initializeRecentProductsCollection() {
+    if (!recentProductsCollection) {
+        recentProductsCollection = new ProductCollection('#{{ collection_container|default:"recentProductsCollection" }}', 'strip', {
+            selectable: false,
+            showBulkActions: false,
+            cardVariant: 'compact',
+            cardOptions: {
+                showCheckbox: false,
+                showActions: false,
+                showDelete: false,
+                clickAction: 'modal' // In recent products strip, clicking opens modal for quick preview
+            }
+        });
+    }
+}
+
+function loadRecentProducts() {
+    fetch('{% url recent_products_url|default:"main:recent_products_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Initialize collection if not already done
+            initializeRecentProductsCollection();
+            
+            if (data.products && data.products.length > 0) {
+                recentProductsCollection.loadProducts(data.products);
+            } else {
+                recentProductsCollection.loadProducts([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent products:', error);
+            // Initialize collection with empty state
+            initializeRecentProductsCollection();
+            recentProductsCollection.loadProducts([]);
+        });
+}
+
+function loadRecentOrders() {
+    fetch('{% url recent_orders_url|default:"main:recent_orders_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            const placeholder = document.getElementById('recentOrdersPlaceholder');
+            const content = document.getElementById('recentOrdersContent');
+            const tableBody = document.getElementById('recentOrdersTable');
+            
+            if (data.orders && data.orders.length > 0) {
+                tableBody.innerHTML = '';
+                
+                data.orders.forEach(order => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <a href="/orders/${order.id}/" class="text-decoration-none">
+                                #${order.id}
+                            </a>
+                        </td>
+                        <td class="text-truncate" style="max-width: 200px;">${order.title || 'Untitled'}</td>
+                        <td>
+                            <span class="badge ${getStatusBadgeClass(order.status)}">${order.status}</span>
+                        </td>
+                        <td class="text-muted">${formatDate(order.created_at)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                if (placeholder) placeholder.style.display = 'none';
+                if (content) content.style.display = 'block';
+            } else {
+                if (placeholder) placeholder.style.display = 'block';
+                if (content) content.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent orders:', error);
+            const placeholder = document.getElementById('recentOrdersPlaceholder');
+            if (placeholder) placeholder.style.display = 'block';
+            const content = document.getElementById('recentOrdersContent');
+            if (content) content.style.display = 'none';
+        });
+}
+
+// Helper function to get status badge class
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'completed': return 'bg-success';
+        case 'processing': return 'bg-primary';
+        case 'failed': return 'bg-danger';
+        case 'pending': return 'bg-secondary';
+        default: return 'bg-secondary';
+    }
+}
+
+// Helper function to format date
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString();
+}
+
+// Load all page data
+function loadPageData() {
+    loadRecentProducts();
+    loadRecentOrders();
+}
+</script>

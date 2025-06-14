@@ -1,0 +1,253 @@
+{% comment %}
+Order Progress Management JavaScript Component
+
+This component handles order submission, progress tracking, polling,
+and preview area management for the order page.
+
+Parameters:
+- max_poll_attempts (optional): Maximum polling attempts, defaults to 120
+- poll_interval_ms (optional): Polling interval in milliseconds, defaults to 3000
+- order_status_url_pattern (optional): URL pattern for order status API
+
+Usage:
+{% include 'components/js/order_progress_management.html' %}
+{% include 'components/js/order_progress_management.html' with max_poll_attempts=60 %}
+{% endcomment %}
+
+<script>
+// Preview area management
+function showOrderProgress() {
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    const previewContent = document.getElementById('previewContent');
+    const previewProgress = document.getElementById('previewProgress');
+    
+    if (previewPlaceholder) previewPlaceholder.style.display = 'none';
+    if (previewContent) previewContent.style.display = 'none';
+    if (previewProgress) previewProgress.style.display = 'block';
+    
+    updateProgressText('Submitting order...');
+    updateProgressBar(10);
+}
+
+function hideOrderProgress() {
+    const previewProgress = document.getElementById('previewProgress');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    
+    if (previewProgress) previewProgress.style.display = 'none';
+    if (previewPlaceholder) previewPlaceholder.style.display = 'block';
+}
+
+function updateProgressText(text) {
+    const progressText = document.getElementById('progressText');
+    if (progressText) {
+        progressText.textContent = text;
+    }
+}
+
+function updateProgressBar(percentage) {
+    const progressBar = document.getElementById('progressBar');
+    if (progressBar) {
+        progressBar.style.width = percentage + '%';
+    }
+}
+
+function showPreviewResult(product) {
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    const previewProgress = document.getElementById('previewProgress');
+    const previewContent = document.getElementById('previewContent');
+    
+    if (previewPlaceholder) previewPlaceholder.style.display = 'none';
+    if (previewProgress) previewProgress.style.display = 'none';
+    
+    const previewImage = document.getElementById('previewImage');
+    const previewInfo = document.getElementById('previewInfo');
+    const previewViewBtn = document.getElementById('previewViewBtn');
+    const previewDownloadBtn = document.getElementById('previewDownloadBtn');
+    
+    if (previewImage) {
+        previewImage.innerHTML = `<img src="${product.file_url}" alt="${product.title}" class="img-fluid rounded">`;
+    }
+    if (previewInfo) {
+        previewInfo.textContent = `${product.provider} • ${new Date(product.created_at).toLocaleString()}`;
+    }
+    if (previewViewBtn) {
+        previewViewBtn.href = `/products/${product.id}/`;
+    }
+    if (previewDownloadBtn) {
+        previewDownloadBtn.href = `/products/${product.id}/download/`;
+    }
+    
+    if (previewContent) previewContent.style.display = 'block';
+}
+
+// Order polling for real-time updates
+function startOrderPolling(orderId) {
+    let pollCount = 0;
+    const maxPolls = {{ max_poll_attempts|default:'120' }}; // Poll for up to 6 minutes by default
+    let lastProgress = 0;
+    
+    const pollInterval = setInterval(() => {
+        pollCount++;
+        
+        // Poll the actual order status
+        fetch(`/api/order-status/${orderId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                const progress = data.progress || 0;
+                const status = data.status || 'pending';
+                
+                // Update progress bar
+                updateProgressBar(progress);
+                
+                // Update progress text based on status
+                if (status === 'pending') {
+                    updateProgressText(`Order #${orderId} queued...`);
+                } else if (status === 'processing') {
+                    const completed = data.status_counts?.completed || 0;
+                    const total = data.total_items || 1;
+                    updateProgressText(`Processing ${completed}/${total} images...`);
+                } else if (status === 'completed') {
+                    updateProgressText('Generation complete!');
+                    updateProgressBar(100);
+                    
+                    // Show latest product in preview if available
+                    if (data.latest_product) {
+                        setTimeout(() => {
+                            showPreviewResult(data.latest_product);
+                            if (typeof loadPageData === 'function') {
+                                loadPageData(); // Refresh all data
+                            }
+                        }, 1000);
+                    } else {
+                        setTimeout(() => {
+                            hideOrderProgress();
+                            if (typeof loadPageData === 'function') {
+                                loadPageData();
+                            }
+                        }, 1000);
+                    }
+                    
+                    clearInterval(pollInterval);
+                    
+                    // Show success notification
+                    if (typeof ToastNotification !== 'undefined') {
+                        ToastNotification.success(
+                            `Order #${orderId} completed! Generated ${data.total_items} image(s).`,
+                            'Generation Complete'
+                        );
+                    }
+                } else if (status === 'failed') {
+                    updateProgressText('Generation failed');
+                    updateProgressBar(100);
+                    clearInterval(pollInterval);
+                    
+                    setTimeout(() => {
+                        hideOrderProgress();
+                        if (typeof loadPageData === 'function') {
+                            loadPageData();
+                        }
+                    }, 2000);
+                    
+                    // Show error notification
+                    if (typeof ToastNotification !== 'undefined') {
+                        ToastNotification.error(
+                            `Order #${orderId} failed to complete.`,
+                            'Generation Failed'
+                        );
+                    }
+                }
+                
+                // Stop polling after max attempts
+                if (pollCount >= maxPolls) {
+                    clearInterval(pollInterval);
+                    updateProgressText('Polling timeout - check order status manually');
+                    setTimeout(() => {
+                        hideOrderProgress();
+                        if (typeof loadPageData === 'function') {
+                            loadPageData();
+                        }
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error('Error polling order status:', error);
+                pollCount++; // Count errors toward the limit
+                
+                if (pollCount >= maxPolls) {
+                    clearInterval(pollInterval);
+                    updateProgressText('Unable to track order progress');
+                    setTimeout(() => {
+                        hideOrderProgress();
+                        if (typeof loadPageData === 'function') {
+                            loadPageData();
+                        }
+                    }, 3000);
+                }
+            });
+    }, {{ poll_interval_ms|default:'3000' }});
+}
+
+// Order submission handling
+function handleOrderSubmission(formData, submitBtn) {
+    // Show progress immediately
+    showOrderProgress();
+    
+    // Submit the order
+    fetch('/api/place-order/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateProgressText(`Order #${data.order_id} submitted! Starting generation...`);
+            updateProgressBar(20);
+            
+            // Start polling for updates
+            setTimeout(() => {
+                startOrderPolling(data.order_id);
+            }, 2000);
+            
+            // Clear saved form data on successful submission
+            localStorage.removeItem('orderFormData');
+            
+            // Show success notification
+            if (typeof ToastNotification !== 'undefined') {
+                ToastNotification.success(
+                    `Order #${data.order_id} submitted successfully!`,
+                    'Order Placed'
+                );
+            }
+        } else {
+            throw new Error(data.message || 'Failed to place order');
+        }
+    })
+    .catch(error => {
+        console.error('Error placing order:', error);
+        
+        // Show error notification
+        if (typeof ToastNotification !== 'undefined') {
+            ToastNotification.error(
+                error.message || 'Failed to place order. Please try again.',
+                'Order Failed'
+            );
+        }
+        
+        hideOrderProgress();
+    })
+    .finally(() => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-lightning"></i> Place Order';
+        }
+    });
+}
+</script>

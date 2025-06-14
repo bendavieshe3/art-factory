@@ -1,0 +1,139 @@
+{% comment %}
+Order Form Management JavaScript Component
+
+This component handles form validation, generation count management, 
+total calculation, and form persistence for the order form.
+
+Parameters:
+- max_generations (optional): Maximum allowed generations, defaults to 50
+- default_batch_size (optional): Default batch size, defaults to 4
+
+Usage:
+{% include 'components/js/order_form_management.html' %}
+{% include 'components/js/order_form_management.html' with max_generations=100 %}
+{% endcomment %}
+
+<script>
+// Generation count control functions
+window.changeGenerationCount = function(delta) {
+    const input = document.getElementById('generationCount');
+    const currentValue = parseInt(input.value) || 1;
+    const newValue = Math.max(1, Math.min({{ max_generations|default:'50' }}, currentValue + delta));
+    input.value = newValue;
+    updateTotalProducts();
+    saveFormValues();
+};
+
+// Update total products calculation
+function updateTotalProducts() {
+    const generationCount = parseInt(document.getElementById('generationCount').value) || 1;
+    const batchSize = parseInt(document.getElementById('batchSize').value) || {{ default_batch_size|default:'4' }};
+    const totalProducts = generationCount * batchSize;
+    
+    const totalEl = document.getElementById('totalProducts');
+    totalEl.textContent = totalProducts;
+    
+    // Add visual styling based on total
+    if (totalProducts > 10) {
+        totalEl.className = 'form-control-plaintext fw-bold text-primary';
+    } else {
+        totalEl.className = 'form-control-plaintext fw-bold';
+    }
+}
+
+// Save form values to localStorage
+function saveFormValues() {
+    const formData = {
+        machine: document.getElementById('machine').value,
+        prompt: document.getElementById('prompt').value,
+        negative_prompt: document.getElementById('negative_prompt').value,
+        title: document.getElementById('title').value,
+        project: document.getElementById('project').value,
+        generationCount: document.getElementById('generationCount').value,
+        batchSize: document.getElementById('batchSize').value
+    };
+    
+    // Save advanced parameters
+    const advancedParams = {};
+    const parameterInputs = document.querySelectorAll('#advancedParams input, #advancedParams select');
+    parameterInputs.forEach(input => {
+        if (input.value !== '') {
+            advancedParams[input.name] = input.value;
+        }
+    });
+    formData.advancedParams = advancedParams;
+    
+    localStorage.setItem('orderFormData', JSON.stringify(formData));
+}
+
+// Load form values from localStorage
+function loadFormValues() {
+    const savedData = localStorage.getItem('orderFormData');
+    if (savedData) {
+        try {
+            const formData = JSON.parse(savedData);
+            
+            // Restore basic form fields
+            if (formData.machine) {
+                document.getElementById('machine').value = formData.machine;
+                // Trigger change event to load parameters
+                document.getElementById('machine').dispatchEvent(new Event('change'));
+            }
+            if (formData.prompt) document.getElementById('prompt').value = formData.prompt;
+            if (formData.negative_prompt) document.getElementById('negative_prompt').value = formData.negative_prompt;
+            if (formData.title) document.getElementById('title').value = formData.title;
+            if (formData.project) document.getElementById('project').value = formData.project;
+            if (formData.generationCount) document.getElementById('generationCount').value = formData.generationCount;
+            if (formData.batchSize) document.getElementById('batchSize').value = formData.batchSize;
+            
+            // Restore advanced parameters after a short delay to ensure they're generated
+            if (formData.advancedParams) {
+                setTimeout(() => {
+                    for (const [key, value] of Object.entries(formData.advancedParams)) {
+                        const input = document.getElementById(key);
+                        if (input) {
+                            input.value = value;
+                        }
+                    }
+                    updateTotalProducts();
+                }, 500);
+            }
+            
+            // Update calculation after restoring values
+            updateTotalProducts();
+        } catch (e) {
+            console.error('Error loading saved form data:', e);
+        }
+    }
+}
+
+// Initialize form management event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for generation count and batch size changes
+    const batchSizeElement = document.getElementById('batchSize');
+    if (batchSizeElement) {
+        batchSizeElement.addEventListener('change', function() {
+            updateTotalProducts();
+            saveFormValues();
+        });
+    }
+    
+    const generationCountElement = document.getElementById('generationCount');
+    if (generationCountElement) {
+        generationCountElement.addEventListener('input', function() {
+            updateTotalProducts();
+            saveFormValues();
+        });
+    }
+    
+    // Add event listeners for form field changes to save values
+    const formFields = ['machine', 'prompt', 'negative_prompt', 'title', 'project'];
+    formFields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.addEventListener('change', saveFormValues);
+            element.addEventListener('input', saveFormValues);
+        }
+    });
+});
+</script>
