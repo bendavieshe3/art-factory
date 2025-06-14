@@ -43,10 +43,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData(form);
             const jsonData = {};
             
-            // Convert FormData to JSON
+            // Convert FormData to JSON with field name mapping
             for (let [key, value] of formData.entries()) {
                 if (key.startsWith('csrfmiddlewaretoken')) continue;
-                jsonData[key] = value;
+                
+                // Map form field names to API field names
+                if (key === 'machine') {
+                    jsonData['machine_id'] = value;
+                } else if (key === 'project') {
+                    jsonData['project_id'] = value;
+                } else if (key === 'generationCount') {
+                    jsonData['generation_count'] = value;
+                } else if (key === 'batchSize') {
+                    jsonData['batch_size'] = value;
+                } else {
+                    jsonData[key] = value;
+                }
             }
             
             // Collect advanced parameters
@@ -67,15 +79,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleOrderSubmission(jsonData, submitBtn);
             } else {
                 // Fallback basic submission
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (!csrfToken) {
+                    console.error('CSRF token not found');
+                    throw new Error('Security token missing. Please refresh the page and try again.');
+                }
+                
                 fetch('{{ place_order_api_url|default:"/api/place-order/" }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        'X-CSRFToken': csrfToken.value
                     },
                     body: JSON.stringify(jsonData)
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || errorData.user_message || `HTTP ${response.status}: ${response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         // Clear saved form data on successful submission
@@ -94,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             setTimeout(loadPageData, 1000);
                         }
                     } else {
-                        throw new Error(data.message || 'Failed to place order');
+                        throw new Error(data.error || data.user_message || data.message || 'Failed to place order');
                     }
                 })
                 .catch(error => {

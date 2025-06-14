@@ -197,15 +197,28 @@ function handleOrderSubmission(formData, submitBtn) {
     showOrderProgress();
     
     // Submit the order
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        throw new Error('Security token missing. Please refresh the page and try again.');
+    }
+    
     fetch('/api/place-order/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            'X-CSRFToken': csrfToken.value
         },
         body: JSON.stringify(formData)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(errorData.error || errorData.user_message || `HTTP ${response.status}: ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             updateProgressText(`Order #${data.order_id} submitted! Starting generation...`);
@@ -227,7 +240,7 @@ function handleOrderSubmission(formData, submitBtn) {
                 );
             }
         } else {
-            throw new Error(data.message || 'Failed to place order');
+            throw new Error(data.error || data.user_message || data.message || 'Failed to place order');
         }
     })
     .catch(error => {
