@@ -30,6 +30,8 @@ def order_view(request):
         factory_machines=factory_machines,
         page_title="Order",
         project_specifier="for",
+        inventory_url=reverse("main:inventory"),
+        production_url=reverse("main:production"),
     )
     return render(request, "main/order.html", context)
 

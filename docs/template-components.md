@@ -680,6 +680,46 @@ def test_pagination_component_integration(self):
 {% include 'components/js/product_collection_init.html' with collection_container='#myProducts' %}
 ```
 
+#### `components/ui/recent_products.html`
+
+**Purpose**: Display recent products with optional project filtering indicator
+
+**Parameters**:
+- `title` (optional): Section title, defaults to "Recent Products"
+- `view_all_url` (optional): URL for "View All" button
+- `view_all_text` (optional): Text for "View All" button, defaults to "View All"
+- `api_url` (optional): API endpoint URL, defaults to main:recent_products_api
+- `show_project_filter` (optional): Whether to show project filter pill, defaults to True if current_project exists
+- `limit` (optional): Number of products to show, defaults to 8
+- `container_id` (optional): ID for the product collection container, defaults to "recentProductsCollection"
+- `extra_classes` (optional): Additional CSS classes for the card
+
+**Usage Example**:
+```django
+{% include 'components/ui/recent_products.html' %}
+{% include 'components/ui/recent_products.html' with title="Latest Creations" limit=6 %}
+```
+
+#### `components/ui/recent_orders.html`
+
+**Purpose**: Display recent orders with optional project filtering indicator
+
+**Parameters**:
+- `title` (optional): Section title, defaults to "Recent Orders"
+- `view_all_url` (optional): URL for "View All" button
+- `view_all_text` (optional): Text for "View All" button, defaults to "View Production"
+- `api_url` (optional): API endpoint URL, defaults to main:recent_orders_api
+- `show_project_filter` (optional): Whether to show project filter pill, defaults to True if current_project exists
+- `limit` (optional): Number of orders to show, defaults to 10
+- `container_id` (optional): ID for the orders container, defaults to "recentOrders"
+- `extra_classes` (optional): Additional CSS classes for the card
+
+**Usage Example**:
+```django
+{% include 'components/ui/recent_orders.html' %}
+{% include 'components/ui/recent_orders.html' with title="Latest Orders" limit=5 %}
+```
+
 ## Related Documentation
 
 - `docs/template-layouts.md` - Layout system documentation  

@@ -1,0 +1,102 @@
+{% comment %}
+Recent Products Component
+
+This component displays a list of recent products with optional project filtering indicator.
+It uses the ProductCollection JavaScript component for rendering.
+
+Parameters:
+- title (optional): Title for the section, defaults to "Recent Products"
+- view_all_url (optional): URL for "View All" button, defaults to inventory page
+- view_all_text (optional): Text for "View All" button, defaults to "View All"
+- api_url (optional): API endpoint URL, defaults to main:recent_products_api
+- show_project_filter (optional): Whether to show project filter pill, defaults to True if current_project exists
+- limit (optional): Number of products to show, defaults to 8
+- container_id (optional): ID for the product collection container, defaults to "recentProductsCollection"
+- extra_classes (optional): Additional CSS classes for the card
+
+Usage:
+{% include 'components/ui/recent_products.html' %}
+{% include 'components/ui/recent_products.html' with title="Latest Creations" limit=6 %}
+{% endcomment %}
+
+{% load static %}
+
+<div class="card {{ extra_classes }}" 
+     data-component="recent-products"
+     data-api-url="{% if api_url %}{{ api_url }}{% else %}{% url 'main:recent_products_api' %}{% endif %}"
+     data-limit="{{ limit|default:8 }}"
+     data-container-id="{{ container_id|default:'recentProductsCollection' }}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <h6 class="mb-0">
+                <i class="bi bi-images"></i> {{ title|default:"Recent Products" }}
+            </h6>
+            {% if show_project_filter|default:current_project %}
+                {% if current_project %}
+                    <span class="badge bg-primary">
+                        <i class="bi bi-funnel"></i> {{ current_project.name }}
+                    </span>
+                {% endif %}
+            {% endif %}
+        </div>
+        <a href="{{ view_all_url|default_if_none:'#' }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-grid"></i> {{ view_all_text|default:"View All" }}
+        </a>
+    </div>
+    <div class="card-body">
+        <div id="{{ container_id|default:'recentProductsCollection' }}"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const recentProductsCards = document.querySelectorAll('[data-component="recent-products"]');
+    
+    recentProductsCards.forEach(function(card) {
+        const apiUrl = card.getAttribute('data-api-url');
+        const limit = card.getAttribute('data-limit');
+        const containerId = card.getAttribute('data-container-id');
+        
+        // Initialize product collection
+        let productCollection = null;
+        
+        function initializeCollection() {
+            if (!productCollection) {
+                productCollection = new ProductCollection('#' + containerId, 'strip', {
+                    selectable: false,
+                    showBulkActions: false,
+                    cardVariant: 'compact',
+                    cardOptions: {
+                        showCheckbox: false,
+                        showActions: false,
+                        showDelete: false,
+                        clickAction: 'modal'
+                    }
+                });
+            }
+        }
+        
+        function loadProducts() {
+            fetch(apiUrl + '?limit=' + limit)
+                .then(response => response.json())
+                .then(data => {
+                    initializeCollection();
+                    
+                    if (data.products && data.products.length > 0) {
+                        productCollection.loadProducts(data.products);
+                    } else {
+                        productCollection.loadProducts([]);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading recent products:', error);
+                    initializeCollection();
+                    productCollection.loadProducts([]);
+                });
+        }
+        
+        // Load products for this card
+        loadProducts();
+    });
+});
+</script>

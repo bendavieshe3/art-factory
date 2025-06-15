@@ -203,59 +203,14 @@
         <!-- Recent Products Strip -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0"><i class="bi bi-images"></i> Recent Products</h6>
-                        <a href="{% url 'main:inventory' %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-grid"></i> View All
-                        </a>
-                    </div>
-                    <div class="card-body">
-                        <!-- Unified Product Collection for Recent Products -->
-                        <div id="recentProductsCollection"></div>
-                    </div>
-                </div>
+                {% include 'components/ui/recent_products.html' with view_all_url=inventory_url %}
             </div>
         </div>
         
         <!-- Recent Orders List -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0"><i class="bi bi-list-ul"></i> Recent Orders</h6>
-                        <a href="{% url 'main:production' %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-kanban"></i> View Production
-                        </a>
-                    </div>
-                    <div class="card-body">
-                        <div id="recentOrders">
-                            <div id="recentOrdersPlaceholder" class="text-center py-3 text-muted">
-                                <small>Your recent orders will appear here</small>
-                            </div>
-                            <div id="recentOrdersContent" style="display: none;">
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Title</th>
-                                                <th>Model</th>
-                                                <th>Status</th>
-                                                <th>Items</th>
-                                                <th>Created</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="recentOrdersTable">
-                                            <!-- Orders will be inserted here -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% include 'components/ui/recent_orders.html' with view_all_url=production_url %}
             </div>
         </div>
     </div>
@@ -281,7 +236,6 @@
 {% block extra_js %}
 <!-- Order Form Management Components -->
 {% include 'components/js/order_form_management.html' %}
-{% include 'components/js/order_recent_data.html' %}
 {% include 'components/js/order_progress_management.html' %}
 {% include 'components/js/order_machine_parameters.html' %}
 {% include 'components/js/order_template_management.html' %}

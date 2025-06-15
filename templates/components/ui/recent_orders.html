@@ -1,0 +1,160 @@
+{% comment %}
+Recent Orders Component
+
+This component displays a list of recent orders with optional project filtering indicator.
+
+Parameters:
+- title (optional): Title for the section, defaults to "Recent Orders"
+- view_all_url (optional): URL for "View All" button, defaults to production page
+- view_all_text (optional): Text for "View All" button, defaults to "View Production"
+- api_url (optional): API endpoint URL, defaults to main:recent_orders_api
+- show_project_filter (optional): Whether to show project filter pill, defaults to True if current_project exists
+- limit (optional): Number of orders to show, defaults to 10
+- container_id (optional): ID for the orders container, defaults to "recentOrders"
+- extra_classes (optional): Additional CSS classes for the card
+
+Usage:
+{% include 'components/ui/recent_orders.html' %}
+{% include 'components/ui/recent_orders.html' with title="Latest Orders" limit=5 %}
+{% endcomment %}
+
+{% load static %}
+
+<div class="card {{ extra_classes }}"
+     data-component="recent-orders"
+     data-api-url="{% if api_url %}{{ api_url }}{% else %}{% url 'main:recent_orders_api' %}{% endif %}"
+     data-limit="{{ limit|default:10 }}"
+     data-container-id="{{ container_id|default:'recentOrders' }}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <h6 class="mb-0">
+                <i class="bi bi-list-ul"></i> {{ title|default:"Recent Orders" }}
+            </h6>
+            {% if show_project_filter|default:current_project %}
+                {% if current_project %}
+                    <span class="badge bg-primary">
+                        <i class="bi bi-funnel"></i> {{ current_project.name }}
+                    </span>
+                {% endif %}
+            {% endif %}
+        </div>
+        <a href="{{ view_all_url|default_if_none:'#' }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-kanban"></i> {{ view_all_text|default:"View Production" }}
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="recent-orders-container">
+            <div class="recent-orders-placeholder text-center py-3 text-muted">
+                <small>Your recent orders will appear here</small>
+            </div>
+            <div class="recent-orders-content" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Model</th>
+                                <th>Status</th>
+                                <th>Items</th>
+                                <th>Created</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody class="recent-orders-table">
+                            <!-- Orders will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const recentOrdersCards = document.querySelectorAll('[data-component="recent-orders"]');
+    
+    recentOrdersCards.forEach(function(card) {
+        const apiUrl = card.getAttribute('data-api-url');
+        const limit = card.getAttribute('data-limit');
+        
+        const placeholder = card.querySelector('.recent-orders-placeholder');
+        const content = card.querySelector('.recent-orders-content');
+        const tableBody = card.querySelector('.recent-orders-table');
+        
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'completed': return 'bg-success';
+                case 'processing': return 'bg-primary';
+                case 'failed': return 'bg-danger';
+                case 'pending': return 'bg-secondary';
+                case 'partial': return 'bg-warning';
+                default: return 'bg-secondary';
+            }
+        }
+        
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
+        }
+        
+        function loadOrders() {
+            fetch(apiUrl + '?limit=' + limit)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.orders && data.orders.length > 0) {
+                        tableBody.innerHTML = '';
+                        
+                        data.orders.forEach(order => {
+                            const row = document.createElement('tr');
+                            
+                            // Format items status display
+                            const itemsText = order.total_items > 0 
+                                ? `${order.completed_items}/${order.total_items}`
+                                : '0/0';
+                            
+                            row.innerHTML = `
+                                <td>
+                                    <a href="/orders/${order.id}/" class="text-decoration-none">
+                                        #${order.id}
+                                    </a>
+                                </td>
+                                <td class="text-truncate" style="max-width: 200px;">${order.title || 'Untitled'}</td>
+                                <td class="text-truncate" style="max-width: 150px;">
+                                    <small>${order.factory_machine_name || 'Unknown'}</small>
+                                </td>
+                                <td>
+                                    <span class="badge ${getStatusBadgeClass(order.status)}">${order.status}</span>
+                                </td>
+                                <td class="text-muted">
+                                    <small>${itemsText}</small>
+                                </td>
+                                <td class="text-muted">${formatDate(order.created_at)}</td>
+                                <td>
+                                    <a href="/orders/${order.id}/" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                        
+                        if (placeholder) placeholder.style.display = 'none';
+                        if (content) content.style.display = 'block';
+                    } else {
+                        if (placeholder) placeholder.style.display = 'block';
+                        if (content) content.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading recent orders:', error);
+                    if (placeholder) placeholder.style.display = 'block';
+                    if (content) content.style.display = 'none';
+                });
+        }
+        
+        // Load orders for this card
+        loadOrders();
+    });
+});
+</script>
