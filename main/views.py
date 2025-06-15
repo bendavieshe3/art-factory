@@ -705,7 +705,8 @@ def product_detail_api(request, product_id):
 
                 if default_storage.exists(product.file_path):
                     file_size = default_storage.size(product.file_path)
-            except:
+            except Exception:
+                # Ignore file size errors - not critical for API response
                 pass
 
         # Get order information if available
@@ -719,7 +720,8 @@ def product_detail_api(request, product_id):
             if order_item:
                 order_id = order_item.order.id
                 factory_machine_definition = order_item.order.factory_machine_name
-        except:
+        except Exception:
+            # Ignore order relationship errors - not critical for API response
             pass
 
         product_data = {

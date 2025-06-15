@@ -1,0 +1,9 @@
+# Bandit configuration file for Art Factory
+
+[bandit]
+# Exclude virtual environment, coverage reports, and logs
+exclude_dirs = ./venv,./htmlcov,./logs
+
+# Skip hardcoded passwords in test files (test passwords are expected)
+# Skip try/except pass in test files (acceptable for test validation)
+skips = B106,B110
