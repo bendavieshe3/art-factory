@@ -10,7 +10,7 @@ import json
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from main.models import Order, Product, Project
+from main.models import Order, OrderItem, Product, Project
 from main.utils.project_context import set_project_context
 
 
@@ -34,7 +34,7 @@ class ProjectAwareAPITestCase(TestCase):
             model_name="test-model",
             width=512,
             height=512,
-            file_path="/test/path/1.jpg",
+            file_path="test/path/1.jpg",
             file_size=1024,
             file_format="jpg",
         )
@@ -46,7 +46,7 @@ class ProjectAwareAPITestCase(TestCase):
             model_name="test-model",
             width=512,
             height=512,
-            file_path="/test/path/2.jpg",
+            file_path="test/path/2.jpg",
             file_size=2048,
             file_format="jpg",
         )
@@ -58,7 +58,7 @@ class ProjectAwareAPITestCase(TestCase):
             model_name="test-model",
             width=512,
             height=512,
-            file_path="/test/path/3.jpg",
+            file_path="test/path/3.jpg",
             file_size=3072,
             file_format="jpg",
         )
@@ -70,7 +70,7 @@ class ProjectAwareAPITestCase(TestCase):
             model_name="test-model",
             width=512,
             height=512,
-            file_path="/test/path/4.jpg",
+            file_path="test/path/4.jpg",
             file_size=4096,
             file_format="jpg",
         )
@@ -104,10 +104,41 @@ class ProjectAwareAPITestCase(TestCase):
             title="Order with no project", prompt="test order 4", factory_machine_name="test-machine", provider="test-provider"
         )
 
-        # Set up products to be associated with their projects
-        # (Using the project's add_product method if available, or directly setting project relationship)
-        self.project1.products_set = [self.product1_proj1, self.product2_proj1]
-        self.project2.products_set = [self.product1_proj2]
+        # Create OrderItems to properly associate products with projects
+        # Products are connected to projects through: Project -> Order -> OrderItem -> Product
+        self.order_item1_proj1 = OrderItem.objects.create(
+            order=self.order1_proj1,
+            prompt="test prompt 1",
+            parameters={},
+        )
+        self.order_item2_proj1 = OrderItem.objects.create(
+            order=self.order2_proj1,
+            prompt="test prompt 2",
+            parameters={},
+        )
+        self.order_item1_proj2 = OrderItem.objects.create(
+            order=self.order1_proj2,
+            prompt="test prompt 3",
+            parameters={},
+        )
+        self.order_item_no_project = OrderItem.objects.create(
+            order=self.order_no_project,
+            prompt="test prompt 4",
+            parameters={},
+        )
+
+        # Associate products with their order items
+        self.product1_proj1.order_item = self.order_item1_proj1
+        self.product1_proj1.save()
+        
+        self.product2_proj1.order_item = self.order_item2_proj1
+        self.product2_proj1.save()
+        
+        self.product1_proj2.order_item = self.order_item1_proj2
+        self.product1_proj2.save()
+        
+        self.product_no_project.order_item = self.order_item_no_project
+        self.product_no_project.save()
 
 
 class RecentProductsAPITestCase(ProjectAwareAPITestCase):

@@ -2,9 +2,7 @@
 
 {% block page_title %}Inventory{% endblock %}
 
-{% block page_description %}
-<p class="lead">View and manage your generated products.</p>
-{% endblock %}
+{% block page_description %}View and manage your generated products.{% endblock %}
 
 {% block content %}
 <!-- CSRF Token for AJAX requests -->
@@ -33,17 +31,6 @@
                     </a>
                 {% endif %}
             </div>
-            {% if current_project %}
-            <div class="col-md-6">
-                <div class="alert alert-info mb-0">
-                    <i class="bi bi-folder-open"></i>
-                    Showing {{ page_obj.paginator.count }} products from <strong>{{ current_project.name }}</strong>
-                    {% if current_project.description %}
-                        <br><small>{{ current_project.description }}</small>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </form>
     </div>
 </div>

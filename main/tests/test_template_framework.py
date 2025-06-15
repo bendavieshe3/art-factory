@@ -55,7 +55,7 @@ class TemplateInheritanceTestCase(TestCase):
         self.assertIn("{% extends 'base.html' %}", app_content)
 
         # Test app_layout adds new blocks
-        new_blocks = ["page_header", "page_title", "page_description", "content"]
+        new_blocks = ["page_header", "content"]
         for block in new_blocks:
             self.assertIn(f"{{% block {block}", app_content, f"app_layout.html missing block: {block}")
 

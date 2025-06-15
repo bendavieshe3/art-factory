@@ -290,20 +290,27 @@ class ProjectIntegrationTest(TestCase):
 
     def test_order_creation_with_project(self):
         """Test that orders can be created with project association."""
+        # Set project context in session to test project header display
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
         response = self.client.get(reverse("main:order"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Integration Test Project")
 
-        # Check that project is in the context
-        self.assertIn("projects", response.context)
-        self.assertTrue(len(response.context["projects"]) >= 1)
-
-        # Find our test project in the context
-        project_names = [p.name for p in response.context["projects"]]
-        self.assertIn("Integration Test Project", project_names)
+        # Check that current project is in the context (from session)
+        self.assertIn("current_project", response.context)
+        self.assertEqual(response.context["current_project"].name, "Integration Test Project")
 
     def test_project_url_parameter_preselection(self):
-        """Test that project URL parameter pre-selects project in order form."""
+        """Test that project URL parameter sets project context."""
         response = self.client.get(reverse("main:order"), {"project": self.project.id})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, f'value="{self.project.id}"')
+
+        # Check that current project is set in context from URL parameter
+        self.assertIn("current_project", response.context)
+        self.assertEqual(response.context["current_project"].name, "Integration Test Project")
+
+        # Check that project name appears in the header
+        self.assertContains(response, "Integration Test Project")

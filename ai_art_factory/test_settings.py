@@ -8,6 +8,9 @@ import tempfile
 
 from .settings import *
 
+# Allow testserver for Django test client
+ALLOWED_HOSTS = ['testserver'] + ALLOWED_HOSTS
+
 # Disable automatic worker spawning during tests
 DISABLE_AUTO_WORKER_SPAWN = True
 

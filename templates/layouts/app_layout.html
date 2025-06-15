@@ -83,12 +83,7 @@
         <!-- Page Header -->
         {% block page_header %}
             {% if page_title or page_description %}
-                <div class="mb-4">
-                    {% if page_title %}
-                        <h1 class="h2">{% block page_title %}{{ page_title }}{% endblock %}</h1>
-                    {% endif %}
-                    {% block page_description %}{% endblock %}
-                </div>
+                {% include 'components/ui/page_header.html' with title=page_title description=page_description %}
             {% endif %}
         {% endblock %}
 

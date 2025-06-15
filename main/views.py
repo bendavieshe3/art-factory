@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 
 from .error_handling import ErrorCategory, ErrorHandler, UserFriendlyMessages
@@ -27,7 +28,8 @@ def order_view(request):
     context = get_project_aware_context(
         request,
         factory_machines=factory_machines,
-        page_title="Place Order",
+        page_title="Order",
+        project_specifier="for",
     )
     return render(request, "main/order.html", context)
 
@@ -86,7 +88,8 @@ def inventory_view(request):
         products_json=json.dumps(products_json),
         projects=projects,
         project_filter=project_filter,
-        page_title=f"Inventory - {current_project.name}" if current_project else "Inventory",
+        page_title="Inventory",
+        project_specifier="of",
     )
     return render(request, "main/inventory.html", context)
 
@@ -846,6 +849,36 @@ def project_detail_view(request, project_id):
             }
         )
 
+    # Build project actions HTML for header
+    project_actions = f"""
+        <a href="{reverse('main:projects')}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Projects
+        </a>
+        <a href="{reverse('main:order')}?project={project.id}" class="btn btn-primary me-2">
+            <i class="bi bi-plus-circle"></i> New Order
+        </a>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-gear"></i> Manage
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                            data-bs-target="#editProjectModal">
+                        <i class="bi bi-pencil"></i> Edit Project
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal"
+                            data-bs-target="#deleteProjectModal">
+                        <i class="bi bi-trash"></i> Delete Project
+                    </button>
+                </li>
+            </ul>
+        </div>
+    """
+
     context = get_project_aware_context(
         request,
         project=project,
@@ -854,6 +887,7 @@ def project_detail_view(request, project_id):
         products=page_obj,
         products_json=json.dumps(products_json),
         page_title=f"Project: {project.name}",
+        project_actions=project_actions,
     )
     return render(request, "main/project_detail.html", context)
 

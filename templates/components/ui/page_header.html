@@ -1,0 +1,115 @@
+{% comment %}
+Integrated Page Header Component
+
+Combines page title, description, and project context into a unified, space-efficient header.
+This replaces the scattered page_title/page_description blocks and project_context_indicator.
+
+Usage:
+    {% include 'components/ui/page_header.html' with title="Page Title" description="Optional description" %}
+
+Parameters:
+    - title: String, required - The base page title (e.g., "Order", "Inventory")
+    - description: String, optional - Page description/subtitle
+    - project_specifier: String, optional - Word to connect title with project ("for", "of", etc.)
+    - show_project_context: Boolean, default True - Whether to show project context
+    - project_context_style: String, default 'compact' - 'compact' or 'full'
+    - actions: String, optional - HTML for action buttons to display on the right
+
+Examples:
+    - "Order" + project_specifier "for" + "Testing" = "Order for Testing"
+    - "Inventory" + project_specifier "of" + "Testing" = "Inventory of Testing"
+{% endcomment %}
+
+<div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <!-- Left side: Title, description, and project context -->
+        <div class="flex-grow-1 min-w-0">
+            <!-- Page Title -->
+            <h1 class="h2 mb-1">
+                {{ title }}{% if show_project_context|default:True and current_project and project_specifier %}<span class="text-muted"> {{ project_specifier }} {{ current_project.name }}</span>{% endif %}
+            </h1>
+            
+            <!-- Project Context (Compact) -->
+            {% if show_project_context|default:True and current_project %}
+                <div class="project-context-compact mb-2">
+                    <div class="d-flex align-items-center text-muted">
+                        <i class="bi bi-folder-open me-1" style="font-size: 0.875rem;"></i>
+                        <small>
+                            <span class="fw-medium">Project:</span> {{ current_project.name }}
+                            {% if current_project.order_count or current_project.product_count %}
+                                <span class="mx-1">-</span>
+                                {% if current_project.order_count %}
+                                    {{ current_project.order_count }} order{{ current_project.order_count|pluralize }}
+                                {% endif %}
+                                {% if current_project.order_count and current_project.product_count %}
+                                    <span class="mx-1">-</span>
+                                {% endif %}
+                                {% if current_project.product_count %}
+                                    {{ current_project.product_count }} product{{ current_project.product_count|pluralize }}
+                                {% endif %}
+                            {% endif %}
+                        </small>
+                        <a href="{% url 'main:projects' %}" class="ms-2 text-decoration-none" title="Change Project">
+                            <i class="bi bi-arrow-left-circle" style="font-size: 0.875rem;"></i>
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Page Description -->
+            {% if description %}
+                <div class="page-description">
+                    {% if description|slice:":3" == "<p>" %}
+                        {{ description|safe }}
+                    {% else %}
+                        <p class="text-muted mb-0">{{ description }}</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right side: Actions -->
+        {% if actions %}
+            <div class="flex-shrink-0">
+                {{ actions|safe }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Full Project Context (when explicitly requested) -->
+    {% if show_project_context|default:True and current_project and project_context_style == 'full' %}
+        <div class="alert alert-info d-flex justify-content-between align-items-start mt-3">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-folder-open me-2"></i>
+                    <div>
+                        <strong>Working in: {{ current_project.name }}</strong>
+                        {% if current_project.description %}
+                            <br>
+                            <small class="text-muted">{{ current_project.description }}</small>
+                        {% endif %}
+                        <br>
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>Last updated: {{ current_project.updated_at|date:"M j, Y g:i A" }}
+                            {% if current_project.product_count %}
+                                <span class="ms-2">
+                                    <i class="bi bi-images me-1"></i>{{ current_project.product_count }} product{{ current_project.product_count|pluralize }}
+                                </span>
+                            {% endif %}
+                            {% if current_project.order_count %}
+                                <span class="ms-2">
+                                    <i class="bi bi-list-ul me-1"></i>{{ current_project.order_count }} order{{ current_project.order_count|pluralize }}
+                                </span>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-shrink-0 ms-3">
+                <a href="{% url 'main:projects' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i>Change Project
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
