@@ -818,17 +818,26 @@ class ProductViewerModal {
     
     addHistoryState() {
         if (!this.historyAdded) {
-            // Push a new state that we can detect on popstate
-            window.history.pushState({ modalOpen: true }, '', window.location.href);
+            console.log('ProductViewerModal: Adding history state...');
+            // Push a new state with a different URL to ensure browser creates new history entry
+            const currentUrl = window.location.href;
+            const modalUrl = currentUrl + (currentUrl.includes('#') ? '' : '#modal-open');
+            window.history.pushState({ modalOpen: true }, '', modalUrl);
             this.historyAdded = true;
+            console.log('ProductViewerModal: History state added, URL:', modalUrl, 'length:', window.history.length);
+        } else {
+            console.log('ProductViewerModal: History already added, skipping');
         }
     }
     
     removeHistoryState() {
         if (this.historyAdded) {
-            // Replace current state instead of going back to avoid navigation
-            window.history.replaceState(null, '', window.location.href);
+            console.log('ProductViewerModal: Removing history state...');
+            // Remove the hash and replace state to clean up URL
+            const cleanUrl = window.location.href.replace('#modal-open', '');
+            window.history.replaceState(null, '', cleanUrl);
             this.historyAdded = false;
+            console.log('ProductViewerModal: History state removed, URL cleaned:', cleanUrl);
         }
     }
 }
