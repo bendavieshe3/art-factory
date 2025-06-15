@@ -113,9 +113,16 @@ class InventoryProjectFilteringTest(TestCase):
         self.assertEqual(len(all_products_json), 6, "Inventory should show all 6 products when not filtered")
 
         # Test inventory page filtered by our test project (should show all 4 batch products)
-        response = self.client.get(reverse("main:inventory"), {"project": self.project.id})
+        # Set project context in session
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+        
+        response = self.client.get(reverse("main:inventory"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Test Inventory Project")
+        # Check that the project name appears in the contextual title
+        self.assertContains(response, "of Test Inventory Project")
+        self.assertContains(response, "Inventory")
 
         # Parse the filtered products JSON
         filtered_products_json = json.loads(response.context["products_json"])

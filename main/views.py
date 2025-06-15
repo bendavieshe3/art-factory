@@ -40,25 +40,10 @@ def inventory_view(request):
     """Product gallery and inventory management."""
     products = Product.objects.all().order_by("-created_at")
 
-    # Project filter - check URL parameter for legacy compatibility, then session
-    project_filter = request.GET.get("project")
-    current_project = None
-
-    if project_filter:
-        # Legacy URL-based filtering - still supported for direct links
-        try:
-            current_project = Project.objects.get(id=project_filter, status="active")
-            products = current_project.get_products_queryset().order_by("-created_at")
-        except Project.DoesNotExist:
-            pass
-    else:
-        # Use session-based project context for filtering
-        current_project = ensure_project_context(request)
-        if current_project:
-            products = current_project.get_products_queryset().order_by("-created_at")
-
-    # Get all active projects for filter dropdown
-    projects = Project.objects.filter(status="active").order_by("name")
+    # Use session-based project context for filtering
+    current_project = ensure_project_context(request)
+    if current_project:
+        products = current_project.get_products_queryset().order_by("-created_at")
 
     # Pagination
     paginator = Paginator(products, 20)  # 20 products per page
@@ -88,8 +73,6 @@ def inventory_view(request):
         page_obj=page_obj,
         products=page_obj,
         products_json=json.dumps(products_json),
-        projects=projects,
-        project_filter=project_filter,
         page_title="Inventory",
         project_specifier="of",
     )
