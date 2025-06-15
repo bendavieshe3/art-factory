@@ -245,8 +245,12 @@ class ProductViewerModal {
         
         // Handle browser back button
         window.addEventListener('popstate', (e) => {
-            if (this.modal.style.display !== 'none' && e.state && e.state.modalClosed) {
-                this.close();
+            if (this.modal.style.display !== 'none') {
+                // If modal is open and user navigates back, close the modal
+                // Prevent the history.back() call in removeHistoryState from causing issues
+                if (!e.state || !e.state.modalOpen) {
+                    this.closeWithoutHistory();
+                }
             }
         });
     }
@@ -338,6 +342,24 @@ class ProductViewerModal {
         
         // Remove from history if we added it
         this.removeHistoryState();
+    }
+    
+    closeWithoutHistory() {
+        this.modal.style.display = 'none';
+        document.body.style.overflow = '';
+        
+        // Reset zoom and pan
+        this.resetZoom();
+        
+        // Hide thumbnail strip
+        this.thumbnailStrip.style.display = 'none';
+        
+        // Clear current product
+        this.currentProduct = null;
+        this.products = [];
+        
+        // Mark history as removed since user already navigated back
+        this.historyAdded = false;
     }
     
     async loadProduct(product) {
@@ -793,8 +815,8 @@ class ProductViewerModal {
     
     removeHistoryState() {
         if (this.historyAdded) {
-            // Go back to remove our state
-            window.history.back();
+            // Replace current state instead of going back to avoid navigation
+            window.history.replaceState(null, '', window.location.href);
             this.historyAdded = false;
         }
     }
