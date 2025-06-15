@@ -28,3 +28,4 @@ black==24.10.0
 isort==5.13.2
 safety==3.2.11
 bandit==1.7.10
+time-machine==2.16.0
