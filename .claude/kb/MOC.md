@@ -37,6 +37,7 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - [Django Fixtures vs Seed Data](./django-fixtures-vs-seed-data.md) - When to use fixtures vs management commands for data initialization
 - [Universal Worker Architecture](./universal-worker-architecture.md) - Provider-agnostic worker pattern for simplified deployment and scaling
 - [Django Template Testing Framework](./django-template-testing-framework.md) - Comprehensive template validation including inheritance, security, accessibility, and component consistency
+- [Django Project Context Patterns](./django-project-context-patterns.md) - Session-based project context, contextual page headers, reusable filtered components, template security
 
 ### Troubleshooting & Solutions
 - [Replicate Model Versioning](./replicate-model-versioning.md) - Solving 404 errors with SDXL and other models requiring version hashes
@@ -52,6 +53,9 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - Knowledge is kept current through regular updates prioritizing frequently-changing topics
 
 ## Last Updated
+2025-06-15 - Added Django Project Context Patterns from Art Factory project-aware UI implementation:
+- Django Project Context Patterns: Comprehensive guide on session-based project context management, contextual page headers with project specifiers, reusable filtered content components, template security with data attributes, and component documentation patterns. Includes implementation from GitHub Issue #82 resolution.
+
 2025-06-15 - Added Django Template Testing Framework from Art Factory template standardization work:
 - Django Template Testing Framework: Comprehensive template validation framework covering inheritance validation, component consistency, security testing, accessibility compliance, and documentation validation. Includes implementation patterns, common issues/solutions, and integration with CI/CD pipelines.
 
