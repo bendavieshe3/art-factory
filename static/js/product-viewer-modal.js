@@ -245,12 +245,19 @@ class ProductViewerModal {
         
         // Handle browser back button
         window.addEventListener('popstate', (e) => {
+            console.log('ProductViewerModal: popstate event fired', {
+                modalDisplay: this.modal.style.display,
+                isModalVisible: this.modal.style.display !== 'none',
+                state: e.state
+            });
+            
             if (this.modal.style.display !== 'none') {
-                // If modal is open and user navigates back, close the modal
-                // Prevent the history.back() call in removeHistoryState from causing issues
-                if (!e.state || !e.state.modalOpen) {
-                    this.closeWithoutHistory();
-                }
+                console.log('ProductViewerModal: Modal is open, closing it');
+                // If modal is open and popstate fires, close the modal
+                // This happens when user presses back button while modal is open
+                this.closeWithoutHistory();
+            } else {
+                console.log('ProductViewerModal: Modal not open, ignoring popstate');
             }
         });
     }
@@ -304,9 +311,11 @@ class ProductViewerModal {
         // Show modal
         this.modal.style.display = 'flex';
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        console.log('ProductViewerModal: Modal opened, display set to flex');
         
         // Add to browser history
         this.addHistoryState();
+        console.log('ProductViewerModal: History state added');
         
         // Load the product
         await this.loadProduct(this.products[this.currentIndex]);
@@ -345,6 +354,7 @@ class ProductViewerModal {
     }
     
     closeWithoutHistory() {
+        console.log('ProductViewerModal: closeWithoutHistory called');
         this.modal.style.display = 'none';
         document.body.style.overflow = '';
         
@@ -360,6 +370,7 @@ class ProductViewerModal {
         
         // Mark history as removed since user already navigated back
         this.historyAdded = false;
+        console.log('ProductViewerModal: Modal closed without history manipulation');
     }
     
     async loadProduct(product) {
