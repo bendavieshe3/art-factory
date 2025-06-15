@@ -38,6 +38,7 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - [Universal Worker Architecture](./universal-worker-architecture.md) - Provider-agnostic worker pattern for simplified deployment and scaling
 - [Django Template Testing Framework](./django-template-testing-framework.md) - Comprehensive template validation including inheritance, security, accessibility, and component consistency
 - [Django Project Context Patterns](./django-project-context-patterns.md) - Session-based project context, contextual page headers, reusable filtered components, template security
+- [Browser History Modal Patterns](./browser-history-modal-patterns.md) - Back button navigation for modals, History API usage, URL hash management, UX best practices
 
 ### Troubleshooting & Solutions
 - [Replicate Model Versioning](./replicate-model-versioning.md) - Solving 404 errors with SDXL and other models requiring version hashes
@@ -53,6 +54,9 @@ This file provides an overview of all knowledge base articles maintained by Clau
 - Knowledge is kept current through regular updates prioritizing frequently-changing topics
 
 ## Last Updated
+2025-06-15 - Added Browser History Modal Patterns from Art Factory modal back button fix:
+- Browser History Modal Patterns: Comprehensive guide on implementing proper back button navigation for modals using Browser History API. Covers URL hash management, popstate event handling, debugging techniques, and complete implementation patterns. Includes solution for common issue where pushState with same URL doesn't create navigable history entries.
+
 2025-06-15 - Added Django Project Context Patterns from Art Factory project-aware UI implementation:
 - Django Project Context Patterns: Comprehensive guide on session-based project context management, contextual page headers with project specifiers, reusable filtered content components, template security with data attributes, and component documentation patterns. Includes implementation from GitHub Issue #82 resolution.
 
